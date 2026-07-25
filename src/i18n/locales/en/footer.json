@@ -1,0 +1,24 @@
+{
+  "tagline": "A Unique Relaxation Spot in the Heart of Latvian Nature!",
+  "sections": {
+    "services": "Services",
+    "booking": "Booking",
+    "policies": "Policies",
+    "social": "Follow on Social Media"
+  },
+  "services": {
+    "rituals": "Sauna Rituals",
+    "rental": "Sauna Rental",
+    "experiences": "Special Sauna Experiences",
+    "accommodation": "Accommodation"
+  },
+  "booking": {
+    "reserve": "Reserve",
+    "giftCards": "Gift Cards"
+  },
+  "policies": {
+    "privacy": "Privacy Policy",
+    "rules": "Internal Rules"
+  },
+  "copyright": "© 2024 SaimniekaPirts. All rights reserved."
+}

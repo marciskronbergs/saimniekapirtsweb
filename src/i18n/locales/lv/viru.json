@@ -1,0 +1,41 @@
+{
+  "title": "PIRTS PIEDZĪVOJUMS VECPUIŠU BALĪTEI \"VĪRU PAKA\"",
+  "belief": {
+    "title": "Ticējums:",
+    "text": "Pirts ir zemnieka dakteris. Ja nebūtu pirts un rutku, tad dakteri brauktu zelta ratiem"
+  },
+  "price": "360€, līdz 8 cilvēkiem vienlaicīgi",
+  "description1": "Vecpuišu ballītes ir aizguvums no ārzemēm, kuru pieaugušo skaits liecina, ka vecpuišu ballītes kļūst arvien populārākas un ir kļuvušas par neatņemamu pirms kāzu tradīciju.",
+  "description2": "Pēc tradīcijas vecpuišu ballīte ir topošā līgavaiņa draugu sanākšanas reize, kurā notiek izklaide vecpuišu stilā, darot kādas neparastas un aizraujošas lietas.",
+  "description3": "\"Saimnieka Pirtī\" vecpuišu ballītes organizē līgavaiņa draugi, kā vienu no vecpuišu ballītes scenārija elementiem, lai kopā atpūstos, izbaudītu kaut ko jaunu un sagatavotos precētai dzīvei.",
+  "details": {
+    "duration": "Procedūras Ilgums: 4 h",
+    "included": "Iekļauts: Ārstnieciskais Zāļu Kubls",
+    "master": "Darbojas: Viens Sertificēts Pirtnieks",
+    "availability": "Rituāls pieejams: Visu gadu"
+  },
+  "includedTitle": "VECPUIŠU PIRTS PIEDZĪVOJUMĀ ietilpst:",
+  "includedItems": [
+    "Kopēja draugu sildīšanās ar novēlējumu rituālu;",
+    "Vibroakustiskā masāža ar klūgu slotiņām vecpuisim;",
+    "Mazais pēriens ar čūskādas novilkšanu vecpuisim;",
+    "Lielais vīru pēriens individuāli vecpuisim ar izpeldināšanu un ietīšanu;"
+  ],
+  "additionalTitle": "Papildus:",
+  "additional": {
+    "rental": "Pirts un zāļu kubla noma – 18€ /h (4 h iekļauta cenā)",
+    "extraTitle": "Papildus procedūras citiem vecpuišu ballītes dalībniekiem (no personas):",
+    "extraServices": [
+      { "name": "Pēriens", "price": "75€" },
+      { "name": "Vibroakustiskā masāža", "price": "24€" },
+      { "name": "Attīrošo un barojošo skrubju uzklāšana", "price": "25€" }
+    ],
+    "accommodation": "Nakšņošana",
+    "accommodationPrice": "19.99 € (MIN 36€)"
+  },
+  "cta": {
+    "title": "Piesaki \"VĪRU PAKAS\" Rituālu",
+    "subtitle": "Piesaki Pasākumu Topošajam Līgavainim Jau Šodien!",
+    "button": "Rezervēt"
+  }
+}

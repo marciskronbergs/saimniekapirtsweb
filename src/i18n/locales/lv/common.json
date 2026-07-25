@@ -1,0 +1,14 @@
+{
+  "reserve": "Rezervēt",
+  "calendar": {
+    "select_date": "Izvēlieties datumu",
+    "select_time": "Izvēlieties laiku",
+    "weekdays": ["P", "O", "T", "C", "Pk", "S", "Sv"],
+    "months": ["Janvāris", "Februāris", "Marts", "Aprīlis", "Maijs", "Jūnijs", "Jūlijs", "Augusts", "Septembris", "Oktobris", "Novembris", "Decembris"],
+    "today": "Šodien",
+    "available": "Pieejams",
+    "unavailable": "Nav pieejams",
+    "please_select_date_time": "Lūdzu izvēlieties datumu un laiku kreisajā pusē",
+    "no_availability": "Nav pieejamības izvēlētajam laikam"
+  }
+}

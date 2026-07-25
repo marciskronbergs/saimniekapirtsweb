@@ -1,0 +1,38 @@
+{
+  "title": "Dāvanu Kartes",
+  "description": "Dāvini neaizmirstamu pirts pieredzi – izvēlies starp specifiskiem rituāliem vai pielāgotu vērtību.",
+  "ritualCard": {
+    "title": "Dāvanu Kartes – Pirts Rituāls",
+    "description": "Dāvanu kartes ar specifiskiem rituālu pakalpojumiem.",
+    "cta": "Pasūtīt"
+  },
+  "valueCard": {
+    "title": "Dāvanu Karte 80€ – 380€",
+    "description": "Izvēlies pats savas dāvanu kartes vērtību.",
+    "cta": "Pasūtīt"
+  },
+  "form": {
+    "ritualTitle": "Pasūti Dāvanu Karti Konkrētam Rituālam",
+    "valueTitle": "Izvēlies Dāvanu Kartes Vērtību",
+    "selectRitual": "Izvēlies Rituālu",
+    "selectRitualPlaceholder": "Izvēlies rituālu...",
+    "valueLabel": "Dāvanu kartes vērtība:",
+    "name": "Vārds, Uzvārds",
+    "namePlaceholder": "Tavs vārds un uzvārds",
+    "email": "E-pasts",
+    "emailPlaceholder": "tavs@epasts.lv",
+    "phone": "Tālrunis",
+    "phonePlaceholder": "12345678",
+    "submit": "Iegādāties Dāvanu Karti",
+    "submitting": "Apstrādā...",
+    "success": "Paldies!",
+    "successMessage": "Mēs ar jums sazināsimies 24 stundu laikā."
+  },
+  "rituals": [
+    { "value": "individuali-ar", "label": "Pirts Rituāls Individuāli (Ar Zāļu Kubulu) – 280€" },
+    { "value": "individuali-bez", "label": "Pirts Rituāls Individuāli (Bez Zāļu Kubulu) – 220€" },
+    { "value": "diviem-ar", "label": "Pirts Rituāls Diviem (Ar Zāļu Kubulu) – 360€" },
+    { "value": "diviem-bez", "label": "Pirts Rituāls Diviem (Bez Zāļu Kubulu) – 300€" },
+    { "value": "gimenei", "label": "Pirts Rituāls Ģimenei (ar zāļu kubulu) – 380€" }
+  ]
+}

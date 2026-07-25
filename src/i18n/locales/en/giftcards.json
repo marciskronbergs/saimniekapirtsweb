@@ -1,0 +1,38 @@
+{
+  "title": "Gift Cards",
+  "description": "Gift unforgettable sauna experiences – choose between specific rituals or custom values.",
+  "ritualCard": {
+    "title": "Gift Cards – Sauna Rituals",
+    "description": "Gift cards for specific ritual services.",
+    "cta": "Order"
+  },
+  "valueCard": {
+    "title": "Gift Card 80€ – 380€",
+    "description": "Choose your own gift card value.",
+    "cta": "Order"
+  },
+  "form": {
+    "ritualTitle": "Order Gift Card for Specific Ritual",
+    "valueTitle": "Choose Gift Card Value",
+    "selectRitual": "Choose Ritual",
+    "selectRitualPlaceholder": "Choose ritual...",
+    "valueLabel": "Gift card value:",
+    "name": "Full Name",
+    "namePlaceholder": "Your full name",
+    "email": "Email",
+    "emailPlaceholder": "your@email.com",
+    "phone": "Phone",
+    "phonePlaceholder": "12345678",
+    "submit": "Purchase Gift Card",
+    "submitting": "Processing...",
+    "success": "Thank you!",
+    "successMessage": "We will contact you within 24 hours."
+  },
+  "rituals": [
+    { "value": "individuali-ar", "label": "Individual Sauna Ritual (With Herbal Hot Tub) – 280€" },
+    { "value": "individuali-bez", "label": "Individual Sauna Ritual (Without Herbal Hot Tub) – 220€" },
+    { "value": "diviem-ar", "label": "Sauna Ritual for Two (With Herbal Hot Tub) – 360€" },
+    { "value": "diviem-bez", "label": "Sauna Ritual for Two (Without Herbal Hot Tub) – 300€" },
+    { "value": "gimenei", "label": "Family Sauna Ritual (with herbal hot tub) – 380€" }
+  ]
+}

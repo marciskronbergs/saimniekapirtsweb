@@ -1,0 +1,161 @@
+{
+  "intro": {
+    "title": "Tradicionālais Pirts Rituāls",
+    "quote": "\"Pirtī jāpērcas ar jauna bērza slotiņu, tad miesa paliekot balta.\"",
+    "description": "PIRTS RITUĀLS ir pirts apmeklējums profesionāla pirtinieka pavadībā individuāli, diviem vai lielākai kompānijai. Piedāvājam relaksējošu atpūtu izdzīvot jaunas sajūtas un pieredzi.",
+    "features": [
+      "Rituāls Notiek Sertificētu Pirtnieku Vadībā",
+      "Relaksējoši Zāļu Kubli Ar Dabas Dziedinošo Spēku",
+      "Atsvaidzinošs Dīķis Cauru Gadu"
+    ],
+    "cta": "Rezervēt"
+  },
+  "experience": {
+    "title": "Pilnā Pirts Rituāla Pieredze",
+    "subtitle": "Izejiet cauri pilnajam 7 soļu rituālam, kas apvieno tradicionālās latviskās pirts metodes ar mūsu pirtnieku unikālo pieskārienu.",
+    "steps": [
+      {
+        "title": "Sildīšanās Zāļu Kublā",
+        "description": "Sākam rituālu ar maigi siltu zāļu kublu, kas sagatavo ķermeni un dvēseli dziļākam pirts piedzīvojumam. Aromātiskie augi palīdz atslābināties un atbrīvoties no ikdienas stresa."
+      },
+      {
+        "title": "Zāļu Tējas Baudīšana",
+        "description": "Baudām siltu, ārstniecisku tēju, kas bagātina organismu ar dabīgajiem vitamīniem un minerālvielām, vienlaikus sagatavojot ķermeni turpmākajiem rituāla soļiem."
+      },
+      {
+        "title": "Slotu Pēriens",
+        "description": "Pirts rituāla sirds ir pirts pēriens, kas veicina dziļu relaksāciju un ķermeņa attīrīšanu. Pirtinieks izmanto īpaši sagatavotas bērza, ozola vai citu koku slotiņas, lai maigi nobrauktu un stimulētu ādu, uzlabojot asinsriti un veicinot toksīnu izvadīšanu."
+      },
+      {
+        "title": "Zāļu Skrubju Iestrādāšana",
+        "description": "Zāļu skrubis tiek uzklāts uz ādas, lai maigi noņemtu atmirušās šūnas un veicinātu ādas atjaunošanos. Tas ir izgatavots no ārstnieciskiem augiem un sāls, un sniedz pīlinga efektu."
+      },
+      {
+        "title": "Siltā Medus Masāža",
+        "description": "Siltais medus tiek uzklāts uz ķermeņa un maigi iemasēts, lai dziļi mitrinātu ādu. Medus bagātīgās īpašības palīdz padarīt ādu maigu, dzidru un veselīgi mirdzošu. Turklāt procedūra nomierina prātu."
+      },
+      {
+        "title": "Peldināšana Vēsā Dīķī",
+        "description": "Pēc pēršanās pirtī, klients tiek ievests vēsā dīķī, kur notiek peldināšanas process. Aukstais ūdens atvēsina ādu un stimulē asinsriti."
+      },
+      {
+        "title": "Guldīšana Pledos",
+        "description": "Pēc kontrasta peldes Jūs tiekat maigi ietīti siltās sedziņās un guldīti svaigā gaisā. Šis atpūtas brīdis palīdz stabilizēt asinsriti un noslēdz rituālu ar pilnīgu mieru."
+      }
+    ],
+    "cta": "Rezervēt Pilno Rituālu"
+  },
+  "pricing": {
+    "title": "Pakalpojumu Cenas",
+    "plans": [
+      {
+        "title": "INDIVIDUĀLI",
+        "price": "220€ – 280€",
+        "description": "Ideāli piemērots cilvēkiem, kuri meklē mierīgu atpūtu. (bez kubla 220€)",
+        "features": ["Sertificēts pirtinieks/-ce", "3h", "Zāļu Kubls & Pirts Noma"],
+        "popular": false
+      },
+      {
+        "title": "DIVIEM",
+        "price": "300€ – 360€",
+        "description": "Ideāli piemērots pārim vai draugiem, kuri vēlas izbaudīt kopīgu rituālu mierpilnā atmosfērā. (Bez kubla – 300€)",
+        "features": ["Sertificēts pirtinieks/-ce", "4h", "Zāļu Kubls & Pirts Noma"],
+        "popular": true
+      },
+      {
+        "title": "ĢIMENEI",
+        "price": "380€",
+        "description": "Ideāli piemērots ģimenes saliedēšanai caur sajūtām un jaunām pieredzēm. (2 pieaugušie + 3 bērni)",
+        "features": ["Sertificēts pirtinieks/-ce", "5h", "Zāļu Kubls & Pirts Noma"],
+        "popular": false
+      }
+    ],
+    "cta": "Pieteikt Tagad"
+  },
+  "groupOptions": {
+    "title": "Grupu Pirts Rituāli",
+    "options": [
+      {
+        "title": "PIRTS PIEDZĪVOJUMS AR PIRTS MEISTARU",
+        "price": "70€ /no personas",
+        "description": "Ar grupas skrubēšanu, zāļu kubliņu un kontrasta procedūru.",
+        "details": "Bez individuālā pēriena un individuālās skrubēšanas.",
+        "restrictions": [
+          "noIndividualBeating",
+          "noIndividualScrub"
+        ]
+      },
+      {
+        "title": "PIRTS KŪRE \"DRAUGU PIRTS\"",
+        "price": "100€ /no personas",
+        "description": "Ar izsildīšanos zāļu kubliņā, individuālo pērienu un grupas skrubēšanas procedūru.",
+        "restrictions": [
+          "noIndividualScrub"
+        ]
+      },
+      {
+        "title": "PIRTS KŪRE \"DRAUGU PIRTS\" +",
+        "price": "140€ /no personas",
+        "description": "Pirts apmeklējums draugu lokā ar pilnu individuālu rituālu – no izsildīšanās līdz pērienam un skrubēšanai.",
+        "restrictions": []
+      }
+    ],
+    "cta": "Uzzināt Vairāk",
+    "noIndividualBeating": "❌ Individuāls Pēriens",
+    "noIndividualScrub": "❌ Individuālā Skrubja Iestrādāšana"
+  },
+  "specialExperiences": {
+    "title": "Īpašie Pirts Piedzīvojumi",
+    "experiences": [
+      {
+        "title": "Vecmeitu Pirts"
+      },
+      {
+        "title": "Vīru Paka"
+      }
+    ]
+  },
+  "saunaHost": {
+    "title": "Pirts Saimnieks",
+    "description": "Pirts saimnieku sauc Mārcis Kronbergs. Viņš pats ir mācījies 3 gadus pirts skolā, ieguvis sertifikātu un veicis 1500+ rituālu. 7 gadu laikā viņš ir izveidojis perfektu struktūru pirts rituāla izpildīšanai, lai katra rituāla procedūra būtu pēc iespējas baudāmāka.",
+    "stats": [
+      {
+        "number": "7+",
+        "title": "Gadu Pieredze",
+        "description": "Saimnieks savu pirmo rituālu veica pirms 7+ gadiem un kopš tā laika ir daudz ko iemācījies."
+      },
+      {
+        "number": "1500+",
+        "title": "Pirts Rituālu",
+        "description": "1500+ apmierinātu klientu. Daudzi regulāri atgriežas uz pirts rituāliem."
+      }
+    ]
+  },
+  "testimonials": {
+    "title": "Ko Saka Mūsu Pirts Mīļi",
+    "subtitle": "Atklājiet neaizmirstamās pirts mīļu pieredzes Saimnieka Pirtī."
+  },
+  "accommodation": {
+    "title": "Nakšņošana",
+    "description": "Piedāvājam arī nakšņošanu! Vakarā pēc pirts un kubla var rasties patīkams nogurums. Pagariniet savu atpūtas pieredzi un izbaudiet pilnīgu atslēgšanos no ikdienas steigas.",
+    "cta": "Uzzināt vairāk"
+  },
+  "giftCards": {
+    "title": "Dāvanu Kartes",
+    "description": "Nopērc Pirts Rituāla Dāvanu Karti! Perfekta dāvana draugam vai tuviniekam, kam vēlies dāvināt neaizmirstamu pirts pieredzi.",
+    "giftCard": {
+      "title": "Dāvanu Karte",
+      "subtitle": "Perfekta dāvana mīļajiem"
+    },
+    "giftCardVisual": {
+      "title": "Dāvanu Karte",
+      "subtitle": "Perfekta dāvana mīļajiem"
+    },
+    "features": [
+      "Tūlītēja piegāde uz e-pastu",
+      "Vari izvēlēties specifiskus rituālus",
+      "Neaizmirstams pārsteigums"
+    ],
+    "cta": "Uzzināt Vairāk"
+  }
+}

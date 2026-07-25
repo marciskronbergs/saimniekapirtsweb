@@ -1,0 +1,19 @@
+{
+  "title": "Veikt Rezervāciju",
+  "ritualsTitle": "Pirts Rituāli",
+  "ritualsDesc": "Atklāj tradicionālos latviešu pirts rituālus, kas vērsti uz dziļu relaksāciju un ķermeņa attīrīšanu. Pieredzējušie pirts meistari pielāgo katru rituālu un uzlabo jūsu garīgo un fizisko labsajūtu.",
+  "rentTitle": "Pirts Noma",
+  "rentDesc": "Izbaudi privātu pirts pieredzi meža klusumā. Lieliski piemērots mierīgai atpūtai vai neaizmirstamam vakaram ar draugiem un ģimeni.",
+  "reserve": "Rezervēt",
+  "location": "Atrašanās Vieta",
+  "transport": "Sabiedriskais Transports:",
+  "transportDesc": "Rīga -> Baldone, Saimnieks var Jūs savākt autoostā (jāvienojas pie rezervācijas).",
+  "contactEmail": "E-pasts",
+  "contactPhone": "Tālrunis",
+  "contactAddress": "Adrese",
+  "companyInfo": "Rekvizīti",
+  "companyName": "SARMA SPA SIA",
+  "companyReg": "Reģ. Nr.",
+  "companyBank": "A/S SwedBank",
+  "companyIBAN": "Konta numurs"
+}

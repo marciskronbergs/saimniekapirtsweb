@@ -1,0 +1,83 @@
+{
+  "title": "Internal Rules",
+  "subtitle": "Saimniekapirts.lv visitors' INTERNAL RULES",
+  "intro": {
+    "description": "SIA KMR Business reg. no. 53603071411, www.saimniekapirts.lv owned sauna complex \"Sarma No.123\", Baldone parish, Baldone municipality, LV-2125, is a sauna complex whose use requires human physical effort and activity. Visitors must follow internal rules to avoid threats to life and health, as well as not cause material damage to themselves and the company.",
+    "compliance": "All visitors regardless of age must follow the recreation complex rules.",
+    "liability": "If a visitor, due to non-compliance with these rules or ignoring sarmaspa.lv staff instructions, causes harm to their health, endangers their own and other people's lives, causes damage or creates losses to third parties, the company assumes no responsibility.",
+    "acknowledgment": "The visitor carefully familiarizes themselves with these rules before visiting the recreation complex and undertakes to follow them when receiving the service, confirming this with a signature."
+  },
+  "section1": {
+    "title": "I Sauna complex visit",
+    "rules": [
+      "the visitor makes a prepayment for the reserved time before visiting the recreation complex, having previously familiarized themselves with the recreation complex's internal rules;",
+      "payment for the recreation complex confirms that the visitor has familiarized themselves with the visitor rules and undertakes to follow them;",
+      "a visitor who is younger than 18 years old, when paying for the visit, shows an identity document (passport, student ID, etc.);",
+      "children under 18 years of age can visit the recreation complex only in the presence of parents or adults and are under strict supervision of these persons. The adult must be at least 18 years old and take responsibility for the behavior of the children entrusted to them;",
+      "The sauna complex is not responsible for items left or lost in the sauna complex"
+    ]
+  },
+  "section2": {
+    "title": "II Exceptions to sauna complex visits:",
+    "subsection1": {
+      "title": "1. The sauna complex is not suitable for visits and it is categorically FORBIDDEN to visit:",
+      "rules": [
+        "persons with fever, conjunctivitis, skin diseases or other contagious diseases, open wounds, cuts or other diseases that endanger or may endanger the life and health of other visitors;",
+        "persons with health disorders (cardiovascular diseases, colds, head injuries, etc.);",
+        "persons under the influence of alcohol, narcotic or other intoxicating substances;"
+      ]
+    },
+    "subsection2": {
+      "title": "2. recreation complex visits may be denied to a person whose visit may endanger the recreation complex's order, safety and hygienic condition and/or whose behavior contradicts moral or socially accepted behavioral norms."
+    }
+  },
+  "section3": {
+    "title": "III Use of common bathroom facilities:",
+    "rules": [
+      "before entering the sauna room, the visitor must take a shower;",
+      "The sauna complex assumes no responsibility for accidents, injuries and other causes resulting from visitor negligence or non-compliance with these rules;",
+      "the visitor assumes responsibility and covers damages caused to the sauna complex or third parties due to non-compliance with internal rules;"
+    ]
+  },
+  "section4": {
+    "title": "IV General safety rules of the sauna complex:",
+    "rules": [
+      "Beware of slippery floors in the sauna room and anteroom;",
+      "Be careful when throwing water on the sauna stove stones, as steam can cause burns.",
+      "Do not touch the stove stones, they are hot and can cause burns.",
+      "When relaxing in a group, it is advisable to choose a leader who would check from time to time if someone has been forgotten in the barn!",
+      "Remember that dizziness occurs quite often in the sauna, so be kind and don't hesitate to lend a hand to someone climbing down from the bench! Dizziness also occurs when cooling down after the sauna, so don't go to the pool alone!",
+      "Be careful when entering and exiting the water body and climbing the water body stairs.",
+      "95ºC temperature is critical for water throwing! The optimal beating temperature is 60ºC, so throw water carefully!",
+      "Be careful when climbing up and down stairs, climbing with your face toward the stairs.",
+      "Do not lean over open window frames."
+    ]
+  },
+  "section5": {
+    "title": "V Eating habits before sauna visit or sauna ritual:",
+    "rules": [
+      "Drink plenty of water the day before and on the ritual day, as the body loses a lot of fluid when sweating;",
+      "The day before the ritual, it is recommended not to eat meat products and anything that fills the stomach and creates a feeling of heaviness."
+    ]
+  },
+  "section6": {
+    "title": "VI Prohibited in the sauna complex:",
+    "rules": [
+      "bringing alcoholic beverages;",
+      "shouting, whistling, running and pushing that can cause injuries to oneself and others, as well as unnecessary calling for help;",
+      "damaging equipment, objects and other inventory belonging to the sauna complex;",
+      "spitting on the floor and in water, defecating in unintended places;",
+      "polluting water and the sauna complex with inappropriate liquids (for example, soap, shampoos, alcohol and any other type of liquids and substances);"
+    ]
+  },
+  "section7": {
+    "title": "VII Visitor responsibility and monetary fines:",
+    "rules": [
+      "monetary fine for damaging sauna complex inventory – depending on the damage caused;",
+      "monetary fine for intentional pollution of water bodies and sauna complex EUR 70.00."
+    ]
+  },
+  "warning": {
+    "text": "Remember that you yourself are responsible for your own and other visitors' safety!"
+  }
+}

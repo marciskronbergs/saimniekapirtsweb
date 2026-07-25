@@ -1,0 +1,26 @@
+{
+  "title": "Nakšņošana",
+  "description": "Paildzini savu atpūtu – pieejamas ērtas un siltas naktsmītnes mūsu pirts viesiem.",
+  "whiteSauna": {
+    "title": "Baltā Pirts",
+    "description": "Atrodas pirts ēkā, vienmēr silta – pat ziemā aukstākajos mēnešos."
+  },
+  "blackSauna": {
+    "title": "Pelēkā Pirts",
+    "description": "Atsevišķa ēka ar iebūvētu virtuvi. Klusa telpa ar labu siltumizolāciju."
+  },
+  "perks": {
+    "beds": "Ērtas Gultas",
+    "atmosphere": "Silta Atmosfēra",
+    "kitchen": "Virtuves Zona"
+  },
+  "priceTitle": "Palikšana pa nakti",
+  "price": "19.99 €",
+  "priceNote": "/no cilvēka",
+  "priceMin": "(Min – 36 €)",
+  "cta": "Nokomplektēt Pasūtījumu",
+  "transport": {
+    "title": "Sabiedriskais Transports:",
+    "description": "Rīga → Baldone, SaimniekaPirts var Jūs savākt autoostā (jāievēro pie rezervācijas, komentāros pievienojiet)."
+  }
+}

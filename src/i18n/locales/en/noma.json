@@ -1,0 +1,96 @@
+{
+  "hero": {
+    "title": "Sauna Rental",
+    "subtitle": "Private Relaxation in Nature!"
+  },
+  "section": {
+    "title": "Sauna Rental",
+    "description": "\"SaimniekaPirts\" sauna offers relaxing recreation for friends, families, and informal business meetings, enjoying rural tourism in the Riga region.",
+    "cta": "Reserve Sauna Rental"
+  },
+  "saunas": [
+    {
+      "title": "Wet Sauna",
+      "description": "A sauna with spacious indoor and outdoor areas – perfect for larger gatherings and celebrations with friends.",
+      "checklist": [
+        "Relaxation Room With Herbal Carpet Aroma",
+        "Two-Story Sauna House", 
+        "Herbal Hot Tub Can Be Added To Booking"
+      ]
+    },
+    {
+      "title": "Gray Sauna",
+      "description": "A sauna room designed by the sauna master, best suited for more experienced sauna lovers, in a separate building with a kitchen.",
+      "checklist": [
+        "Sauna Room Designed by the Sauna Master",
+        "Relaxation Room with Kitchen Area",
+        "Herbal Hot Tub Can Be Added To Booking"
+      ]
+    }
+  ],
+  "herbTubs": {
+    "title": "Herbal Hot Tubs",
+    "description": "You can also choose to add the herbal hot tub. The hot tub is filled with medicinal plant leaves that help relax muscles, improve skin condition, and promote body recovery."
+  },
+  "pricing": {
+    "title": "Sauna Rental Prices", 
+    "options": [
+      {
+        "title": "Sauna Rental Price (Without Hot Tub)",
+        "priceRange": "80€ – 140€",
+        "options": [
+          { "duration": "3h", "price": "80€", "note": "(Sauna for two)" },
+          { "duration": "4h", "price": "90€", "note": "(Sauna for two)" },
+          { "duration": "5h", "price": "120€", "note": "(up to 5 people)" },
+          { "duration": "5h", "price": "140€", "note": "(6–10 people)" }
+        ],
+        "features": [],
+        "popular": false
+      },
+      {
+        "title": "Sauna Rental Price (With Hot Tub)",
+        "priceRange": "150€ – 200€",
+        "options": [
+          { "duration": "4h", "price": "150€", "note": "(Sauna & Hot Tub for two)" },
+          { "duration": "4h", "price": "170€", "note": "(up to 5 people)" },
+          { "duration": "5h", "price": "200€", "note": "(6–10 people)" }
+        ],
+        "features": [],
+        "popular": true
+      }
+    ],
+    "cta": "Book Now"
+  },
+  "additionalServices": {
+    "title": "Additional Rental Services",
+    "services": [
+      {
+        "title": "Sauna Whisks",
+        "price": "4€",
+        "description": "In addition to sauna rental, it's possible to purchase or choose sauna whisks.",
+        "features": ["Birch Whisks", "Oak Whisks"]
+      },
+      {
+        "title": "Scrubs",
+        "price": "15€",
+        "description": "In addition to sauna rental, it's possible to choose herbal scrubs.",
+        "features": ["Made with herbs just for you", "200 ml"]
+      }
+    ]
+  },
+  "accommodation": {
+    "title": "Accommodation",
+    "description": "We also offer accommodation! In the evening after sauna and hot tub, pleasant fatigue may arise. Extend your relaxation experience and enjoy complete disconnection from daily rush.",
+    "cta": "Learn more"
+  },
+  "giftCards": {
+    "title": "Gift Cards",
+    "description": "Buy a Sauna Ritual Gift Card! Perfect gift for a friend or loved one whom you want to give an unforgettable sauna experience.",
+    "features": [
+      "Instant delivery to email",
+      "You can choose specific rituals",
+      "Unforgettable surprise"
+    ],
+    "cta": "Learn More"
+  }
+}

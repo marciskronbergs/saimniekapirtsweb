@@ -1,0 +1,41 @@
+{
+  "title": "SAUNA EXPERIENCE FOR BACHELOR PARTY \"BACHELOR PACK\"",
+  "belief": {
+    "title": "Belief:",
+    "text": "The sauna is the farmer's doctor. If there were no sauna and turnips, then doctors would ride in golden carriages"
+  },
+  "price": "360€, up to 8 people simultaneously",
+  "description1": "Bachelor parties are borrowed from abroad, whose growing number shows that bachelor parties are becoming increasingly popular and have become an integral pre-wedding tradition.",
+  "description2": "According to tradition, a bachelor party is a gathering of the groom-to-be's friends, where entertainment takes place in bachelor style, doing some unusual and exciting things.",
+  "description3": "At \"Saimnieka Pirts\" bachelor parties are organized by the groom's friends, as one of the bachelor party scenario elements, to relax together, enjoy something new and prepare for married life.",
+  "details": {
+    "duration": "Procedure Duration: 4 h",
+    "included": "Included: Herbal Hot Tub",
+    "master": "Operating: One Certified Sauna Master",
+    "availability": "Ritual available: All year round"
+  },
+  "includedTitle": "BACHELOR SAUNA EXPERIENCE includes:",
+  "includedItems": [
+    "Joint warming of friends with wish ritual;",
+    "Vibroacoustic massage with birch whisks for the groom;",
+    "Small whisk beating with snake skin removal for the groom;",
+    "Big men's whisk beating individually for the groom with bathing and wrapping;"
+  ],
+  "additionalTitle": "Additional:",
+  "additional": {
+    "rental": "Sauna and herbal hot tub rental – 18€ /h (4 h included in price)",
+    "extraTitle": "Additional procedures for other bachelor party participants (per person):",
+    "extraServices": [
+      { "name": "Whisk beating", "price": "75€" },
+      { "name": "Vibroacoustic massage", "price": "24€" },
+      { "name": "Cleansing and nourishing scrub application", "price": "25€" }
+    ],
+    "accommodation": "Accommodation",
+    "accommodationPrice": "19.99 € (MIN 36€)"
+  },
+  "cta": {
+    "title": "Book \"BACHELOR PACK\" Ritual",
+    "subtitle": "Book the Event for the Groom-to-be Today!",
+    "button": "Reserve"
+  }
+}

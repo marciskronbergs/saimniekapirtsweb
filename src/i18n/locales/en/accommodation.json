@@ -1,0 +1,26 @@
+{
+  "title": "Accommodation",
+  "description": "Extend your relaxation – comfortable and warm overnight stays available for our sauna guests.",
+  "whiteSauna": {
+    "title": "Wet Sauna",
+    "description": "Located in the sauna building, always warm – even during the coldest winter months."
+  },
+  "blackSauna": {
+    "title": "Gray Sauna",
+    "description": "Separate building with built-in kitchen. Quiet room with good insulation."
+  },
+  "perks": {
+    "beds": "Comfortable Beds",
+    "atmosphere": "Cozy Atmosphere",
+    "kitchen": "Kitchen Zone"
+  },
+  "priceTitle": "Overnight Stay",
+  "price": "19.99 €",
+  "priceNote": "/per person",
+  "priceMin": "(Min – 36 €)",
+  "cta": "Customize & Book",
+  "transport": {
+    "title": "Public Transport:",
+    "description": "Riga → Baldone, SaimniekaPirts can pick you up at the bus station (must be noted during reservation, add in comments)."
+  }
+}

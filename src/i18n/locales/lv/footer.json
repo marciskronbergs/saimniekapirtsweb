@@ -1,0 +1,24 @@
+{
+  "tagline": "Unikāla Atpūtas Vieta Latvijas Dabas Sirdī!",
+  "sections": {
+    "services": "Pakalpojumi",
+    "booking": "Rezervēt",
+    "policies": "Polises",
+    "social": "Pieseko Sociālajos Tīklos"
+  },
+  "services": {
+    "rituals": "Pirts Rituāli",
+    "rental": "Pirts Noma",
+    "experiences": "Īpašie Pirts Piedzīvojumi",
+    "accommodation": "Nakšņošana"
+  },
+  "booking": {
+    "reserve": "Rezervēt",
+    "giftCards": "Dāvanu Kartes"
+  },
+  "policies": {
+    "privacy": "Privātuma Politika",
+    "rules": "Iekšējās Kārtības Noteikumi"
+  },
+  "copyright": "© 2024 SaimniekaPirts. Visas tiesības aizsargātas."
+}

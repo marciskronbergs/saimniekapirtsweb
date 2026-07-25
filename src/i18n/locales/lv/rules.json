@@ -1,0 +1,83 @@
+{
+  "title": "Iekšējās Kārtības Noteikumi",
+  "subtitle": "Saimniekapirts.lv apmeklētāju IEKŠĒJĀS KĀRTĪBAS NOTEIKUMI",
+  "intro": {
+    "description": "SIA KMR Biznesa reģ. nr.53603071411, www.saimniekapirts.lv piederošais pirts komplekss \"Sarma Nr.123\", Baldones pag., Baldones nov., LV-2125, ir pirts komplekss, kura izmantošana prasa cilvēka fizisko piepūli un aktivitāti. Apmeklētājiem jāievēro iekšējās kārtības noteikumi, lai neradītu draudus dzīvībai un veselībai, kā arī neradītu materiālus zaudējumus sev un uzņēmumam.",
+    "compliance": "Visiem apmeklētājiem neatkarīgi no vecuma jāievēro atpūtas kompleksa noteikumi.",
+    "liability": "Ja apmeklētājs šo noteikumu neievērošanas dēļ, vai ignorējot sarmaspa.lv darbinieku norādījumus, nodara kaitējumu savai veselībai, apdraud savu un citu cilvēku dzīvību, nodara zaudējumus vai rada zaudējumus trešajām personām, uzņēmums neuzņemas atbildību.",
+    "acknowledgment": "Apmeklētājs pirms atpūtas kompleksa apmeklējuma rūpīgi iepazīstas ar šiem noteikumiem un apņemas tos ievērot, saņemot pakalpojumu, apliecinot to ar parakstu."
+  },
+  "section1": {
+    "title": "I Pirts kompleksa apmeklējums",
+    "rules": [
+      "apmeklētājs veic priekšapmaksu par rezervēto laiku pirms atpūtas kompleksa apmeklējuma, iepriekš iepazīstoties ar atpūtas kompleksa iekšējās kārtības noteikumiem;",
+      "samaksa par atpūtas kompleksu apliecina, ka apmeklētājs ir iepazinies ar apmeklētāju noteikumiem un apņemas tos ievērot;",
+      "apmeklētājs, kurš ir jaunāks par 18 gadiem, norēķinoties par vizīti, uzrāda personu apliecinošu dokumentu (pasi, skolēna apliecību u.c.);",
+      "bērni līdz 18 gadu vecumam var apmeklēt atpūtas kompleksu tikai vecāku vai pieaugušo klātbūtnē un atrodas stingrā šo personu uzraudzībā. Pieaugušajam ir jābūt vismaz 18 gadus vecam un jāuzņemas atbildība par viņam uzticēto bērnu uzvedību;",
+      "Pirts komplekss neatbild par Pirts kompleksā atstātajām vai nozaudētajām mantām"
+    ]
+  },
+  "section2": {
+    "title": "II Izņēmumi pirts kompleksa apmeklējumam:",
+    "subsection1": {
+      "title": "1. Pirts komplekss nav piemērots apmeklējumam un kategoriski AIZLIEGTS apmeklēt:",
+      "rules": [
+        "personas ar drudzi, konjunktivītu, ādas slimībām vai citām lipīgām slimībām, atklātām brūcēm, pārsējiem vai citām slimībām, kas apdraud vai var apdraudēt citu apmeklētāju dzīvību un veselību;",
+        "personām ar veselības traucējumiem (sirds un asinsvadu slimības, iesnas, galvas traumas u.c.);",
+        "personas alkohola, narkotisko vai citu apreibinošo vielu reibumā;"
+      ]
+    },
+    "subsection2": {
+      "title": "2. atpūtas kompleksa apmeklējumu var liegt personai, kuras apmeklējums var apdraudēt atpūtas kompleksa kārtību, drošību un higiēnisko stāvokli un/vai kuras uzvedība ir pretrunā ar morāles vai sabiedrībā pieņemtiem uzvedības noteikumiem."
+    }
+  },
+  "section3": {
+    "title": "III Kopējās vannas istabas izmantošana:",
+    "rules": [
+      "pirms ieiešanas Pirts telpā apmeklētājam jāiet dušā;",
+      "Pirts komplekss neuzņemas atbildību par negadījumiem, traumām un citiem iemesliem, kas radušies apmeklētāja neuzmanības vai šo noteikumu neievērošanas rezultātā;",
+      "apmeklētājs uzņemas atbildību un sedz zaudējumus, kas Pirts kompleksam vai trešajām personām radušies iekšējās kārtības noteikumu neievērošanas dēļ;"
+    ]
+  },
+  "section4": {
+    "title": "IV Pirts kompleksa vispārīgie drošības noteikumi:",
+    "rules": [
+      "Uzmanieties no slidenām grīdām pirts telpā un priekštelpā;",
+      "Uzmanieties ar gara mešanu uz pirts krāsns akmeņiem, jo tvaiki var izraisīt applaucējumus.",
+      "Neaiztieciet cepeškrāsns akmeņus, tie ir karsti un var izraisīt apdegumus.",
+      "Atpūšoties kompānijā, vēlams izvēlēties vadītāju, kurš ik pa laikam sekotu, ja kāds nav aizmirsts šķūnī!",
+      "Atcerieties, ka pirtī diezgan bieži reibst galva, tāpēc esiet laipni un nekautrējieties sniegt roku no lāvas kāpējam! Reibonis rodas arī atvēsinoties pēc pirts, tāpēc neej uz baseinu viens!",
+      "Uzmanība, ieejot un izejot no ūdenstilpnes un kāpjot pa ūdenstilpes kāpnēm.",
+      "95ºC temperatūra ir kritiska gara liešanai! Optimālā pēršanas temperatūra ir 60 ºC, tāpēc garu metiet uzmanīgi!",
+      "Esiet piesardzīgs, kāpjot augšup un lejup pa kāpnēm, kāpjot ar seju pret kāpnēm.",
+      "Nekarieties pāri atvērta loga margām."
+    ]
+  },
+  "section5": {
+    "title": "V Ēšanas paradumi pirms pirts apmeklējuma vai pirts rituāla:",
+    "rules": [
+      "Iepriekšējā un rituālā dienā dzeriet daudz ūdens, jo svīstot organisms zaudē daudz šķidruma;",
+      "Dienu pirms rituāla ieteicams neēst gaļas produktus un jebko, kas piepilda vēderu un rada smaguma sajūtu."
+    ]
+  },
+  "section6": {
+    "title": "VI Pirts kompleksā aizliegts:",
+    "rules": [
+      "ienest alkoholiskos dzērienus;",
+      "kliegšana, svilpošana, skriešana un grūstīšanās, kas var radīt traumas sev un citiem, kā arī nevajadzīga palīdzības izsaukšana;",
+      "sabojāt pirts kompleksam piederošo aprīkojumu, priekšmetus un citu inventāru;",
+      "spļaut uz grīdas un ūdenī, izkārnīties neparedzētās vietās;",
+      "piesārņot ūdens un pirts kompleksu ar nepiemērotiem šķidrumiem (piemēram, ziepēm, šampūniem, spirtu un jebkura cita veida šķidrumiem un vielām);"
+    ]
+  },
+  "section7": {
+    "title": "VII Apmeklētāju atbildība un naudas sodi:",
+    "rules": [
+      "naudas sods par pirts kompleksa inventāra bojāšanu – atkarībā no nodarītā kaitējuma;",
+      "naudas sods par ūdenstilpju un pirts kompleksa tīšu piesārņošanu EUR 70,00."
+    ]
+  },
+  "warning": {
+    "text": "Atcerieties, ka jūs pats esat atbildīgs par savu un citu apmeklētāju drošību!"
+  }
+}

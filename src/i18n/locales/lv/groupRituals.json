@@ -1,0 +1,96 @@
+{
+  "hero": {
+    "title": "Grupu Pirts Rituāli",
+    "subtitle": "Izvēlieties savu ideālo grupu pirts rituālu pieredzi"
+  },
+  "ticējums": {
+    "title": "Ticējums:",
+    "text": "Pirts kūrējam jāuzmet gars un jāaicina ļaudis pērties, sakot: \"Šis kausiņš gariņiem!\", bet, kad visi nopērušies, jāatstāj tīrs ūdens ar slotu un, ejot laukā, jāsaka: \"Nu, Laimīt, peries tu!\""
+  },
+  "meistaru": {
+    "title": "PIRTS PIEDZĪVOJUMS GRUPĀM",
+    "subtitle": "PIRTS MEISTARS",
+    "cardTitle": "Pirts Piedzīvojums ar Pirts Meistaru",
+    "price": "70€ /no personas (Min 360€)",
+    "description": "\"PIRTS PIEDZĪVOJUMS\" ir pirts apmeklējums pirtnieka pavadībā draugu lokā. Piedāvājam fantastisku atpūtu satiekoties draugiem un izdzīvojot jaunas sajūtas un pieredzi.",
+    "features": [
+      "Procedūras Ilgums: 4 h",
+      "Iekļauts Ārstnieciskais Zāļu Kubls",
+      "Grupas Skrubēšanās",
+      "❌ Individuāls Pērniens",
+      "❌ Individuālā Skrubja Iestrādāšana"
+    ],
+    "includedTitle": "Pakalpojumā ietilpst:",
+    "includedItems": [
+      "Izsildīšanās – vienmērīga izsildīšanās aromātiskā zāļu kubliņā, kas sāk attīrīšanās procesu un atbrīvo Tavu ķermeni",
+      "Attīrošais skrubis – attīroša noberšanās ar augu maisījumiem",
+      "Kontrasta procedūra – pelde attīrošā dīķī ar avota ūdeni un temperatūras kontrasts",
+      "Barojošais skrubis – kafijas, medus, zilo mālu vai eļļu procedūra pēc klienta vēlmēm"
+    ],
+    "additionalTitle": "Papildus:",
+    "additionalRental": "Pirts un zāļu kubla noma iekļauta cenā",
+    "additionalPeriensTitle": "Papildu individuāls pēriens:",
+    "additionalPeriensPrice": "40€ /cilv.",
+    "accommodationTitle": "Nakšņošana",
+    "accommodationPrice": "19.99 € (MIN 36€)",
+    "accommodationNote": "no personas",
+    "ctaTitle": "Piesaki \"PIRTS PIEDZĪVOJUMA\" Rituālu",
+    "ctaSubtitle": "Izbaudi neaizmirstamu pirts piedzīvojumu draugu lokā – rezervē jau šodien!",
+    "ctaButton": "Rezervēt"
+  },
+  "draugu": {
+    "title": "PIRTS KŪRE \"DRAUGU PIRTS\"",
+    "cardTitle": "PIRTS KŪRE \"DRAUGU PIRTS\"",
+    "price": "100€ /no personas (Min 360€)",
+    "description": "PIRTS KŪRE \"DRAUGU PIRTS\" ir pirts apmeklējums pirtnieka pavadībā draugu lokā. Piedāvājam fantastisku atpūtu satiekoties draugiem un izdzīvojot jaunas sajūtas un pieredzi.",
+    "features": [
+      "Procedūras Ilgums: 4 h – 5 h",
+      "Iekļauts Ārstnieciskais Zāļu Kubls",
+      "Grupas Skrubēšanās",
+      "Individuāls Pērniens",
+      "❌ Individuālā Skrubja Iestrādāšana"
+    ],
+    "includedTitle": "Pakalpojumā ietilpst:",
+    "includedItems": [
+      "Izsildīšanās – vienmērīga izsildīšanās aromātiskā zāļu kubliņā, kas sāk attīrīšanās procesu un atbrīvo Tavu ķermeni",
+      "Attīrošais skrubis – attīroša noberšanās ar augu maisījumiem",
+      "Pēriens – izpērties ar dažādām pirtsslotām, izpeldināšana dīķī un noguldīšana",
+      "Barojošais skrubis – kafijas, medus, zilo mālu vai eļļu procedūra pēc klienta vēlmēm"
+    ],
+    "additionalTitle": "Papildus:",
+    "additionalRental": "Pirts un zāļu kubla noma iekļauta cenā",
+    "accommodationTitle": "Nakšņošana",
+    "accommodationPrice": "19.99 € (MIN 36€)",
+    "accommodationNote": "no personas",
+    "ctaTitle": "Piesaki \"DRAUGU PIRTS\" Rituālu",
+    "ctaSubtitle": "Izbaudi neaizmirstamu pirts piedzīvojumu draugu lokā – rezervē jau šodien!",
+    "ctaButton": "Rezervēt"
+  },
+  "draugu-plus": {
+    "title": "PIRTS KŪRE \"DRAUGU PIRTS +\"",
+    "cardTitle": "PIRTS KŪRE \"DRAUGU PIRTS +\"",
+    "price": "140€ /no personas (Min 360€)",
+    "description": "PIRTS KŪRE \"DRAUGU PIRTS +\" ir pirts apmeklējums pirtnieka pavadībā draugu lokā. Piedāvājam fantastisku atpūtu satiekoties draugiem un izdzīvojot jaunas sajūtas un pieredzi.",
+    "features": [
+      "Procedūras Ilgums: 4 h – 5 h",
+      "Iekļauts Ārstnieciskais Zāļu Kubls",
+      "Individuāla Skrubja Iestrādāšana",
+      "Individuāls Pērniens"
+    ],
+    "includedTitle": "Pakalpojumā ietilpst:",
+    "includedItems": [
+      "Izsildīšanās – vienmērīga izsildīšanās aromātiskā zāļu kubliņā, kas sāk attīrīšanās procesu un atbrīvo Tavu ķermeni",
+      "Attīrošais skrubis – attīroša noberšanās ar augu maisījumiem",
+      "Pēriens – izpērties ar dažādām pirtsslotām, izpeldināšana dīķī un noguldīšana",
+      "Barojošais skrubis – kafijas, medus, zilo mālu vai eļļu procedūra pēc klienta vēlmēm"
+    ],
+    "additionalTitle": "Papildus:",
+    "additionalRental": "Pirts un zāļu kubla noma iekļauta cenā",
+    "accommodationTitle": "Nakšņošana",
+    "accommodationPrice": "19.99 € (MIN 36€)",
+    "accommodationNote": "no personas",
+    "ctaTitle": "Piesaki \"DRAUGU PIRTS +\" Rituālu",
+    "ctaSubtitle": "Izbaudi neaizmirstamu pirts piedzīvojumu draugu lokā – rezervē jau šodien!",
+    "ctaButton": "Rezervēt"
+  }
+}

@@ -1,0 +1,14 @@
+{
+  "location": "Location",
+  "transport": "Public Transport:",
+  "transportDesc": "Riga → Baldone. SaimniekaPirts can pick you up at the bus station (must be added as a note during reservation in comments).",
+  "companyInfo": "Company Details",
+  "companyName": "Company",
+  "contactAddress": "Address",
+  "contactEmail": "Email",
+  "contactPhone": "Phone",
+  "companyReg": "Registration No.",
+  "companyBank": "Bank",
+  "companyIBAN": "Account No.",
+  "reserveNow": "Reserve Now"
+}

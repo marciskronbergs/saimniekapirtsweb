@@ -1,0 +1,45 @@
+{
+  "title": "SAUNA EXPERIENCE FOR BACHELORETTE PARTY \"BACHELORETTE SAUNA\"",
+  "poem": {
+    "title": "Folk Song:",
+    "line1": "To the sauna I go, to the sauna I run,",
+    "line2": "In the sauna my bride,",
+    "line3": "In the sauna my bride",
+    "line4": "Played with herbs"
+  },
+  "price": "360€, up to 8 people simultaneously",
+  "description1": "According to tradition, a bachelorette party is a gathering of the bride-to-be's friends, where entertainment takes place in bachelorette style, doing some unusual and exciting things.",
+  "description2": "At \"SaimniekaPirts\" bachelorette parties are organized by the bride's friends as one of the bachelorette party event elements, to relax together, enjoy beauty, self-renewal, strengthening good and preparation rituals for married life.",
+  "details": {
+    "duration": "Procedure Duration: 4 h",
+    "included": "Included: Herbal Hot Tub",
+    "master": "Operating: One Certified Sauna Master",
+    "availability": "Ritual available: All year round"
+  },
+  "includedTitle": "BACHELORETTE SAUNA EXPERIENCE includes:",
+  "includedItems": [
+    "Joint warming of friends with wish ritual;",
+    "Vibroacoustic massage with birch whisks for the bride;", 
+    "Relaxing whisk beating, during which friends help the sauna master with heating, whisk compresses;",
+    "CLEANSING SCRUB – cleansing rubbing with plant mixtures that cleanse body and spirit;",
+    "Main whisk beating individually for the bride;",
+    "NOURISHING SCRUB – (by prior agreement) application of coffee, amber, clay, honey or other body care product for the bride;"
+  ],
+  "additionalTitle": "Additional:",
+  "additional": {
+    "rental": "Sauna and herbal hot tub rental – 18€ /h (4 h included in price.)",
+    "extraTitle": "Additional procedures for other bachelorette party participants per person:",
+    "extraServices": [
+      { "name": "Whisk beating", "price": "75€" },
+      { "name": "vibroacoustic massage", "price": "24€" },
+      { "name": "cleansing and nourishing scrub application", "price": "25€" }
+    ],
+    "accommodation": "Accommodation",
+    "accommodationPrice": "19.99 € /person (MIN 36€)"
+  },
+  "cta": {
+    "title": "Book \"BACHELORETTE SAUNA\" Ritual",
+    "subtitle": "Book the Event for the Bride-to-be Today!",
+    "button": "Reserve"
+  }
+}

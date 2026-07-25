@@ -1,0 +1,96 @@
+{
+  "hero": {
+    "title": "Group Sauna Rituals",
+    "subtitle": "Choose your ideal group sauna ritual experience"
+  },
+  "ticējums": {
+    "title": "Belief:",
+    "text": "The sauna master should cast the spirit and invite people to bathe, saying: \"This cup is for the spirits!\", but when everyone has bathed, clean water with a whisk should be left and, upon leaving, one should say: \"Now, Laimīt, you bathe!\""
+  },
+  "meistaru": {
+    "title": "SAUNA EXPERIENCE FOR GROUPS",
+    "subtitle": "SAUNA MASTER",
+    "cardTitle": "Sauna Experience with Sauna Master",
+    "price": "70€ /per person (Min 360€)",
+    "description": "\"SAUNA EXPERIENCE\" is a sauna visit accompanied by a sauna master with friends. We offer fantastic relaxation meeting friends and experiencing new sensations and experiences.",
+    "features": [
+      "Procedure Duration: 4 h",
+      "Included: Herbal Hot Tub",
+      "Group Scrubbing",
+      "❌ Individual Whisk Beating",
+      "❌ Individual Scrub Application"
+    ],
+    "includedTitle": "Service includes:",
+    "includedItems": [
+      "Warming – even warming in an aromatic herbal hot tub, which begins the cleansing process and frees your body",
+      "Cleansing scrub – cleansing rubbing with herbal mixtures",
+      "Contrast procedure – swimming in a cleansing pond with spring water and temperature contrast",
+      "Nourishing scrub – coffee, honey, blue clay or oil procedure according to client's wishes"
+    ],
+    "additionalTitle": "Additional:",
+    "additionalRental": "Sauna and herbal hot tub rental included in price",
+    "additionalPeriensTitle": "Additional individual whisk beating:",
+    "additionalPeriensPrice": "40€ /person",
+    "accommodationTitle": "Accommodation",
+    "accommodationPrice": "19.99 € (MIN 36€)",
+    "accommodationNote": "per person",
+    "ctaTitle": "Book \"SAUNA EXPERIENCE\" Ritual",
+    "ctaSubtitle": "Enjoy an unforgettable sauna experience with friends – book today!",
+    "ctaButton": "Reserve"
+  },
+  "draugu": {
+    "title": "SAUNA EXPERIENCE \"FRIENDS' SAUNA\"",
+    "cardTitle": "SAUNA EXPERIENCE \"FRIENDS' SAUNA\"",
+    "price": "100€ /per person (Min 360€)",
+    "description": "SAUNA EXPERIENCE \"FRIENDS' SAUNA\" is a sauna visit accompanied by a sauna master with friends. We offer fantastic relaxation meeting friends and experiencing new sensations and experiences.",
+    "features": [
+      "Procedure Duration: 4 h – 5 h",
+      "Included: Herbal Hot Tub",
+      "Group Scrubbing",
+      "Individual Whisk Beating",
+      "❌ Individual Scrub Application"
+    ],
+    "includedTitle": "Service includes:",
+    "includedItems": [
+      "Warming – even warming in an aromatic herbal hot tub, which begins the cleansing process and frees your body",
+      "Cleansing scrub – cleansing rubbing with herbal mixtures",
+      "Whisk beating – bathing with various sauna whisks, swimming in the pond and laying down",
+      "Nourishing scrub – coffee, honey, blue clay or oil procedure according to client's wishes"
+    ],
+    "additionalTitle": "Additional:",
+    "additionalRental": "Sauna and herbal hot tub rental included in price",
+    "accommodationTitle": "Accommodation",
+    "accommodationPrice": "19.99 € (MIN 36€)",
+    "accommodationNote": "per person",
+    "ctaTitle": "Book \"FRIENDS' SAUNA\" Experience",
+    "ctaSubtitle": "Enjoy an unforgettable sauna experience with friends – book today!",
+    "ctaButton": "Reserve"
+  },
+  "draugu-plus": {
+    "title": "SAUNA CURE \"FRIENDS' SAUNA +\"",
+    "cardTitle": "SAUNA CURE \"FRIENDS' SAUNA +\"",
+    "price": "140€ /per person (Min 360€)",
+    "description": "SAUNA CURE \"FRIENDS' SAUNA +\" is a sauna visit accompanied by a sauna master with friends. We offer fantastic relaxation meeting friends and experiencing new sensations and experiences.",
+    "features": [
+      "Procedure Duration: 4 h – 5 h",
+      "Included: Herbal Hot Tub",
+      "Individual Scrub Application",
+      "Individual Whisk Beating"
+    ],
+    "includedTitle": "Service includes:",
+    "includedItems": [
+      "Warming – even warming in an aromatic herbal hot tub, which begins the cleansing process and frees your body",
+      "Cleansing scrub – cleansing rubbing with herbal mixtures",
+      "Whisk beating – bathing with various sauna whisks, swimming in the pond and laying down",
+      "Nourishing scrub – coffee, honey, blue clay or oil procedure according to client's wishes"
+    ],
+    "additionalTitle": "Additional:",
+    "additionalRental": "Sauna and herbal hot tub rental included in price",
+    "accommodationTitle": "Accommodation",
+    "accommodationPrice": "19.99 € (MIN 36€)",
+    "accommodationNote": "per person",
+    "ctaTitle": "Book \"FRIENDS' SAUNA +\" Ritual",
+    "ctaSubtitle": "Enjoy an unforgettable sauna experience with friends – book today!",
+    "ctaButton": "Reserve"
+  }
+}

@@ -1,0 +1,14 @@
+{
+  "reserve": "Reserve",
+  "calendar": {
+    "select_date": "Select Date",
+    "select_time": "Select Time",
+    "weekdays": ["Mo", "Tu", "We", "Th", "Fr", "Sa", "Su"],
+    "months": ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"],
+    "today": "Today",
+    "available": "Available",
+    "unavailable": "Unavailable",
+    "please_select_date_time": "Please select date and time on the left",
+    "no_availability": "No availability for selected time"
+  }
+}

@@ -1,0 +1,96 @@
+{
+  "hero": {
+    "title": "Pirts Noma",
+    "subtitle": "Privāta Atpūta Dabā!"
+  },
+  "section": {
+    "title": "Pirts Noma",
+    "description": "Pirts \"SaimniekaPirts\" piedāvā relaksējošu atpūtu draugiem, ģimenēm un neformālām biznesa tikšanām, izbaudot Rīgas rajona lauku tūrismu.",
+    "cta": "Rezervēt Pirts Nomu"
+  },
+  "saunas": [
+    {
+      "title": "Baltā Pirts",
+      "description": "Pirts ar plašu telpu gan iekštelpās, gan ārā – ideāli piemērota lielākiem pasākumiem un draugu pulcēšanās reizēm.",
+      "checklist": [
+        "Atpūtas Telpa Ar Zāļu Paklāju Aromātu",
+        "Divstāvu Pirts Māja",
+        "Iespējams Pasūtījumam Pievienot Zāļu Kubulu"
+      ]
+    },
+    {
+      "title": "Pelēkā Pirts", 
+      "description": "Pirtnieka dizainēta pirts telpa, piemērotāka pieredzējušākiem pirts mīļiem, atsevišķā ēkā ar virtuvi.",
+      "checklist": [
+        "Pirtnieka Dizainēta Pirts Telpa",
+        "Atpūtas Telpa Ar Virtuves Zonu",
+        "Iespējams Pasūtījumam Pievienot Zāļu Kubulu"
+      ]
+    }
+  ],
+  "herbTubs": {
+    "title": "Zāļu Kubliņi",
+    "description": "Iespēja papildus izvēlēties arī zāļu kublu. Kubls ir piepildīts ar ārstniecisku augu lapām, kas palīdz atslābināt muskuļus, uzlabo ādas stāvokli un veicina ķermeņa atjaunošanos."
+  },
+  "pricing": {
+    "title": "Pirts Nomas Cenas",
+    "options": [
+      {
+        "title": "Pirts Noma Cena (Bez Kubla)",
+        "priceRange": "80€ – 140€",
+        "options": [
+          { "duration": "3h", "price": "80€", "note": "(Pirts diviem)" },
+          { "duration": "4h", "price": "90€", "note": "(Pirts diviem)" },
+          { "duration": "5h", "price": "120€", "note": "(līdz 5 cilvēkiem)" },
+          { "duration": "5h", "price": "140€", "note": "(6–10 cilvēkiem)" }
+        ],
+        "features": [],
+        "popular": false
+      },
+      {
+        "title": "Pirts Noma Cena (Ar Kubliņu)",
+        "priceRange": "150€ – 200€",
+        "options": [
+          { "duration": "4h", "price": "150€", "note": "(Pirts & Kubls diviem)" },
+          { "duration": "4h", "price": "170€", "note": "(līdz 5 cilvēkiem)" },
+          { "duration": "5h", "price": "200€", "note": "(6–10 cilvēkiem)" }
+        ],
+        "features": [],
+        "popular": true
+      }
+    ],
+    "cta": "Rezervēt Tagad"
+  },
+  "additionalServices": {
+    "title": "Papildus Pakalpojumi Noma",
+    "services": [
+      {
+        "title": "Pirts Slotas",
+        "price": "4€",
+        "description": "Papildus pirts nomai ir iespēja iegādāties vai izvēlēties pirts slotas.",
+        "features": ["Bērza Slotas", "Ozola Slotas"]
+      },
+      {
+        "title": "Skrubji",
+        "price": "15€",
+        "description": "Papildus pirts nomai ir iespēja izvēlēties zāļu skrubjus.",
+        "features": ["Veidoti ar augiem tieši Tev", "200 ml"]
+      }
+    ]
+  },
+  "accommodation": {
+    "title": "Nakšņošana",
+    "description": "Piedāvājam arī nakšņošanu! Vakarā pēc pirts un kubla var rasties patīkams nogurums. Pagariniet savu atpūtas pieredzi un izbaudiet pilnīgu atslēgšanos no ikdienas steigas.",
+    "cta": "Uzzināt vairāk"
+  },
+  "giftCards": {
+    "title": "Dāvanu Kartes",
+    "description": "Nopērc Pirts Rituāla Dāvanu Karti! Perfekta dāvana draugam vai tuviniekam, kam vēlies dāvināt neaizmirstamu pirts pieredzi.",
+    "features": [
+      "Tūlītēja piegāde uz e-pastu",
+      "Vari izvēlēties specifiskus rituālus",
+      "Neaizmirstams pārsteigums"
+    ],
+    "cta": "Uzzināt Vairāk"
+  }
+}

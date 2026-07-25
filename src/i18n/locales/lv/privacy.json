@@ -1,0 +1,117 @@
+{
+  "title": "Privātuma Politika",
+  "subtitle": "Jūsu privātums mums ir svarīgs. Šī politika informē par personas datu apstrādes kārtību.",
+  "intro": {
+    "description": "Jūsu privātums mums ir svarīgs. SIA \"KMR Business\" privātuma politikas mērķis ir informēt klientus un citus datu subjektus par viņu personas datu apstrādes kārtību saskaņā ar Eiropas Parlamenta un Padomes Regulu (ES) 2016/679 (27.aprīlis, 2016) par fizisko personu aizsardzību attiecībā uz personas datu apstrādi un brīvu apriti."
+  },
+  "controller": {
+    "title": "Vadītājs un tā kontaktinformācija",
+    "company": "Vadītājs",
+    "regNumber": "Reģ. nr.",
+    "address": "Juridiskā adrese",
+    "website": "Mājas lapas adrese",
+    "email": "E-pasts",
+    "phone": "Telefons"
+  },
+  "dataClassification": {
+    "title": "Personas datu klasifikācija un apstrādes mērķis",
+    "description": "Personas dati ir jebkura informācija par identificētu vai identificējamu fizisku personu: SIA \"KMR Business\" klientu (tajā skaitā potenciālo, bijušo un esošo), pakalpojuma saņēmēju, viesi, vietnes apmeklētāju, sadarbības partneri, darbinieku vai vakances kandidātu (viss kopā turpmāk – datu subjekts), tostarp:",
+    "types": [
+      "Personas identifikācijas dati (vārds, uzvārds, dzimšanas datums un/vai personas kods)",
+      "Kontaktinformācija (tālruņa numurs, e-pasta adrese, kontaktadrese)",
+      "Profesionālās pieredzes un izglītības dati (nodarbošanās, profesionālās kompetences)",
+      "Personas komunikācijas un uzvedības dati (telefoniskās un elektroniskās saziņas un tiešās saskarsmes procesā gūtās atziņas, atgriezeniskā saite darbinieku atlases procesā)",
+      "Informācija par saņemtajiem vai plānotajiem pakalpojumiem",
+      "Norēķinu informācija (bankas konta numurs utt.)",
+      "Datu subjektam raksturīgie fiziskie, fizioloģiskie, ģenētiskie, garīgie, ekonomiskie, kultūras vai sociālās identitātes faktori (pilsonība utt.)",
+      "Cita informācija, ko var attiecināt uz fizisko personu (biometriskie dati: seja, attēls, automašīnas reģistrācijas numurs u.c.) un ko persona saziņas procesā sniedza pēc saviem ieskatiem (ģimenes stāvoklis u.c.)"
+    ]
+  },
+  "processingPurposes": {
+    "title": "Personas datu apstrādes mērķi",
+    "purposes": [
+      "Par pakalpojumu sniegšanu (klientu identificēšana, līgumu sagatavošana, pakalpojumu sniegšana, pakalpojumu veicināšana, izplatīšana, jaunu pakalpojumu izstrāde, pretenziju izskatīšana un apstrāde)",
+      "Biznesa plānošanai un analīzei (statistika, tirgus izpēte, klientu apmierinātības mērījumi)",
+      "Par noziedzīgu darījumu novēršanu vai atklāšanu saistībā ar īpašuma aizsardzību un personu būtisku interešu, tostarp dzīvības un veselības, aizsardzību",
+      "Par informācijas sniegšanu valsts pārvaldes iestādēm ārējos normatīvajos aktos noteiktajos gadījumos un apjomā",
+      "Nodrošināt potenciālo darbinieku atlases procesu un nodibināt darba tiesiskās attiecības",
+      "Par dokumentu arhivēšanu ārējos normatīvajos aktos noteiktajos gadījumos un apjomā",
+      "Citiem konkrētiem mērķiem, par kuriem klients tiek informēts attiecīgo personas datu pieprasīšanas brīdī"
+    ]
+  },
+  "legalBasis": {
+    "title": "Personas datu apstrādes tiesiskais pamats",
+    "description": "SIA \"KMR Business\" leģitīmās intereses ir: veikt komercdarbību, pirms līguma noslēgšanas pārliecināties par klienta identitāti, nodrošināt līgumsaistību izpildi, novērst nepamatotus riskus savai komercdarbībai, veikt pakalpojumu kvalitātes analīzi un ieviest uzlabojumus, reklamēt savus pakalpojumus, analizēt uzņēmuma mājaslapu un ieviest uzlabojumus, veikt darbības, lai noturētu klientus un paplašinātu klientu segmentu, novērstu krāpšanu, administrētu maksājumus, nodrošinātu efektīvus uzņēmuma vadības procesus, vērstos valsts pārvaldes un operatīvās institūcijās savu tiesisko interešu aizsardzībai, informēt sabiedrību par savu darbību."
+  },
+  "dataAccess": {
+    "title": "Personas datiem var piekļūt",
+    "description": "Personas datiem var piekļūt: Pārziņa darbinieki viņu pienākumu veikšanai nepieciešamajā apjomā, personas datu apstrādātāji – ārpakalpojumu sniedzēji līguma izpildei nepieciešamās vai likumā deleģētās funkcijas veikšanai (piemēram, bankas norēķinu kārtība), valsts un pašvaldību iestādēm pēc to pamatota pieprasījuma, kā arī tiesībsargājošo iestāžu normatīvajos aktos noteiktajos gadījumos."
+  },
+  "dataSubjectRights": {
+    "title": "Datu subjekta tiesības",
+    "description": "Datu subjektam ir tiesības saņemt normatīvajos aktos noteikto informāciju par saviem personas datiem, kas atrodas Pārziņa informācijas sistēmās, un pārliecināties par savu datu pareizību, tos labot, papildināt, pieprasīt dzēst vai apturēt apstrādi, ja tie ir nepilnīgi, novecojuši vai apstrādāti nelikumīgi, kā arī tiesības uz datu pārnesamību. Datu subjekts var iesniegt pieprasījumu par savu tiesību izmantošanu:",
+    "requestMethods": {
+      "title": "Pieprasījuma iesniegšanas veidi:",
+      "methods": [
+        "Rakstiski klātienē SIA \"KMR Business\" juridiskajā adresē: Jelgava, Sudrabu Edžus 15-64, LV-3001, uzrādot personu apliecinošu dokumentu",
+        "Elektroniski, nosūtot ar drošu elektronisko parakstu parakstītu iesniegumu uz e-pasta adresi: info@saimniekapirts.lv"
+      ]
+    },
+    "additionalInfo": "Datu subjekta pieprasījums tiek izvērtēts atbilstoši normatīvajiem aktiem, un atbilde tiek nosūtīta uz klienta norādīto kontaktadresi normatīvajos aktos noteiktajā kārtībā un termiņos. Ja datu subjekts uzskata, ka Pārzinis ir rīkojies prettiesiski, viņam ir tiesības vērsties ar sūdzību Datu valsts inspekcijā Blaumaņa ielā 11/13, Rīgā, LV–1011. Mūsu pieprasītās informācijas sniegšana nav obligāta, taču tā ir priekšnoteikums mūsu sniegto pakalpojumu saņemšanai. Mēs neizmantojam personas datus automatizētai lēmumu pieņemšanai un neveicam profilēšanu. SIA \"KMR Business\" datu subjektu personas dati netiek sūtīti ārpus Eiropas Savienības vai Eiropas Ekonomikas zonas valstīm."
+  },
+  "dataRetention": {
+    "title": "Datu glabāšanas ilgums",
+    "description": "Personas dati tiek glabāti tik ilgi, kamēr ir izpildīts vismaz viens no šiem kritērijiem:",
+    "criteria": [
+      "Spēkā esošie normatīvie akti par datu glabāšanas termiņiem (Grāmatvedības likums, Arhīvu likums)",
+      "Ir juridisks pienākums uzglabāt datus",
+      "Datu subjekta piekrišana attiecīgai personas datu apstrādei ir spēkā",
+      "Spēkā ir ārējos normatīvajos aktos noteiktā kārtība, kādā Pārzinis vai datu subjekts var realizēt savas leģitīmās intereses (piemēram, iesniegt iebildumus vai iesniegt prasību tiesā)"
+    ],
+    "deletion": "Pēc iepriekš minēto apstākļu izbeigšanās datu subjekta personas dati tiek dzēsti vai padarīti nepieejami vai neidentificējami."
+  },
+  "dataSecurity": {
+    "title": "Datu drošība",
+    "description": "Pārzinis nodrošina, ka datu subjekta personas dati tiek apstrādāti saskaņā ar šādiem principiem:",
+    "principles": [
+      "Likumīga un godīga personas datu apstrāde",
+      "Datu minimizēšana, ti, apstrāde tikai nepieciešamajā apjomā",
+      "Datu precizitāte",
+      "Datu uzglabāšana ne ilgāk kā nepieciešams apstrādes nolūkos",
+      "Datu drošība un konfidencialitāte"
+    ],
+    "measures": "Mēs nodrošinām, pastāvīgi pārskatām un uzlabojam drošības pasākumus, lai aizsargātu personas datus no nesankcionētas piekļuves, nejaušas nozaudēšanas, izpaušanas vai iznīcināšanas. Lai to īstenotu, mēs piemērojam nepieciešamās tehniskās un organizatoriskās prasības, tostarp pretvīrusu programmas un ugunsmūrus. Taču aicinām arī savus klientus ievērot vispārējos datora un interneta lietošanas drošības noteikumus, kā arī prasības personas datu glabāšanai."
+  },
+  "videoSurveillance": {
+    "title": "Videonovērošana",
+    "description": "Pārzinis veic videonovērošanu un apstrādā personas datus, kad datu subjekts apmeklē Pārziņa pakalpojumu sniegšanas vietas. Videonovērošana tiek veikta reāllaika režīmā un ir nepieciešama, lai aizsargātu darbinieku, klientu un citu datu subjektu vitālās intereses, tostarp veselību un dzīvību. Videokameras ir izvietotas tā, lai nodrošinātu tikai drošības funkcijas un neapstrādātu tādus personas datus, kuru apstrāde nav nepieciešama. Administrators nodrošina pilnīgu datu dzēšanu, ja tie iepriekš nav pieprasīti vai nav konstatēti noziedzīgi darījumi vai citi drošības pārkāpumi."
+  },
+  "communication": {
+    "title": "Saziņa ar datu subjektu",
+    "description": "Saziņai ar datu subjektu mēs izmantojam datu subjekta norādīto tālruņa numuru, e-pasta adresi vai pasta adresi."
+  },
+  "cookies": {
+    "title": "Sīkdatnes",
+    "description": "Sīkdatnes ir nelieli teksta faili, kas tiek izveidoti un saglabāti interneta lietotāja ierīcē (datorā, planšetdatorā, mobilajā tālrunī u.c.), apmeklējot vietni. Sīkdatnes palīdz lietotājam atcerēties pieteikšanās vārdu un iestatījumus (piemēram, valodu, fonta lielumu u.c. papildu informāciju), lai tie nebūtu katru reizi jānorāda, tādējādi uzlabojot vietnes lietošanas ērtumu.",
+    "analytical": {
+      "title": "Analītiskās sīkdatnes",
+      "description": "Analītiskās sīkdatnes (piemēram, Google Analytics un Microsoft Clarity) apkopo informāciju par vietnes apmeklētāja uzvedību, piemēram, kuras sadaļas tiek apmeklētas visbiežāk. Šī informācija palīdz mums attīstīt un uzlabot mūsu vietni, padarīt to ērtāku. Šīs sīkdatnes tiek glabātas lietotāja ierīcē ne ilgāk kā divus gadus."
+    },
+    "technical": {
+      "title": "Tehniskās sīkdatnes",
+      "description": "Tehniskās jeb obligātās sīkdatnes (Google Chrome, Internet Explorer u.c.) palīdz atcerēties lietotāja pieprasījumus un to, kurām sīkdatnēm lietotājs ir piekritis. Šīs sīkdatnes tiek glabātas lietotāja ierīcē līdz pārlūkprogrammas aizvēršanai, bet ne ilgāk kā divus gadus."
+    },
+    "advertising": {
+      "title": "Mērķa sīkdatnes",
+      "description": "Mērķa vai reklāmas sīkfaili (piemēram, Google Adwords) nodrošina lietotāja vēlmēm pielāgotu reklāmu. Šīs sīkdatnes tiek pastāvīgi saglabātas apmeklētāju ierīcēs."
+    },
+    "thirdParty": "Turklāt vietnē var tikt izmantoti tādi pakalpojumi kā YouTube, lai nodrošinātu video saturu vai saites uz citām vietnēm, Facebook, Instagram, TripAdvisor, lai piedāvātu iespēju skatīt saturu no šiem sociālajiem kontiem vai kopīgot tajos vietnes saturu. Visi šie pakalpojumi izmanto sīkfailus, lai iegūtu statistikas datus un noskaidrotu populārākās meklēšanas tendences. Šīs trešās puses sīkfailus mēs nevaram kontrolēt.",
+    "consent": "Apmeklējot mūsu vietni, lietotājs tiek informēts, ka mēs izmantojam sīkdatnes. Aizverot šo paziņojumu, lietotājs apstiprina, ka ir izlasījis informāciju par sīkdatnēm un piekrīt tai. Ja lietotājs nevēlas, lai viņa ierīcē tiktu izmantotas sīkdatnes, viņš var atspējot sīkdatņu izmantošanu savā pārlūkprogrammas iestatījumos, taču jāņem vērā, ka daži pakalpojumi un vietnes funkcijas var nedarboties, kā arī nav iespējams atteikt izmantošanu obligātajām un funkcionālajām sīkdatnēm, jo bez tām nav iespējama pilna vietnes funkcionalitāte.",
+    "identification": "Informācija, kas saistīta ar sīkdatnēm, netiek izmantota, lai personīgi identificētu lietotāju."
+  },
+  "policyChanges": {
+    "title": "Izmaiņas Privātuma politikā",
+    "description": "SIA \"KMR Business\" privātuma politika var tikt mainīta vai labota atbilstoši spēkā esošo normatīvo aktu prasībām. Mūsu esošie un potenciālie klienti var iepazīties ar izmaiņām privātuma politikā, regulāri apmeklējot mūsu vietni."
+  },
+  "notice": "Atcerieties, ka jūs pats esat atbildīgs par savu personas datu drošību!"
+}

@@ -1,0 +1,14 @@
+{
+  "location": "Atrašanās Vieta",
+  "transport": "Sabiedriskais Transports:",
+  "transportDesc": "Rīga → Baldone, SaimniekaPirts var Jūs savākt autoostā (jāievēro pie rezervācijas, komentāros pievienojiet).",
+  "companyInfo": "Rekvizīti",
+  "companyName": "Uzņēmums",
+  "contactAddress": "Adrese",
+  "contactEmail": "E-pasts",
+  "contactPhone": "Tālrunis",
+  "companyReg": "Reģ. Nr.",
+  "companyBank": "Banka",
+  "companyIBAN": "Konta numurs",
+  "reserveNow": "Rezervēt Tagad"
+}

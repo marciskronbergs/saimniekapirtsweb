@@ -1,0 +1,161 @@
+{
+  "intro": {
+    "title": "Traditional Sauna Ritual",
+    "quote": "\"One should bathe in the sauna with a fresh birch whisk, then the body remains white.\"",
+    "description": "SAUNA RITUAL is a sauna visit accompanied by a professional sauna master individually, for two people, or for a larger group. We offer relaxing recreation to experience new sensations and experiences.",
+    "features": [
+      "Ritual Conducted Under Certified Sauna Masters' Guidance",
+      "Relaxing Herbal Hot Tubs With Nature's Healing Power",
+      "Refreshing Pond Year-Round"
+    ],
+    "cta": "Reserve"
+  },
+  "experience": {
+    "title": "Full Sauna Ritual Experience",
+    "subtitle": "Go through the complete 7-step ritual that combines traditional Latvian sauna methods with our sauna masters' unique touch.",
+    "steps": [
+      {
+        "title": "Warming in Herbal Hot Tub",
+        "description": "We begin the ritual with a gently warm herbal hot tub that prepares the body and soul for a deeper sauna experience. Aromatic herbs help relax and release daily stress."
+      },
+      {
+        "title": "Herbal Tea Enjoyment",
+        "description": "We enjoy warm, medicinal tea that enriches the body with natural vitamins and minerals, while preparing the body for the upcoming ritual steps."
+      },
+      {
+        "title": "Whisk Beating", 
+        "description": "The heart of the sauna ritual is the sauna whisk beating, which promotes deep relaxation and body cleansing. The sauna master uses specially prepared birch, oak, or other tree whisks to gently stroke and stimulate the skin, improving circulation and promoting toxin elimination."
+      },
+      {
+        "title": "Herbal Scrub Application",
+        "description": "Herbal scrub is applied to the skin to gently remove dead cells and promote skin renewal. It is made from medicinal plants and salt, providing an exfoliating effect."
+      },
+      {
+        "title": "Warm Honey Massage",
+        "description": "Warm honey is applied to the body and gently massaged to deeply moisturize the skin. Honey's rich properties help make the skin soft, clear, and healthily glowing. Additionally, the procedure calms the mind."
+      },
+      {
+        "title": "Immersion in Cool Pond",
+        "description": "After whisk beating in the sauna, the client is led into a cool pond where the bathing process takes place. Cold water cools the skin and stimulates circulation."
+      },
+      {
+        "title": "Wrapping in Blankets",
+        "description": "After the contrast bath, you are gently wrapped in warm blankets and laid in fresh air. This rest period helps stabilize circulation and concludes the ritual with complete peace."
+      }
+    ],
+    "cta": "Reserve Full Ritual"
+  },
+  "pricing": {
+    "title": "Service Prices",
+    "plans": [
+      {
+        "title": "INDIVIDUAL",
+        "price": "220€ – 280€",
+        "description": "Ideally suited for people seeking peaceful relaxation. (without hot tub 220€)",
+        "features": ["Certified sauna master", "3h", "Herbal Hot Tub & Sauna Rental"],
+        "popular": false
+      },
+      {
+        "title": "FOR TWO",
+        "price": "300€ – 360€",
+        "description": "Ideally suited for a couple or friends who want to enjoy a shared ritual in a peaceful atmosphere. (Without hot tub – 300€)",
+        "features": ["Certified sauna master", "4h", "Herbal Hot Tub & Sauna Rental"],
+        "popular": true
+      },
+      {
+        "title": "FOR FAMILY",
+        "price": "380€",
+        "description": "Ideally suited for family bonding through sensations and new experiences. (2 adults + 3 children)",
+        "features": ["Certified sauna master", "5h", "Herbal Hot Tub & Sauna Rental"],
+        "popular": false
+      }
+    ],
+    "cta": "Book Now"
+  },
+  "groupOptions": {
+    "title": "Group Sauna Rituals",
+    "options": [
+      {
+        "title": "SAUNA EXPERIENCE WITH SAUNA MASTER",
+        "price": "70€ /per person",
+        "description": "With group scrubbing, herbal hot tub, and contrast procedure.",
+        "details": "Without individual whisk beating and individual scrubbing.",
+        "restrictions": [
+          "noIndividualWhiskBeating",
+          "noIndividualScrub"
+        ]
+      },
+      {
+        "title": "SAUNA CURE \"FRIENDS' SAUNA\"",
+        "price": "100€ /per person",
+        "description": "With warming in herbal hot tub, individual whisk beating, and group scrubbing procedure.",
+        "restrictions": [
+          "noIndividualScrub"
+        ]
+      },
+      {
+        "title": "SAUNA CURE \"FRIENDS' SAUNA\" +",
+        "price": "140€ /per person",
+        "description": "Sauna visit with friends featuring a complete individual ritual – from warming to whisk beating and scrubbing.",
+        "restrictions": []
+      }
+    ],
+    "cta": "Learn More",
+    "noIndividualWhiskBeating": "❌ Individual Whisk Beating",
+    "noIndividualScrub": "❌ Individual Scrub Application"
+  },
+  "specialExperiences": {
+    "title": "Special Sauna Experiences",
+    "experiences": [
+      {
+        "title": "Bachelorette Sauna"
+      },
+      {
+        "title": "Bachelor Party"
+      }
+    ]
+  },
+  "saunaHost": {
+    "title": "Sauna Master",
+    "description": "The sauna master is called Mārcis Kronbergs. He himself studied for 3 years in sauna school, obtained a certificate, and performed 1500+ rituals. Over 7 years, he has created the perfect structure for sauna ritual execution, so that each ritual procedure is as enjoyable as possible.",
+    "stats": [
+      {
+        "number": "7+",
+        "title": "Years Experience",
+        "description": "The master performed his first ritual over 7 years ago and has learned a lot since then."
+      },
+      {
+        "number": "1500+",
+        "title": "Sauna Rituals",
+        "description": "1500+ satisfied clients. Many regularly return for sauna rituals."
+      }
+    ]
+  },
+  "testimonials": {
+    "title": "What Our Sauna Lovers Say",
+    "subtitle": "Discover unforgettable sauna-lover experiences at Saimnieka Pirts."
+  },
+  "accommodation": {
+    "title": "Accommodation",
+    "description": "We also offer accommodation! In the evening after sauna and hot tub, pleasant fatigue may arise. Extend your relaxation experience and enjoy complete disconnection from daily rush.",
+    "cta": "Learn more"
+  },
+  "giftCards": {
+    "title": "Gift Cards",
+    "description": "Buy a Sauna Ritual Gift Card! Perfect gift for a friend or loved one whom you want to give an unforgettable sauna experience.",
+    "giftCard": {
+      "title": "Gift Card",
+      "subtitle": "Perfect gift for loved ones"
+    },
+    "giftCardVisual": {
+      "title": "Gift Card",
+      "subtitle": "Perfect gift for loved ones"
+    },
+    "features": [
+      "Instant delivery to email",
+      "You can choose specific rituals",
+      "Unforgettable surprise"
+    ],
+    "cta": "Learn More"
+  }
+}

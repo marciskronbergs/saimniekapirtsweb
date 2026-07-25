@@ -1,0 +1,45 @@
+{
+  "title": "PIRTS PIEDZĪVOJUMS VECMEITU BALLĪTEI \"VECMEITAS PŪRS\"",
+  "poem": {
+    "title": "Tautasdziesma:",
+    "line1": "Pirtī eimu, pirtī teku,",
+    "line2": "Pirtī mana līgaviņa,",
+    "line3": "Pirtī mana līgaviņa",
+    "line4": "Ar māriņu spēlējās"
+  },
+  "price": "360€, līdz 8 cilvēkiem vienlaicīgi",
+  "description1": "Pēc tradīcijas vecmeitu ballīte ir topošās līgavas draudzeņu sanākšanas reize, kurā notiek izklaide vecmeitu stilā, darot kādas neparastas un aizraujošas lietas.",
+  "description2": "\"SaimniekaPirtī\" vecmeitu ballītes organizē līgavas draudzenes kā vienu no vecmeitu ballītes pasākuma elementiem, lai kopā atpūstos, izbaudītu skaistuma, sevis atjaunošanas, labā nostiprināšanas un sagatavošanās rituālus precētai dzīvei.",
+  "details": {
+    "duration": "Procedūras Ilgums: 4 h",
+    "included": "Iekļauts: Ārstnieciskais Zāļu Kubls",
+    "master": "Darbojas: Viens Sertificēts Pirtnieks",
+    "availability": "Rituāls pieejams: Visu gadu"
+  },
+  "includedTitle": "VECMEITU PIRTS PIEDZĪVOJUMĀ ietilpst:",
+  "includedItems": [
+    "Kopēja draudzeņu sildīšanās ar novēlējumu rituālu;",
+    "Vibroakustiskā masāža ar klūgu slotām gaviļniecei;",
+    "Relaksējošs pēriens, kura laikā draudzenes palīdz pirtniekam ar sildīšanu, slotu kompresēm;",
+    "ATTĪROŠAIS SKRUBIS – attīroša noberšanās ar augu maisījumiem, kas attīra ķermeni un garu;",
+    "Galvenais pēriens individuāli gaviļniecei;",
+    "BAROJOŠAIS SKRUBIS – (iepriekš vienojoties) kafijas, dzintara, mālu, medus vai cita ķermeņa kopšanas līdzekļa uzklāšana gaviļniecei;"
+  ],
+  "additionalTitle": "Papildus:",
+  "additional": {
+    "rental": "Pirts un zāļu kubla noma – 18€ /h (4 h iekļauta cenā.)",
+    "extraTitle": "Papildus procedūras citām veicmeitu ballītes dalībniecēm no personas:",
+    "extraServices": [
+      { "name": "Pēriens", "price": "75€" },
+      { "name": "vibroakustiskā masāža", "price": "24€" },
+      { "name": "attīrošo un barojošo skrubju uzklāšana", "price": "25€" }
+    ],
+    "accommodation": "Nakšņošana",
+    "accommodationPrice": "19.99 € /pers. (MIN 36€)"
+  },
+  "cta": {
+    "title": "Piesaki \"VECMEITAS PŪRA\" Rituālu",
+    "subtitle": "Piesaki Pasākumu Topošajajai līgavai Jau Šodien!",
+    "button": "Rezervēt"
+  }
+}
