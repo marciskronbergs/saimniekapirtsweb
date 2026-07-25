@@ -1,0 +1,36 @@
+# Netlify redirects file for SEO preservation during Wix to custom site migration
+# All redirects use 301 (permanent) status codes to preserve SEO rankings
+
+# Old Wix URLs -> New Netlify URLs (301 permanent redirects)
+/book-online                          /rezervet                         301
+/gift-card                           /davanu-kartes                    301
+/davanu-kartes-forma                 /davanu-kartes                    301
+/copy-of-privātuma-politika          /privatuma-politika               301
+/atsauksmes                          /                                 301
+/pakalpojumi-un-cenas                /pirts-noma                       301
+/privatuma-politika                  /privatuma-politika               301
+/davanu-karte                        /davanu-kartes                    301
+/konkursa-noteikumi                  /ieksejas-kartibas-noteikumi      301
+
+# Additional common variations and typos (optional but recommended)
+/book-online/                        /rezervet                         301
+/gift-card/                          /davanu-kartes                    301
+/davanu-kartes-forma/                /davanu-kartes                    301
+/copy-of-privātuma-politika/         /privatuma-politika               301
+/atsauksmes/                         /                                 301
+/pakalpojumi-un-cenas/               /pirts-noma                       301
+/privatuma-politika/                 /privatuma-politika               301
+/davanu-karte/                       /davanu-kartes                    301
+/konkursa-noteikumi/                 /ieksejas-kartibas-noteikumi      301
+
+# Catch-all for any other old Wix patterns (optional)
+# /wix-old-pattern/*                 /new-pattern/:splat               301
+
+# Force HTTPS (recommended for SEO)
+http://saimniekapirts.lv/*           https://saimniekapirts.lv/:splat  301!
+http://www.saimniekapirts.lv/*       https://saimniekapirts.lv/:splat  301!
+https://www.saimniekapirts.lv/*      https://saimniekapirts.lv/:splat  301!
+
+
+# SPA fallback for React/Vite routing
+/*  /index.html  200
