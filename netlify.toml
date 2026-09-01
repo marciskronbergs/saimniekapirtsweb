@@ -17,3 +17,7 @@
 [build.environment]
   # Matches the Node version the committed dist/ was verified to reproduce on.
   NODE_VERSION = "22"
+  # VITE_-prefixed variables are compiled into the client bundle by design, so
+  # Netlify's secrets scanner would otherwise find their values in dist/ and
+  # fail the build.
+  SECRETS_SCAN_OMIT_KEYS = "VITE_SUPABASE_URL,VITE_SUPABASE_ANON_KEY"
