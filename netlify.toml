@@ -1,0 +1,19 @@
+# Netlify build settings for continuous deployment from Git.
+#
+# Until now the site was deployed manually, and the publish directory was
+# configured in the Netlify UI as an absolute Windows path, which does not
+# exist on Netlify's build machines. Committing the settings here makes the
+# build reproducible and overrides the UI values once the repository is
+# linked.
+#
+# Redirects are intentionally not declared here: public/_redirects already
+# holds the full redirect list plus the SPA fallback, and rules in this file
+# would take precedence over that file.
+
+[build]
+  command = "npm run build"
+  publish = "dist"
+
+[build.environment]
+  # Matches the Node version the committed dist/ was verified to reproduce on.
+  NODE_VERSION = "22"
