@@ -11,7 +11,9 @@
 # would take precedence over that file.
 
 [build]
-  command = "npm run build"
+  # The verification step fails the build when the Supabase variables were
+  # absent, so a bundle that cannot reach the database is never published.
+  command = "npm run build && npm run verify:build"
   publish = "dist"
 
 [build.environment]
