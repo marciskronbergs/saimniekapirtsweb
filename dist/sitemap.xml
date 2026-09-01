@@ -1,122 +1,63 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:xhtml="http://www.w3.org/1999/xhtml">
-  <!-- Homepage -->
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
     <loc>https://saimniekapirts.lv/</loc>
-    <lastmod>2024-12-18</lastmod>
+    <lastmod>2026-09-01</lastmod>
     <changefreq>weekly</changefreq>
     <priority>1.0</priority>
-    <xhtml:link rel="alternate" hreflang="lv" href="https://saimniekapirts.lv/" />
-    <xhtml:link rel="alternate" hreflang="en" href="https://saimniekapirts.lv/" />
   </url>
-
-  <!-- Pirts Rituāli (Sauna Rituals) -->
   <url>
     <loc>https://saimniekapirts.lv/pirts-rituali</loc>
-    <lastmod>2024-12-18</lastmod>
+    <lastmod>2026-09-01</lastmod>
     <changefreq>monthly</changefreq>
-    <priority>0.9</priority>
-    <xhtml:link rel="alternate" hreflang="lv" href="https://saimniekapirts.lv/pirts-rituali" />
-    <xhtml:link rel="alternate" hreflang="en" href="https://saimniekapirts.lv/pirts-rituali" />
+    <priority>0.8</priority>
   </url>
-
-  <!-- Grupu Rituāli (Group Rituals) -->
   <url>
     <loc>https://saimniekapirts.lv/grupu-rituali</loc>
-    <lastmod>2024-12-18</lastmod>
+    <lastmod>2026-09-01</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
-    <xhtml:link rel="alternate" hreflang="lv" href="https://saimniekapirts.lv/grupu-rituali" />
-    <xhtml:link rel="alternate" hreflang="en" href="https://saimniekapirts.lv/grupu-rituali" />
   </url>
-
-  <!-- Pirts Noma (Sauna Rental) -->
   <url>
     <loc>https://saimniekapirts.lv/pirts-noma</loc>
-    <lastmod>2024-12-18</lastmod>
+    <lastmod>2026-09-01</lastmod>
     <changefreq>monthly</changefreq>
-    <priority>0.9</priority>
-    <xhtml:link rel="alternate" hreflang="lv" href="https://saimniekapirts.lv/pirts-noma" />
-    <xhtml:link rel="alternate" hreflang="en" href="https://saimniekapirts.lv/pirts-noma" />
+    <priority>0.8</priority>
   </url>
-
-  <!-- Īpašie Piedzīvojumi (Special Experiences) -->
   <url>
     <loc>https://saimniekapirts.lv/ipasiie-piedzivvojumi</loc>
-    <lastmod>2024-12-18</lastmod>
+    <lastmod>2026-09-01</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
-    <xhtml:link rel="alternate" hreflang="lv" href="https://saimniekapirts.lv/ipasiie-piedzivvojumi" />
-    <xhtml:link rel="alternate" hreflang="en" href="https://saimniekapirts.lv/ipasiie-piedzivvojumi" />
   </url>
-
-  <!-- Vecmeitas Pūrs (Bachelorette Sauna) -->
   <url>
     <loc>https://saimniekapirts.lv/vecmeitas-purs</loc>
-    <lastmod>2024-12-18</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.7</priority>
-    <xhtml:link rel="alternate" hreflang="lv" href="https://saimniekapirts.lv/vecmeitas-purs" />
-    <xhtml:link rel="alternate" hreflang="en" href="https://saimniekapirts.lv/vecmeitas-purs" />
-  </url>
-
-  <!-- Vīru Paka (Bachelor Party) -->
-  <url>
-    <loc>https://saimniekapirts.lv/viru-paka</loc>
-    <lastmod>2024-12-18</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.7</priority>
-    <xhtml:link rel="alternate" hreflang="lv" href="https://saimniekapirts.lv/viru-paka" />
-    <xhtml:link rel="alternate" hreflang="en" href="https://saimniekapirts.lv/viru-paka" />
-  </url>
-
-  <!-- Nakšņošana (Accommodation) -->
-  <url>
-    <loc>https://saimniekapirts.lv/naksnosana</loc>
-    <lastmod>2024-12-18</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.7</priority>
-    <xhtml:link rel="alternate" hreflang="lv" href="https://saimniekapirts.lv/naksnosana" />
-    <xhtml:link rel="alternate" hreflang="en" href="https://saimniekapirts.lv/naksnosana" />
-  </url>
-
-  <!-- Dāvanu Kartes (Gift Cards) -->
-  <url>
-    <loc>https://saimniekapirts.lv/davanu-kartes</loc>
-    <lastmod>2024-12-18</lastmod>
+    <lastmod>2026-09-01</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
-    <xhtml:link rel="alternate" hreflang="lv" href="https://saimniekapirts.lv/davanu-kartes" />
-    <xhtml:link rel="alternate" hreflang="en" href="https://saimniekapirts.lv/davanu-kartes" />
   </url>
-
-  <!-- Rezervēt (Reserve) -->
+  <url>
+    <loc>https://saimniekapirts.lv/viru-paka</loc>
+    <lastmod>2026-09-01</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://saimniekapirts.lv/naksnosana</loc>
+    <lastmod>2026-09-01</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://saimniekapirts.lv/davanu-kartes</loc>
+    <lastmod>2026-09-01</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
   <url>
     <loc>https://saimniekapirts.lv/rezervet</loc>
-    <lastmod>2024-12-18</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.9</priority>
-    <xhtml:link rel="alternate" hreflang="lv" href="https://saimniekapirts.lv/rezervet" />
-    <xhtml:link rel="alternate" hreflang="en" href="https://saimniekapirts.lv/rezervet" />
-  </url>
-
-  <!-- Iekšējās Kārtības Noteikumi (Internal Rules) -->
-  <url>
-    <loc>https://saimniekapirts.lv/ieksejas-kartibas-noteikumi</loc>
-    <lastmod>2024-12-18</lastmod>
-    <changefreq>yearly</changefreq>
-    <priority>0.4</priority>
-    <xhtml:link rel="alternate" hreflang="lv" href="https://saimniekapirts.lv/ieksejas-kartibas-noteikumi" />
-    <xhtml:link rel="alternate" hreflang="en" href="https://saimniekapirts.lv/ieksejas-kartibas-noteikumi" />
-  </url>
-
-  <!-- Privātuma Politika (Privacy Policy) -->
-  <url>
-    <loc>https://saimniekapirts.lv/privatuma-politika</loc>
-    <lastmod>2024-12-18</lastmod>
-    <changefreq>yearly</changefreq>
-    <priority>0.4</priority>
-    <xhtml:link rel="alternate" hreflang="lv" href="https://saimniekapirts.lv/privatuma-politika" />
-    <xhtml:link rel="alternate" hreflang="en" href="https://saimniekapirts.lv/privatuma-politika" />
+    <lastmod>2026-09-01</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
   </url>
 </urlset>

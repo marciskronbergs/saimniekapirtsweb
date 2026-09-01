@@ -1,0 +1,25 @@
+# SaimniekaPirts
+
+> Izbaudi autentiskos latviešu pirts rituālus ar sertificētiem pirtniekiem. Privāta pirts noma, zāļu kubli un īpaši pasākumi dabas sirdī.
+
+SaimniekaPirts ir tradicionāla latviskā pirts Baldonē, Ķekavas novadā. Pirts rituālus vada sertificēti pirtnieki.
+
+## Pakalpojumu lapas
+
+- [Pirts Rituāli - Tradicionālā Latviskā Pirts](https://saimniekapirts.lv/pirts-rituali): Sertificētu pirtnieku vadīti pirts rituāli individuāli, diviem vai ģimenei. Zāļu kubli, pērieni un atjaunojošas procedūras.
+- [Grupu Pirts Rituāli - Draugu Piedzīvojumi](https://saimniekapirts.lv/grupu-rituali): Pirts rituāli grupām līdz 10 personām. Dažādi pakalpojumu līmeņi - no draugu pirts līdz pilnam meistara rituālam.
+- [Pirts Noma - Privāta Pirts Atpūta](https://saimniekapirts.lv/pirts-noma): Iznomā Balto vai Pelēko pirti privātai atpūtai. Iespēja pievienot zāļu kublu. Ideāli ģimenēm un draugu kompānijām.
+- [Īpašie Pirts Piedzīvojumi - Svinīgi Pasākumi](https://saimniekapirts.lv/ipasiie-piedzivvojumi): Unikāli pirts piedzīvojumi īpašiem pasākumiem. Vecmeitu pūrs un vīru paka ar tradicionāliem rituāliem un svinīgu atmosfēru.
+- [Vecmeitas Pūrs - Tradicionālā Vecmeitu Ballīte](https://saimniekapirts.lv/vecmeitas-purs): Īpašs pirts rituāls vecmeitu ballītei ar tradicionāliem elementiem. Līgavas skaistumkopšana un draudzeņu saliedēšana.
+- [Vīru Paka - Tradicionālā Vecpuišu Ballīte](https://saimniekapirts.lv/viru-paka): Vīrišķīgs pirts piedzīvojums vecpuišu ballītei. Tradicionālie rituāli, pērieni un draudzīga atmosfēra līgavaiņa godināšanai.
+- [Nakšņošana - Ērta Naktsmītne pēc Pirts](https://saimniekapirts.lv/naksnosana): Paliec pa nakti pēc pirts rituāliem. Siltas un ērtas naktsmītnes Baltajā un Pelēkajā pirtī. Pagarini savu atpūtas pieredzi.
+- [Dāvanu Kartes - Perfekta Pirts Dāvana](https://saimniekapirts.lv/davanu-kartes): Iegādājies dāvanu karti pirts rituāliem un nomai. Izvēlies konkrētu rituālu vai pielāgotu vērtību. Tūlītēja piegāde uz e-pastu.
+- [Rezervēt - Pirts Rituālu Rezervācija](https://saimniekapirts.lv/rezervet): Rezervē pirts rituālus vai pirti nomai. Ērti rezervācijas kalendāri, kontaktinformācija un atrašanās vietas karte.
+
+## Kontakti
+
+- Adrese: Sarma Nr. 123, Baldones pagasts, Ķekavas novads, LV-2125, Latvija
+- Tālrunis: +371-26-752-661
+- E-pasts: info@saimniekapirts.lv
+- Darba laiks: Mo-Su 09:00-22:00
+- Valodas: latviešu, angļu

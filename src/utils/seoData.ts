@@ -214,11 +214,56 @@ export const seoData: Record<string, PageSEO> = {
       twitterTitle: 'Reserve - Sauna Ritual Booking',
       twitterDescription: 'Book sauna rituals or sauna rentals with convenient booking calendars.'
     }
+  },
+  '/ieksejas-kartibas-noteikumi': {
+    lv: {
+      title: 'Iekšējās Kārtības Noteikumi - SaimniekaPirts',
+      description: 'SaimniekaPirts apmeklējuma noteikumi: drošība pirtī un zāļu kublā, rezervāciju un atcelšanas kārtība, uzvedība teritorijā.',
+      keywords: 'iekšējās kārtības noteikumi, pirts noteikumi, drošības noteikumi, rezervācijas noteikumi',
+      ogTitle: 'Iekšējās Kārtības Noteikumi',
+      ogDescription: 'SaimniekaPirts apmeklējuma noteikumi: drošība, rezervāciju un atcelšanas kārtība.',
+      twitterTitle: 'Iekšējās Kārtības Noteikumi',
+      twitterDescription: 'SaimniekaPirts apmeklējuma un drošības noteikumi.'
+    },
+    en: {
+      title: 'House Rules - SaimniekaPirts',
+      description: 'SaimniekaPirts house rules: safety in the sauna and herbal hot tub, booking and cancellation terms, conduct on the premises.',
+      keywords: 'house rules, sauna rules, safety rules, booking terms',
+      ogTitle: 'House Rules',
+      ogDescription: 'SaimniekaPirts house rules: safety, booking and cancellation terms.',
+      twitterTitle: 'House Rules',
+      twitterDescription: 'SaimniekaPirts visitor and safety rules.'
+    }
+  },
+  '/privatuma-politika': {
+    lv: {
+      title: 'Privātuma Politika - SaimniekaPirts',
+      description: 'Kā SaimniekaPirts apstrādā un glabā rezervācijās norādītos personas datus, un kādas ir jūsu tiesības attiecībā uz tiem.',
+      keywords: 'privātuma politika, personas datu apstrāde, sīkdatnes, GDPR',
+      ogTitle: 'Privātuma Politika',
+      ogDescription: 'Kā SaimniekaPirts apstrādā rezervācijās norādītos personas datus un kādas ir jūsu tiesības.',
+      twitterTitle: 'Privātuma Politika',
+      twitterDescription: 'SaimniekaPirts personas datu apstrādes principi.'
+    },
+    en: {
+      title: 'Privacy Policy - SaimniekaPirts',
+      description: 'How SaimniekaPirts processes and stores the personal data given when booking, and what rights you have over it.',
+      keywords: 'privacy policy, personal data processing, cookies, GDPR',
+      ogTitle: 'Privacy Policy',
+      ogDescription: 'How SaimniekaPirts processes the personal data given when booking, and your rights.',
+      twitterTitle: 'Privacy Policy',
+      twitterDescription: 'SaimniekaPirts personal data processing principles.'
+    }
   }
 };
 
 // Function to get current page SEO data
 export const getCurrentPageSEO = (pathname: string, language: 'lv' | 'en'): SEOData => {
-  const pageSEO = seoData[pathname] || seoData['/'];
+  // Since every route is prerendered to its own directory, the same page is
+  // reachable as /pirts-rituali and /pirts-rituali/. Without trimming the
+  // trailing slash the second form finds no entry above, and the page
+  // silently adopts the homepage title, description and canonical.
+  const normalized = pathname.length > 1 ? pathname.replace(/\/+$/, '') : pathname;
+  const pageSEO = seoData[normalized] || seoData['/'];
   return pageSEO[language];
 };
