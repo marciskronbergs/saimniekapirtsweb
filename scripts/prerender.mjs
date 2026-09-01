@@ -21,7 +21,21 @@ import { build } from 'esbuild'
 
 const DIST = 'dist'
 const ORIGIN = 'https://saimniekapirts.lv'
-const LOCALES = 'src/i18n/locales/lv'
+const LANGUAGES = ['lv', 'en']
+const localeDir = (language) => `src/i18n/locales/${language}`
+
+/** Latvian at /pirts-noma, English at /en/pirts-noma. Mirrors src/utils/locale.ts. */
+const pathForLanguage = (routePath, language) => {
+  const clean = routePath === '/' ? '' : routePath.replace(/\/+$/, '')
+  if (language === 'en') return clean ? `/en${clean}` : '/en'
+  return clean || '/'
+}
+const urlForLanguage = (routePath, language) => ORIGIN + pathForLanguage(routePath, language)
+
+const LABELS = {
+  lv: { contact: 'Kontakti', pages: 'Lapas', phone: 'Tālrunis', email: 'E-pasts' },
+  en: { contact: 'Contact', pages: 'Pages', phone: 'Phone', email: 'Email' },
+}
 
 const BUSINESS = {
   name: 'SaimniekaPirts',
@@ -78,9 +92,9 @@ async function loadSeoData() {
   return mod.seoData
 }
 
-function loadNamespace(name) {
+function loadNamespace(name, language) {
   try {
-    return JSON.parse(readFileSync(join(LOCALES, `${name}.json`), 'utf8'))
+    return JSON.parse(readFileSync(join(localeDir(language), `${name}.json`), 'utf8'))
   } catch {
     return null
   }
@@ -192,7 +206,7 @@ function localBusiness() {
   }
 }
 
-function schemaFor(route, seo, nsData) {
+function schemaFor(route, seo, nsData, language) {
   const graph = []
 
   if (route.home) {
@@ -211,8 +225,18 @@ function schemaFor(route, seo, nsData) {
       '@context': 'https://schema.org',
       '@type': 'BreadcrumbList',
       itemListElement: [
-        { '@type': 'ListItem', position: 1, name: 'Sākums', item: ORIGIN + '/' },
-        { '@type': 'ListItem', position: 2, name: seo.title.split(' - ')[0], item: ORIGIN + route.path },
+        {
+          '@type': 'ListItem',
+          position: 1,
+          name: language === 'en' ? 'Home' : 'Sākums',
+          item: urlForLanguage('/', language),
+        },
+        {
+          '@type': 'ListItem',
+          position: 2,
+          name: seo.title.split(' - ')[0],
+          item: urlForLanguage(route.path, language),
+        },
       ],
     })
   }
@@ -225,7 +249,7 @@ function schemaFor(route, seo, nsData) {
       '@type': 'Service',
       name: seo.title.split(' - ')[0],
       description: seo.description,
-      url: ORIGIN + route.path,
+      url: urlForLanguage(route.path, language),
       serviceType: seo.title.split(' - ')[0],
       provider: { '@id': `${ORIGIN}/#business` },
       areaServed: { '@type': 'Country', name: 'Latvia' },
@@ -236,7 +260,7 @@ function schemaFor(route, seo, nsData) {
         priceCurrency: 'EUR',
         price: String(from),
         availability: 'https://schema.org/InStock',
-        url: `${ORIGIN}/rezervet`,
+        url: urlForLanguage('/rezervet', language),
       }
     }
     graph.push(service)
@@ -245,13 +269,23 @@ function schemaFor(route, seo, nsData) {
   return graph
 }
 
-function documentFor({ route, seo, head, body, schema }) {
-  const url = ORIGIN + (route.path === '/' ? '/' : route.path)
+function documentFor({ route, seo, head, body, schema, language }) {
+  const url = urlForLanguage(route.path, language)
   const robots = route.noindexHint
     ? 'noindex, follow'
     : 'index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1'
 
+  const alternates = [
+    ['lv', urlForLanguage(route.path, 'lv')],
+    ['en', urlForLanguage(route.path, 'en')],
+    ['x-default', urlForLanguage(route.path, 'lv')],
+  ]
+    .map(([hl, href]) => `<link rel="alternate" hreflang="${hl}" href="${href}" />`)
+    .join('\n    ')
+
   const tags = [
+    alternates,
+    `<meta property="og:locale" content="${language === 'en' ? 'en_US' : 'lv_LV'}" />`,
     `<title>${esc(seo.title)}</title>`,
     `<meta name="description" content="${esc(seo.description)}" />`,
     `<meta name="keywords" content="${esc(seo.keywords)}" />`,
@@ -281,11 +315,14 @@ function documentFor({ route, seo, head, body, schema }) {
     .replace(/<meta\s+property="og:type"[^>]*>/g, '')
     .replace(/<meta\s+name="twitter:title"[^>]*>/g, '')
     .replace(/<meta\s+name="twitter:description"[^>]*>/g, '')
-    // The old cluster pointed every language at the same URL, which says nothing.
+    .replace(/<meta\s+property="og:locale"[^>]*>/g, '')
+    // The shell's cluster pointed every language at one URL; these are rebuilt
+    // above now that each language has its own address.
     .replace(/<link\s+rel="alternate"[^>]*>/g, '')
     // The homepage LocalBusiness block is replaced by the per-route graph.
     .replace(/<script type="application\/ld\+json">[\s\S]*?<\/script>/g, '')
     .replace('</head>', `  ${tags}\n  </head>`)
+    .replace(/<html lang="[^"]*"/, `<html lang="${language}"`)
 
   return out.replace(
     /<div id="root"><\/div>/,
@@ -299,60 +336,80 @@ const seoData = await loadSeoData()
 const shell = readFileSync(join(DIST, 'index.html'), 'utf8')
 const written = []
 
-for (const route of ROUTES) {
-  const seo = seoData[route.path]?.lv
-  if (!seo) {
-    console.error(`  ! no SEO entry for ${route.path}, skipping`)
-    continue
+for (const language of LANGUAGES) {
+  const label = LABELS[language]
+
+  for (const route of ROUTES) {
+    const seo = seoData[route.path]?.[language]
+    if (!seo) {
+      console.error(`  ! no ${language} SEO entry for ${route.path}, skipping`)
+      continue
+    }
+
+    const namespaces = route.ns.map((n) => loadNamespace(n, language)).filter(Boolean)
+    const sections = namespaces.map((n) => renderNamespace(n)).join('\n      ')
+
+    const nav = ROUTES.filter((r) => r.path !== route.path)
+      .map((r) => {
+        const name = seoData[r.path]?.[language].title.split(' - ')[0] ?? r.path
+        return `<li><a href="${pathForLanguage(r.path, language)}">${esc(name)}</a></li>`
+      })
+      .join('')
+
+    const body = [
+      `<h1>${esc(seo.ogTitle)}</h1>`,
+      `<p>${esc(seo.description)}</p>`,
+      sections,
+      `<h2>${label.contact}</h2>`,
+      `<address>${esc(BUSINESS.name)}, ${esc(BUSINESS.street)}, ${esc(BUSINESS.locality)}, ` +
+        `${esc(BUSINESS.postal)}, Latvia. ` +
+        `${label.phone}: <a href="tel:${BUSINESS.phone.replace(/-/g, '')}">${esc(BUSINESS.phone)}</a>. ` +
+        `${label.email}: <a href="mailto:${BUSINESS.email}">${esc(BUSINESS.email)}</a>.</address>`,
+      `<nav aria-label="${label.pages}"><ul>${nav}</ul></nav>`,
+    ].join('\n      ')
+
+    const html = documentFor({
+      route,
+      seo,
+      head: shell,
+      body,
+      schema: schemaFor(route, seo, namespaces, language),
+      language,
+    })
+
+    const urlPath = pathForLanguage(route.path, language)
+    const target =
+      urlPath === '/' ? join(DIST, 'index.html') : join(DIST, urlPath, 'index.html')
+    mkdirSync(dirname(target), { recursive: true })
+    writeFileSync(target, html)
+    written.push({ path: urlPath, bytes: html.length })
   }
-
-  const namespaces = route.ns.map(loadNamespace).filter(Boolean)
-  const sections = namespaces.map((n) => renderNamespace(n)).join('\n      ')
-
-  const nav = ROUTES.filter((r) => r.path !== route.path)
-    .map((r) => `<li><a href="${r.path}">${esc(seoData[r.path]?.lv.title.split(' - ')[0] ?? r.path)}</a></li>`)
-    .join('')
-
-  const body = [
-    `<h1>${esc(seo.ogTitle)}</h1>`,
-    `<p>${esc(seo.description)}</p>`,
-    sections,
-    `<h2>Kontakti</h2>`,
-    `<address>${esc(BUSINESS.name)}, ${esc(BUSINESS.street)}, ${esc(BUSINESS.locality)}, ${esc(BUSINESS.postal)}, Latvija. ` +
-      `Tālrunis: <a href="tel:${BUSINESS.phone.replace(/-/g, '')}">${esc(BUSINESS.phone)}</a>. ` +
-      `E-pasts: <a href="mailto:${BUSINESS.email}">${esc(BUSINESS.email)}</a>.</address>`,
-    `<nav aria-label="Lapas"><ul>${nav}</ul></nav>`,
-  ].join('\n      ')
-
-  const html = documentFor({
-    route,
-    seo,
-    head: shell,
-    body,
-    schema: schemaFor(route, seo, namespaces),
-  })
-
-  const target =
-    route.path === '/' ? join(DIST, 'index.html') : join(DIST, route.path, 'index.html')
-  mkdirSync(dirname(target), { recursive: true })
-  writeFileSync(target, html)
-  written.push({ path: route.path, bytes: html.length })
 }
 
 // A sitemap generated here can never list a route that was not prerendered.
 const today = new Date().toISOString().slice(0, 10)
+const indexable = ROUTES.filter((r) => !r.noindexHint)
 const sitemap = [
   '<?xml version="1.0" encoding="UTF-8"?>',
-  '<urlset xmlns="http://www.sitemap.org/schemas/sitemap/0.9">'.replace('www.sitemap.org', 'www.sitemaps.org'),
-  ...ROUTES.filter((r) => !r.noindexHint).map((r) =>
-    [
-      '  <url>',
-      `    <loc>${ORIGIN}${r.path === '/' ? '/' : r.path}</loc>`,
-      `    <lastmod>${today}</lastmod>`,
-      `    <changefreq>${r.home ? 'weekly' : 'monthly'}</changefreq>`,
-      `    <priority>${r.home ? '1.0' : r.service ? '0.8' : '0.6'}</priority>`,
-      '  </url>',
-    ].join('\n')
+  '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:xhtml="http://www.w3.org/1999/xhtml">',
+  ...LANGUAGES.flatMap((language) =>
+    indexable.map((r) =>
+      [
+        '  <url>',
+        `    <loc>${urlForLanguage(r.path, language)}</loc>`,
+        // Each entry names both languages, which is how the pair is declared
+        // to search engines from the sitemap side as well as from the markup.
+        ...LANGUAGES.map(
+          (alt) =>
+            `    <xhtml:link rel="alternate" hreflang="${alt}" href="${urlForLanguage(r.path, alt)}"/>`
+        ),
+        `    <xhtml:link rel="alternate" hreflang="x-default" href="${urlForLanguage(r.path, 'lv')}"/>`,
+        `    <lastmod>${today}</lastmod>`,
+        `    <changefreq>${r.home ? 'weekly' : 'monthly'}</changefreq>`,
+        `    <priority>${r.home ? '1.0' : r.service ? '0.8' : '0.6'}</priority>`,
+        '  </url>',
+      ].join('\n')
+    )
   ),
   '</urlset>',
 ].join('\n')
@@ -368,10 +425,20 @@ const llms = [
   '',
   `${BUSINESS.name} ir tradicionāla latviskā pirts Baldonē, Ķekavas novadā. Pirts rituālus vada sertificēti pirtnieki.`,
   '',
-  '## Pakalpojumu lapas',
+  '## Pakalpojumu lapas / Service pages (LV)',
   '',
-  ...ROUTES.filter((r) => !r.noindexHint && !r.home).map(
-    (r) => `- [${seoData[r.path].lv.ogTitle}](${ORIGIN}${r.path}): ${seoData[r.path].lv.description}`
+  ...indexable
+    .filter((r) => !r.home)
+    .map(
+      (r) =>
+        `- [${seoData[r.path].lv.ogTitle}](${urlForLanguage(r.path, 'lv')}): ${seoData[r.path].lv.description}`
+    ),
+  '',
+  '## English pages',
+  '',
+  ...indexable.map(
+    (r) =>
+      `- [${seoData[r.path].en.ogTitle}](${urlForLanguage(r.path, 'en')}): ${seoData[r.path].en.description}`
   ),
   '',
   '## Kontakti',

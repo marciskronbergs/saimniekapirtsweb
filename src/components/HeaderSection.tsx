@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useLocation, Link } from 'react-router-dom';
 import { Phone, MessageCircle, Menu, X, ChevronDown, Globe } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import { pathForLanguage, routePathOf, type Language } from '../utils/locale';
 
 const HeaderSection = () => {
   const [isScrolled, setIsScrolled] = useState(false);
@@ -56,12 +57,22 @@ const HeaderSection = () => {
   };
 
   const handleLanguageChange = async (languageCode: string) => {
-    i18n.changeLanguage(languageCode);
-    
-    // Update SEO when language changes
+    const language = languageCode as Language;
+    const target = pathForLanguage(routePathOf(window.location.pathname), language);
+
+    // Each language has its own address now, so switching is a navigation. A
+    // full load rebuilds the router with the right basename, which keeps every
+    // in-app link pointing at the language the visitor is actually reading.
+    if (target !== window.location.pathname) {
+      window.location.assign(target + window.location.search + window.location.hash);
+      return;
+    }
+
+    i18n.changeLanguage(language);
+
     const { seoManager } = await import('../utils/seoManager');
-    seoManager.updateSEO(location.pathname, languageCode as 'lv' | 'en');
-    
+    seoManager.updateSEO(location.pathname, language);
+
     setIsLanguageDropdownOpen(false);
   };
 

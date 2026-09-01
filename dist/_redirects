@@ -32,5 +32,8 @@ http://www.saimniekapirts.lv/*       https://saimniekapirts.lv/:splat  301!
 https://www.saimniekapirts.lv/*      https://saimniekapirts.lv/:splat  301!
 
 
-# SPA fallback for React/Vite routing
-/*  /index.html  200
+# SPA fallback for React/Vite routing. The English rule comes first so an
+# unknown /en address stays inside the English app instead of falling back to
+# the Latvian shell, where the router would match nothing.
+/en/*  /en/index.html  200
+/*     /index.html     200

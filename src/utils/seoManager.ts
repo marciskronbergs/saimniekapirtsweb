@@ -1,4 +1,5 @@
 import { getCurrentPageSEO } from './seoData';
+import { routePathOf, urlForLanguage } from './locale';
 
 export class SEOManager {
   private static instance: SEOManager;
@@ -55,17 +56,49 @@ export class SEOManager {
   }
 
   private updateCanonicalURL(pathname: string, language: 'lv' | 'en'): void {
+    // pathname comes from the router, so it never carries the /en basename --
+    // it is the route on its own, which is exactly what the URL helpers want.
+    const routePath = routePathOf(pathname);
+
     let canonicalLink = document.querySelector('link[rel="canonical"]') as HTMLLinkElement;
-    
+
     if (!canonicalLink) {
       canonicalLink = document.createElement('link');
       canonicalLink.rel = 'canonical';
       document.head.appendChild(canonicalLink);
     }
 
-    // Since all content is served on same URLs, canonical remains the same
-    const baseURL = 'https://saimniekapirts.lv';
-    canonicalLink.href = `${baseURL}${pathname}`;
+    canonicalLink.href = urlForLanguage(routePath, language);
+
+    this.updateAlternates(routePath);
+  }
+
+  /**
+   * Each language now has its own address, so the two can finally point at each
+   * other. The previous markup declared lv, en and x-default as three names for
+   * one URL, which told search engines nothing about the English pages.
+   */
+  private updateAlternates(routePath: string): void {
+    const alternates: Array<[string, string]> = [
+      ['lv', urlForLanguage(routePath, 'lv')],
+      ['en', urlForLanguage(routePath, 'en')],
+      ['x-default', urlForLanguage(routePath, 'lv')],
+    ];
+
+    for (const [hreflang, href] of alternates) {
+      let link = document.querySelector(
+        `link[rel="alternate"][hreflang="${hreflang}"]`
+      ) as HTMLLinkElement;
+
+      if (!link) {
+        link = document.createElement('link');
+        link.rel = 'alternate';
+        link.hreflang = hreflang;
+        document.head.appendChild(link);
+      }
+
+      link.href = href;
+    }
   }
 
   public getCurrentLanguage(): 'lv' | 'en' {

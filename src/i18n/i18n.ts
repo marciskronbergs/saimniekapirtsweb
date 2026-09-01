@@ -112,7 +112,7 @@ i18n
     resources,
     lng: 'lv', // default language
     fallbackLng: 'en',
-    debug: true, // Enable debugging to see what's happening
+    debug: false,
     interpolation: {
       escapeValue: false
     }
