@@ -98,8 +98,8 @@ const PopupWrapper: React.FC<PopupWrapperProps> = ({ isOpen, onClose, formType }
 
         {/* Selected date and the bookable times, pinned above the scroll area on
             phones so they stay readable while the calendar and form scroll. */}
-        <div className="lg:hidden shrink-0 border-b border-green-500/25 bg-[#0d0d0d] px-4 pt-4 pb-3">
-          <div className="flex items-center gap-2 mb-2 pr-12">
+        <div className="lg:hidden shrink-0 border-b border-green-500/25 bg-[#0d0d0d] pl-4 pr-16 pt-4 pb-3">
+          <div className="flex items-center gap-2 mb-2">
             {selectedDate ? (
               <>
                 <CalendarDays className="w-4 h-4 text-green-400 shrink-0" />
