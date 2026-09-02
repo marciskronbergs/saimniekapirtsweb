@@ -1,6 +1,9 @@
-import React, { useEffect } from 'react';
-import { X } from 'lucide-react';
+import React, { useEffect, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
+import { X, CalendarDays, Clock } from 'lucide-react';
 import CalendarCode from './CalendarCode';
+import TimeSlotPicker from './TimeSlotPicker';
+import { useSlotAvailability } from './timeSlots';
 import FormRitual from './FormRitual';
 import FormNoma from './FormNoma';
 
@@ -11,8 +14,45 @@ interface PopupWrapperProps {
 }
 
 const PopupWrapper: React.FC<PopupWrapperProps> = ({ isOpen, onClose, formType }) => {
+  const { t, i18n } = useTranslation('common');
   const [selectedDate, setSelectedDate] = React.useState<Date | null>(null);
   const [selectedTime, setSelectedTime] = React.useState<string | null>(null);
+  const availability = useSlotAvailability(selectedDate);
+  const formRef = useRef<HTMLDivElement>(null);
+
+  const monthNames = t('calendar.months', { returnObjects: true }) as string[];
+  const formatSelectedDate = (date: Date) => {
+    // A missing translation must not take the booking popup down with it.
+    const month = Array.isArray(monthNames) ? monthNames[date.getMonth()] : undefined;
+    if (!month) return date.toLocaleDateString();
+    return i18n.language === 'lv'
+      ? `${date.getDate()}. ${month.toLowerCase()}`
+      : `${month} ${date.getDate()}`;
+  };
+
+  // On phones the form sits below a full-height calendar, so once the time is
+  // set we bring it into view instead of leaving the visitor to guess.
+  // The jump is deliberate rather than animated: picking a time reflows the
+  // form (the notice goes, the overnight option arrives) and a smooth scroll
+  // running through that reflow stops short of the form. It moves the popup's
+  // own scroll area, not scrollIntoView, which also reaches the overlay behind.
+  const handleTimeChange = (time: string | null) => {
+    setSelectedTime(time);
+    if (!time || !window.matchMedia('(max-width: 1023px)').matches) return;
+
+    requestAnimationFrame(() =>
+      requestAnimationFrame(() => {
+        const form = formRef.current;
+        const scroller = form?.parentElement;
+        if (!form || !scroller) return;
+        const top =
+          scroller.scrollTop +
+          form.getBoundingClientRect().top -
+          scroller.getBoundingClientRect().top;
+        scroller.scrollTo({ top });
+      })
+    );
+  };
 
   useEffect(() => {
     const handleEscape = (e: KeyboardEvent) => {
@@ -56,28 +96,61 @@ const PopupWrapper: React.FC<PopupWrapperProps> = ({ isOpen, onClose, formType }
           <X className="w-5 h-5 text-gray-300" />
         </button>
 
-        {/* Content Area (scrollable on mobile) */}
-        <div className="flex flex-col lg:grid lg:grid-cols-2 h-full overflow-y-auto">
+        {/* Selected date and the bookable times, pinned above the scroll area on
+            phones so they stay readable while the calendar and form scroll. */}
+        <div className="lg:hidden shrink-0 border-b border-green-500/25 bg-[#0d0d0d] px-4 pt-4 pb-3">
+          <div className="flex items-center gap-2 mb-2 pr-12">
+            {selectedDate ? (
+              <>
+                <CalendarDays className="w-4 h-4 text-green-400 shrink-0" />
+                <span className="text-sm font-semibold text-white truncate">
+                  {formatSelectedDate(selectedDate)}
+                </span>
+                <Clock className="w-4 h-4 text-green-400 shrink-0 ml-1" />
+                <span className="text-sm text-gray-400">
+                  {selectedTime ?? t('calendar.select_time')}
+                </span>
+              </>
+            ) : (
+              <>
+                <CalendarDays className="w-4 h-4 text-green-400 shrink-0" />
+                <span className="text-sm text-gray-400">{t('calendar.pick_date_first')}</span>
+              </>
+            )}
+          </div>
+
+          <TimeSlotPicker
+            variant="bar"
+            selectedTime={selectedTime}
+            onTimeChange={handleTimeChange}
+            availability={availability}
+            disabled={!selectedDate}
+          />
+        </div>
+
+        {/* Content Area (one scroll region on phones, two columns on desktop) */}
+        <div className="flex-1 min-h-0 flex flex-col lg:grid lg:grid-cols-2 overflow-y-auto custom-scroll">
           {/* Left: Calendar */}
-          <div className="p-4 sm:p-6 overflow-y-auto custom-scroll w-full max-w-full">
-            <CalendarCode 
+          <div className="p-4 sm:p-6 shrink-0 lg:overflow-y-auto custom-scroll w-full max-w-full">
+            <CalendarCode
               selectedDate={selectedDate}
               selectedTime={selectedTime}
               onDateChange={setSelectedDate}
-              onTimeChange={setSelectedTime}
+              onTimeChange={handleTimeChange}
+              availability={availability}
             />
           </div>
 
           {/* Right: Form */}
-          <div className="p-4 sm:p-6 overflow-y-auto custom-scroll">
+          <div ref={formRef} className="p-4 sm:p-6 shrink-0 lg:overflow-y-auto custom-scroll">
             {formType === 'noma' ? (
-              <FormNoma 
+              <FormNoma
                 selectedDate={selectedDate}
                 selectedTime={selectedTime}
                 onClose={onClose}
               />
             ) : (
-              <FormRitual 
+              <FormRitual
                 selectedDate={selectedDate}
                 selectedTime={selectedTime}
                 onClose={onClose}

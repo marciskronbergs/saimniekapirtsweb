@@ -8,7 +8,8 @@
     "today": "Šodien",
     "available": "Pieejams",
     "unavailable": "Nav pieejams",
-    "please_select_date_time": "Lūdzu izvēlieties datumu un laiku kreisajā pusē",
+    "please_select_date_time": "Lūdzu izvēlieties datumu un laiku kalendārā",
+    "pick_date_first": "Vispirms izvēlieties datumu kalendārā",
     "no_availability": "Nav pieejamības izvēlētajam laikam"
   }
 }

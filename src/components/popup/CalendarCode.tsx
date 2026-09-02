@@ -1,94 +1,29 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ChevronLeft, ChevronRight, Calendar, Clock } from 'lucide-react';
-import { supabase } from '../../lib/supabase';
+import TimeSlotPicker from './TimeSlotPicker';
+import { SlotAvailability } from './timeSlots';
 
 interface CalendarCodeProps {
   selectedDate: Date | null;
   selectedTime: string | null;
   onDateChange: (date: Date | null) => void;
   onTimeChange: (time: string | null) => void;
+  availability: SlotAvailability;
 }
-
-type Availability = { [time: string]: number };
-
-const timeSlots = ['12:00', '17:00', '18:00'];
-const maxPerSlot = 2;
 
 const CalendarCode: React.FC<CalendarCodeProps> = ({
   selectedDate,
   selectedTime,
   onDateChange,
   onTimeChange,
+  availability,
 }) => {
    const { t } = useTranslation('common');
   const [currentDate, setCurrentDate] = useState(new Date());
-  const [availability, setAvailability] = useState<Availability>({});
   const today = new Date();
   const maxDate = new Date();
   maxDate.setFullYear(today.getFullYear() + 1);
-
-  useEffect(() => {
-    if (!selectedDate) return;
-    const isoDate = selectedDate.toLocaleDateString('en-CA'); // e.g. "2025-07-14"
-    (async () => {
-      const { data, error } = await supabase
-        .from('reservations')
-        .select('reservation_time')
-        .eq('reservation_date', isoDate);
-
-      if (error) {
-        console.error(error);
-        return;
-      }
-
-      const counts: Availability = {};
-      data?.forEach((r) => {
-        const time = r.reservation_time as string;
-        counts[time] = (counts[time] || 0) + 1;
-      });
-
-      setAvailability(counts);
-    })();
-  }, [selectedDate]);
-
-  const isTimeAvailable = (time: string): boolean => {
-    if (!selectedDate) return false;
-
-    const now = new Date();
-    const dateStr = selectedDate.toLocaleDateString('en-CA'); // "YYYY-MM-DD"
-const slotDateTime = new Date(`${dateStr}T${time}:00`);
-    if (slotDateTime.getTime() - now.getTime() < 24 * 60 * 60 * 1000) return false;
-
-    if (time === '17:00' || time === '18:00') {
-      const eveningTotal = (availability['17:00'] ?? 0) + (availability['18:00'] ?? 0);
-      return eveningTotal < maxPerSlot;
-    }
-
-    const count = availability[time] ?? 0;
-    return count < maxPerSlot;
-  };
-
-  const getBadgeColor = (time: string): string => {
-  if (!selectedDate) return 'red';
-
-  const now = new Date();
-  const slotDateTime = new Date(`${selectedDate.toDateString()} ${time}`);
-
-  if (slotDateTime.getTime() - now.getTime() < 24 * 60 * 60 * 1000) return 'red';
-
-  if (time === '17:00' || time === '18:00') {
-    const eveningCount = (availability['17:00'] ?? 0) + (availability['18:00'] ?? 0);
-    if (eveningCount >= maxPerSlot) return 'red';
-    if (eveningCount === 1) return 'yellow';
-    return 'green';
-  }
-
-  const count = availability[time] ?? 0;
-  if (count >= maxPerSlot) return 'red';
-  if (count === 1) return 'yellow';
-  return 'green';
-};
 
   const generateCalendarDays = () => {
     const year = currentDate.getFullYear();
@@ -152,7 +87,7 @@ const slotDateTime = new Date(`${dateStr}T${time}:00`);
   const dayNames = t('calendar.weekdays', { returnObjects: true }) as string[];
 
   return (
-    <div className="relative max-h-[80vh] overflow-y-auto pr-3 custom-scroll">
+    <div className="relative lg:max-h-[80vh] lg:overflow-y-auto lg:pr-3 custom-scroll">
       <div className="space-y-5 text-sm">
         {/* Header */}
         <div className="flex items-center gap-2 mb-2">
@@ -206,45 +141,20 @@ const slotDateTime = new Date(`${dateStr}T${time}:00`);
           ))}
         </div>
 
-        {/* Time Slots */}
+        {/* Time Slots - phones render these in the popup header instead, so they
+            stay visible while the calendar and the form scroll past. */}
         {selectedDate && (
-          <div className="space-y-3">
+          <div className="hidden lg:block space-y-3">
             <div className="flex items-center gap-2">
               <Clock className="w-5 h-5 text-green-400" />
               <h3 className="text-lg font-semibold text-white">{t('calendar.select_time')}</h3>
             </div>
 
-            <div className="flex gap-2">
-              {timeSlots.map((time) => {
-                const available = isTimeAvailable(time);
-                const badgeColor = getBadgeColor(time);
-                return (
-                  <button
-                    key={time}
-                    onClick={() => available && onTimeChange(time)}
-                    disabled={!available}
-                    className={`relative flex-1 py-2 px-3 rounded-md text-sm font-medium text-center transition
-                      ${selectedTime === time
-                        ? 'bg-green-600 text-white shadow-md shadow-green-500/20'
-                        : available
-                          ? 'bg-gray-800 text-gray-300 hover:bg-gray-700 hover:text-white'
-                          : 'bg-gray-700/50 text-gray-500 cursor-not-allowed line-through'}
-                    `}
-                  >
-                    {time}
-                    <span
-  className={`absolute top-1 right-2 w-2 h-2 rounded-full ${
-    badgeColor === 'green'
-      ? 'bg-green-400'
-      : badgeColor === 'yellow'
-      ? 'bg-yellow-400'
-      : 'bg-red-400'
-  }`}
-/>
-                  </button>
-                );
-              })}
-            </div>
+            <TimeSlotPicker
+              selectedTime={selectedTime}
+              onTimeChange={onTimeChange}
+              availability={availability}
+            />
           </div>
         )}
       </div>
