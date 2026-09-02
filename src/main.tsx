@@ -11,10 +11,24 @@ import { languageFromPath, routerBasename } from './utils/locale';
 const { pathname } = window.location;
 i18n.changeLanguage(languageFromPath(pathname));
 
-createRoot(document.getElementById('root')!).render(
+const app = (
   <StrictMode>
     <BrowserRouter basename={routerBasename(pathname)}>
       <App />
     </BrowserRouter>
   </StrictMode>
 );
+
+const root = createRoot(document.getElementById('root')!);
+
+// The phone preview is a development aid. The condition is replaced by `false`
+// when building, so the module below is dropped from the production bundle.
+const insidePreviewFrame = new URLSearchParams(window.location.search).has('__frame');
+
+if (import.meta.env.DEV && !insidePreviewFrame) {
+  import('./dev/DevicePreviewShell').then(({ default: DevicePreviewShell }) => {
+    root.render(<DevicePreviewShell>{app}</DevicePreviewShell>);
+  });
+} else {
+  root.render(app);
+}
