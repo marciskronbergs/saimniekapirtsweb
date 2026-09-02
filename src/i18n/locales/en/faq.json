@@ -10,8 +10,16 @@
           "answer": "Book through the \"Reserve\" page on this website or by calling +371 26 752 661. Start times are 12:00, 17:00 and 18:00. Bookings must be made at least 24 hours before the chosen time."
         },
         {
-          "question": "Is prepayment required?",
-          "answer": "Yes. The booked time is paid for in advance. By paying, the guest confirms they have read the house rules and agree to follow them."
+          "question": "How can I pay?",
+          "answer": "You can pay by bank transfer or in cash. A bank transfer is made before the visit; cash is paid after the sauna ritual. By paying, the guest confirms they have read the house rules and agree to follow them."
+        },
+        {
+          "question": "Can a booking be cancelled, and is the money refunded?",
+          "answer": "Cancel at least 5 days before the booked date and the payment is refunded in full. Cancelling between 5 days and 24 hours before the booked date, €50 is retained if the invoice is €150 or less, or €100 if the invoice is more than €150. If a booking is cancelled less than 24 hours before the booked date, the payment is not refunded."
+        },
+        {
+          "question": "Can a booking be moved to another time?",
+          "answer": "A booking can be moved free of charge at least 5 days before the booked date. Moving it between 5 days and 24 hours before the booked date costs €50. If the booking is moved less than 24 hours before the booked date, the amount paid is not refunded."
         }
       ]
     },

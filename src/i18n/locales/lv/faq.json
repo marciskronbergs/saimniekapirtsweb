@@ -10,8 +10,16 @@
           "answer": "Rezervāciju var veikt mājaslapas sadaļā \"Rezervēt\" vai zvanot uz +371 26 752 661. Pieejamie sākuma laiki ir 12:00, 17:00 un 18:00. Rezervācija jāveic vismaz 24 stundas pirms izvēlētā laika."
         },
         {
-          "question": "Vai jāveic priekšapmaksa?",
-          "answer": "Jā. Par rezervēto laiku tiek veikta priekšapmaksa pirms apmeklējuma. Veicot samaksu, apmeklētājs apliecina, ka ir iepazinies ar iekšējās kārtības noteikumiem un apņemas tos ievērot."
+          "question": "Kā var norēķināties?",
+          "answer": "Norēķināties var gan ar pārskaitījumu, gan skaidrā naudā. Ar pārskaitījumu samaksa tiek veikta pirms apmeklējuma, savukārt skaidrā naudā – pēc pirts rituāla. Veicot samaksu, apmeklētājs apliecina, ka ir iepazinies ar iekšējās kārtības noteikumiem un apņemas tos ievērot."
+        },
+        {
+          "question": "Vai rezervāciju var atcelt un vai naudu atgriež?",
+          "answer": "Ja rezervāciju atceļat ne vēlāk kā 5 diennaktis pirms rezervētā datuma, samaksa tiek atgriezta pilnā apmērā. Atceļot laikā no 5 diennaktīm līdz 24 stundām pirms rezervētā datuma, no samaksas tiek ieturēti 50 €, ja rēķina summa nepārsniedz 150 €, vai 100 €, ja rēķina summa pārsniedz 150 €. Ja rezervācija tiek atcelta mazāk nekā 24 stundas pirms rezervētā datuma, samaksa netiek atgriezta."
+        },
+        {
+          "question": "Vai rezervāciju var pārcelt uz citu laiku?",
+          "answer": "Ne vēlāk kā 5 diennaktis pirms rezervētā datuma rezervāciju var pārcelt bez papildu maksas. Pārceļot laikā no 5 diennaktīm līdz 24 stundām pirms rezervētā datuma, par pārcelšanu jāmaksā 50 €. Ja pārcelšana notiek mazāk nekā 24 stundas pirms rezervētā datuma, iemaksātā summa netiek atgriezta."
         }
       ]
     },
