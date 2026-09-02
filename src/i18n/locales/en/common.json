@@ -3,13 +3,41 @@
   "calendar": {
     "select_date": "Select Date",
     "select_time": "Select Time",
-    "weekdays": ["Mo", "Tu", "We", "Th", "Fr", "Sa", "Su"],
-    "months": ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"],
+    "weekdays": [
+      "Mo",
+      "Tu",
+      "We",
+      "Th",
+      "Fr",
+      "Sa",
+      "Su"
+    ],
+    "months": [
+      "January",
+      "February",
+      "March",
+      "April",
+      "May",
+      "June",
+      "July",
+      "August",
+      "September",
+      "October",
+      "November",
+      "December"
+    ],
     "today": "Today",
     "available": "Available",
     "unavailable": "Unavailable",
     "please_select_date_time": "Please select a date and time in the calendar",
     "pick_date_first": "First choose a date in the calendar",
     "no_availability": "No availability for selected time"
+  },
+  "imageAlt": {
+    "ritual": "Traditional Latvian sauna ritual",
+    "host": "Sauna host Mārcis Kronbergs",
+    "hostExtra": "Sauna master during a sauna ritual",
+    "group": "Group sauna ritual",
+    "herbTub": "Herbal hot tub"
   }
 }

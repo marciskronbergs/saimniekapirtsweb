@@ -7,6 +7,7 @@ const SaunaHost = () => {
   const [ritualsCount, setRitualsCount] = useState(0);
   const sectionRef = React.useRef<HTMLDivElement>(null);
   const { t } = useTranslation('rituali');
+  const { t: tCommon } = useTranslation('common');
 
   useEffect(() => {
     const observer = new IntersectionObserver(
@@ -82,7 +83,7 @@ const SaunaHost = () => {
           <div className="relative rounded-2xl overflow-hidden mb-8 lg:mb-0">
             <img
               src={mainImage}
-              alt="Pirts Saimnieks Mārcis Kronbergs"
+              alt={tCommon('imageAlt.host')}
               className="w-full h-[250px] sm:h-[300px] lg:h-[400px] object-cover transition-all duration-500"
             />
           </div>
@@ -136,7 +137,7 @@ const SaunaHost = () => {
           >
             <img
               src={image}
-              alt={`Pirts Saimnieks ${index + 2}`}
+              alt={`${tCommon('imageAlt.hostExtra')} ${index + 2}`}
               className="w-full h-full object-cover transition-all duration-300 hover:brightness-110"
             />
           </div>
@@ -155,7 +156,7 @@ const SaunaHost = () => {
             >
               <img
                 src={image}
-                alt={`Pirts Saimnieks ${index + 2}`}
+                alt={`${tCommon('imageAlt.hostExtra')} ${index + 2}`}
                 className="w-full h-full object-cover"
               />
             </div>

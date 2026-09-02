@@ -7,6 +7,7 @@ const RitualIntro = () => {
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const sectionRef = useRef<HTMLDivElement>(null);
   const { t } = useTranslation('rituali');
+  const { t: tCommon } = useTranslation('common');
 
   useEffect(() => {
     const observer = new IntersectionObserver(
@@ -107,7 +108,7 @@ const RitualIntro = () => {
               >
                 <img
                   src={image}
-                  alt={`Tradicionālais Pirts Rituāls ${index + 1}`}
+                  alt={`${tCommon('imageAlt.ritual')} ${index + 1}`}
                   className="w-full h-[300px] sm:h-[400px] object-cover"
                 />
               </div>
@@ -116,7 +117,7 @@ const RitualIntro = () => {
             {/* First image for layout */}
             <img
               src={images[0]}
-              alt="Tradicionālais Pirts Rituāls"
+              alt={tCommon('imageAlt.ritual')}
               className="w-full h-[300px] sm:h-[400px] object-cover opacity-0"
             />
 

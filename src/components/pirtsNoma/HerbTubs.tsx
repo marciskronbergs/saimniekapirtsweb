@@ -7,6 +7,7 @@ const HerbTubs = () => {
   const [isMobile, setIsMobile] = useState(false);
   const sectionRef = useRef<HTMLDivElement>(null);
   const { t } = useTranslation('noma');
+  const { t: tCommon } = useTranslation('common');
 
   useEffect(() => {
     // Check if mobile
@@ -129,7 +130,7 @@ const HerbTubs = () => {
               >
                 <img
                   src={image}
-                  alt={`Zāļu kubls ${index + 1}`}
+                  alt={`${tCommon('imageAlt.herbTub')} ${index + 1}`}
                   className="w-full h-64 md:h-80 object-cover group-hover:scale-110 transition-transform duration-700"
                   draggable={false}
                 />
@@ -139,7 +140,7 @@ const HerbTubs = () => {
             {/* First image for layout */}
             <img
               src={tubImages[0]}
-              alt="Zāļu kubls"
+              alt={tCommon('imageAlt.herbTub')}
               className="w-full h-64 md:h-80 object-cover opacity-0"
               draggable={false}
             />

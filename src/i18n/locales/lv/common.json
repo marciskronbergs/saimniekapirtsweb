@@ -3,13 +3,41 @@
   "calendar": {
     "select_date": "Izvēlieties datumu",
     "select_time": "Izvēlieties laiku",
-    "weekdays": ["P", "O", "T", "C", "Pk", "S", "Sv"],
-    "months": ["Janvāris", "Februāris", "Marts", "Aprīlis", "Maijs", "Jūnijs", "Jūlijs", "Augusts", "Septembris", "Oktobris", "Novembris", "Decembris"],
+    "weekdays": [
+      "P",
+      "O",
+      "T",
+      "C",
+      "Pk",
+      "S",
+      "Sv"
+    ],
+    "months": [
+      "Janvāris",
+      "Februāris",
+      "Marts",
+      "Aprīlis",
+      "Maijs",
+      "Jūnijs",
+      "Jūlijs",
+      "Augusts",
+      "Septembris",
+      "Oktobris",
+      "Novembris",
+      "Decembris"
+    ],
     "today": "Šodien",
     "available": "Pieejams",
     "unavailable": "Nav pieejams",
     "please_select_date_time": "Lūdzu izvēlieties datumu un laiku kalendārā",
     "pick_date_first": "Vispirms izvēlieties datumu kalendārā",
     "no_availability": "Nav pieejamības izvēlētajam laikam"
+  },
+  "imageAlt": {
+    "ritual": "Tradicionālais pirts rituāls",
+    "host": "Pirts saimnieks Mārcis Kronbergs",
+    "hostExtra": "Pirtnieks pirts rituāla laikā",
+    "group": "Grupas pirts rituāls",
+    "herbTub": "Zāļu kubls"
   }
 }

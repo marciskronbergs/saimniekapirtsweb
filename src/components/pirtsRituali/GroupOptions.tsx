@@ -9,6 +9,7 @@ const GroupOptions = () => {
   const sectionRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
   const { t } = useTranslation('rituali');
+  const { t: tCommon } = useTranslation('common');
 
   useEffect(() => {
     const observer = new IntersectionObserver(
@@ -51,7 +52,7 @@ const GroupOptions = () => {
         }`}>
           <img
             src="https://wigoyeorqnssgbrgexku.supabase.co/storage/v1/object/public/websiteassets/pirtnieki/grupu.png"
-            alt="Grupa pirtī"
+            alt={tCommon('imageAlt.group')}
             className="w-full h-64 sm:h-full object-cover rounded-2xl"
           />
         </div>
