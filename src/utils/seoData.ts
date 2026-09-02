@@ -215,6 +215,26 @@ export const seoData: Record<string, PageSEO> = {
       twitterDescription: 'Book sauna rituals or sauna rentals with convenient booking calendars.'
     }
   },
+  '/biezak-uzdotie-jautajumi': {
+    lv: {
+      title: 'Biežāk Uzdotie Jautājumi - Pirts Rituāli un Noma',
+      description: 'Cik ilgs ir pirts rituāls, cik tas maksā, ko ņemt līdzi, kā nokļūt no Rīgas un kad pirti apmeklēt nedrīkst. Atbildes uz biežākajiem jautājumiem.',
+      keywords: 'pirts rituāls cena, cik ilgs pirts rituāls, ko ņemt līdzi uz pirti, pirts noma cena, pirts noteikumi, dāvanu kartes derīgums, biežāk uzdotie jautājumi',
+      ogTitle: 'Biežāk Uzdotie Jautājumi par Pirts Rituāliem',
+      ogDescription: 'Rituāla ilgums un cenas, ko ņemt līdzi, kā nokļūt no Rīgas, drošības noteikumi un dāvanu karšu termiņi.',
+      twitterTitle: 'Biežāk Uzdotie Jautājumi',
+      twitterDescription: 'Atbildes par pirts rituālu ilgumu, cenām, nokļūšanu un noteikumiem.'
+    },
+    en: {
+      title: 'Frequently Asked Questions - Sauna Rituals and Rental',
+      description: 'How long a Latvian sauna ritual lasts, what it costs, what to bring, how to get there from Riga and when the sauna should not be visited.',
+      keywords: 'latvian sauna ritual price, how long is a sauna ritual, what to bring to sauna, sauna rental price, sauna rules, gift card validity, faq',
+      ogTitle: 'Frequently Asked Questions about Sauna Rituals',
+      ogDescription: 'Ritual length and prices, what to bring, getting there from Riga, safety rules and gift card validity.',
+      twitterTitle: 'Frequently Asked Questions',
+      twitterDescription: 'Answers on sauna ritual length, prices, getting there and the rules.'
+    }
+  },
   '/ieksejas-kartibas-noteikumi': {
     lv: {
       title: 'Iekšējās Kārtības Noteikumi - SaimniekaPirts',

@@ -17,6 +17,7 @@ import RezervetPage from './pages/RezervetPage';
 import IeksejasKartibasNoteikumiPage from './pages/IeksejasKartibasNoteikumiPage';
 import PrivacyPolicyPage from './pages/PrivacyPolicyPage';
 import GrupuRitualiPage from './pages/GrupuRitualiPage';
+import FaqPage from './pages/FaqPage';
 
 // Create a global popup context
 export const PopupContext = React.createContext<{
@@ -81,6 +82,7 @@ function App() {
         <Route path="/ieksejas-kartibas-noteikumi" element={<IeksejasKartibasNoteikumiPage />} />
         <Route path="/privatuma-politika" element={<PrivacyPolicyPage />} />
         <Route path="/grupu-rituali" element={<GrupuRitualiPage />} />
+        <Route path="/biezak-uzdotie-jautajumi" element={<FaqPage />} />
       </Routes>
     </PopupContext.Provider>
   );

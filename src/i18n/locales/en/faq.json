@@ -1,0 +1,103 @@
+{
+  "title": "Frequently Asked Questions",
+  "subtitle": "Answers to what guests ask before booking a sauna ritual or renting the sauna. If anything is unclear, call +371 26 752 661.",
+  "groups": [
+    {
+      "title": "Booking",
+      "items": [
+        {
+          "question": "How do I book a sauna ritual or the sauna?",
+          "answer": "Book through the \"Reserve\" page on this website or by calling +371 26 752 661. Start times are 12:00, 17:00 and 18:00. Bookings must be made at least 24 hours before the chosen time."
+        },
+        {
+          "question": "Is prepayment required?",
+          "answer": "Yes. The booked time is paid for in advance. By paying, the guest confirms they have read the house rules and agree to follow them."
+        }
+      ]
+    },
+    {
+      "title": "Duration and prices",
+      "items": [
+        {
+          "question": "How long does a sauna ritual last?",
+          "answer": "An individual sauna ritual lasts up to 3 hours. A ritual for a couple, a family or a group lasts up to 4 hours."
+        },
+        {
+          "question": "How much does a sauna ritual cost?",
+          "answer": "For one person, €220 to €280. For two, €300 to €360. For a larger party, €380. Group rituals start at €70 per person. The price includes the ritual led by a certified sauna master."
+        },
+        {
+          "question": "How much does it cost to rent the sauna without a ritual?",
+          "answer": "Without a herbal hot tub: 3 hours €80, 4 hours €90, 5 hours €120 to €140. With a herbal hot tub: 4 hours €150 to €170, 5 hours €200. Sauna whisks are available for €4."
+        },
+        {
+          "question": "How much does it cost to stay overnight?",
+          "answer": "Accommodation costs €19.99 per person, with a minimum of €36 per night."
+        }
+      ]
+    },
+    {
+      "title": "Practical information",
+      "items": [
+        {
+          "question": "How do I get there from Riga?",
+          "answer": "SaimniekaPirts is at \"Sarma Nr. 123\", Baldone parish, Ķekava municipality, LV-2125, Latvia. By public transport take the Riga – Baldone route; we can collect you from the bus station if you note it in the booking comments."
+        },
+        {
+          "question": "Is there parking?",
+          "answer": "Yes. The grounds are private and spacious with a paved driveway, so there is room even for a larger party."
+        },
+        {
+          "question": "Are towels and sheets provided?",
+          "answer": "For sauna rituals, towels and sheets are included in the price. For sauna rental they can be rented separately at €4 per towel."
+        },
+        {
+          "question": "Is food available on site?",
+          "answer": "We do not serve food, but you are welcome to bring your own."
+        },
+        {
+          "question": "What should I bring?",
+          "answer": "Rubber or pool slippers are recommended. Drink plenty of water the day before and on the day of the ritual, as the body loses a lot of fluid through sweating. The day before, it is best to avoid meat and heavy meals."
+        }
+      ]
+    },
+    {
+      "title": "Safety and health",
+      "items": [
+        {
+          "question": "Can I bring children?",
+          "answer": "Guests under 18 may visit only in the presence of and under the supervision of a parent or another adult."
+        },
+        {
+          "question": "When should the sauna not be visited?",
+          "answer": "The sauna must not be visited by anyone with a fever, conjunctivitis, skin or other contagious conditions, or open wounds, nor by anyone with cardiovascular disease or other health problems. Before the ritual, tell the sauna master about your health, any allergies and any medication you take."
+        },
+        {
+          "question": "Is alcohol allowed on the premises?",
+          "answer": "No. Bringing or consuming alcohol and other intoxicating substances on the premises is prohibited, and being under their influence is not permitted either."
+        },
+        {
+          "question": "How hot is the sauna?",
+          "answer": "The optimal temperature for whisking is around 60 °C. 95 °C is the critical limit for throwing steam, so steam is added carefully."
+        },
+        {
+          "question": "Who leads the sauna ritual?",
+          "answer": "Rituals are led by certified sauna masters. The host, Mārcis Kronbergs, studied for three years at sauna school, earned his certificate and has been leading rituals for more than 7 years."
+        }
+      ]
+    },
+    {
+      "title": "Gift cards",
+      "items": [
+        {
+          "question": "How long is a gift card valid?",
+          "answer": "A gift card is valid for one year from the date of purchase."
+        },
+        {
+          "question": "Can a gift card be extended?",
+          "answer": "Yes. Get in touch and we will extend it. What matters to us is that the gift is used and the person actually comes for their sauna ritual."
+        }
+      ]
+    }
+  ]
+}

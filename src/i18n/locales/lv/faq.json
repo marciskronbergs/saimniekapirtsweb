@@ -1,0 +1,103 @@
+{
+  "title": "Biežāk Uzdotie Jautājumi",
+  "subtitle": "Atbildes uz jautājumiem, ko klienti uzdod pirms pirts rituāla vai pirts nomas. Ja kaut kas nav skaidrs, zvaniet +371 26 752 661.",
+  "groups": [
+    {
+      "title": "Rezervācija",
+      "items": [
+        {
+          "question": "Kā rezervēt pirts rituālu vai pirti?",
+          "answer": "Rezervāciju var veikt mājaslapas sadaļā \"Rezervēt\" vai zvanot uz +371 26 752 661. Pieejamie sākuma laiki ir 12:00, 17:00 un 18:00. Rezervācija jāveic vismaz 24 stundas pirms izvēlētā laika."
+        },
+        {
+          "question": "Vai jāveic priekšapmaksa?",
+          "answer": "Jā. Par rezervēto laiku tiek veikta priekšapmaksa pirms apmeklējuma. Veicot samaksu, apmeklētājs apliecina, ka ir iepazinies ar iekšējās kārtības noteikumiem un apņemas tos ievērot."
+        }
+      ]
+    },
+    {
+      "title": "Ilgums un cenas",
+      "items": [
+        {
+          "question": "Cik ilgs ir pirts rituāls?",
+          "answer": "Individuālais pirts rituāls ilgst līdz 3 stundām. Rituāls pārim, ģimenei vai grupai ilgst līdz 4 stundām."
+        },
+        {
+          "question": "Cik maksā pirts rituāls?",
+          "answer": "Individuāli – 220 € līdz 280 €. Diviem – 300 € līdz 360 €. Lielākai kompānijai – 380 €. Grupu rituāli sākas no 70 € par personu. Cenā ietilpst sertificēta pirtnieka vadīts rituāls."
+        },
+        {
+          "question": "Cik maksā pirts noma bez rituāla?",
+          "answer": "Bez zāļu kubla: 3 stundas – 80 €, 4 stundas – 90 €, 5 stundas – 120 € līdz 140 €. Ar zāļu kublu: 4 stundas – 150 € līdz 170 €, 5 stundas – 200 €. Papildus var iegādāties pirts slotas (4 €)."
+        },
+        {
+          "question": "Cik maksā nakšņošana?",
+          "answer": "Nakšņošana maksā 19,99 € no cilvēka, ar minimālo summu 36 € par nakti."
+        }
+      ]
+    },
+    {
+      "title": "Praktiskā informācija",
+      "items": [
+        {
+          "question": "Kā nokļūt no Rīgas?",
+          "answer": "SaimniekaPirts atrodas adresē \"Sarma Nr. 123\", Baldones pagastā, Ķekavas novadā, LV-2125. Ar sabiedrisko transportu brauciet maršrutā Rīga – Baldone; mēs varam Jūs savākt autoostā, ja to norādāt rezervācijas komentāros."
+        },
+        {
+          "question": "Vai ir autostāvvieta?",
+          "answer": "Jā. Teritorija ir privāta un plaša, ar bruģētu iebrauktuvi, tāpēc vietas pietiek arī lielākai kompānijai."
+        },
+        {
+          "question": "Vai dvieļi un palagi ir nodrošināti?",
+          "answer": "Pirts rituālos dvieļi un palagi ir iekļauti cenā. Pirts nomā tos var papildus izīrēt – 4 € par dvieli."
+        },
+        {
+          "question": "Vai uz vietas ir ēdināšana?",
+          "answer": "Ēdināšana netiek nodrošināta, taču savu ēdienu drīkst ņemt līdzi."
+        },
+        {
+          "question": "Kas jāņem līdzi?",
+          "answer": "Ieteicams paņemt gumijas vai baseina čības. Dienā pirms rituāla un rituāla dienā dzeriet daudz ūdens, jo svīstot organisms zaudē daudz šķidruma. Dienu iepriekš ieteicams neēst gaļas produktus un smagu ēdienu."
+        }
+      ]
+    },
+    {
+      "title": "Drošība un veselība",
+      "items": [
+        {
+          "question": "Vai var ierasties ar bērniem?",
+          "answer": "Bērni līdz 18 gadu vecumam kompleksu var apmeklēt tikai vecāku vai citu pieaugušo klātbūtnē un uzraudzībā."
+        },
+        {
+          "question": "Kad pirti apmeklēt nedrīkst?",
+          "answer": "Apmeklējums ir aizliegts personām ar drudzi, konjunktivītu, ādas vai citām lipīgām slimībām un atklātām brūcēm, kā arī personām ar sirds un asinsvadu saslimšanām vai citiem veselības traucējumiem. Pirms rituāla par savu veselības stāvokli, alerģijām un lietotajiem medikamentiem jāinformē pirtnieks."
+        },
+        {
+          "question": "Vai teritorijā drīkst lietot alkoholu?",
+          "answer": "Nē. Alkoholu un citas apreibinošas vielas teritorijā ienest un lietot ir aizliegts, kā arī nav atļauts uzturēties to ietekmē."
+        },
+        {
+          "question": "Kāda ir temperatūra pirtī?",
+          "answer": "Optimālā pēršanas temperatūra ir ap 60 °C. 95 °C ir kritiskā robeža gara liešanai, tāpēc garu mest vajag uzmanīgi."
+        },
+        {
+          "question": "Kas vada pirts rituālu?",
+          "answer": "Rituālus vada sertificēti pirtnieki. Pirts saimnieks Mārcis Kronbergs trīs gadus mācījies pirts skolā, ieguvis sertifikātu un rituālus vada vairāk nekā 7 gadus."
+        }
+      ]
+    },
+    {
+      "title": "Dāvanu kartes",
+      "items": [
+        {
+          "question": "Kāds ir dāvanu kartes derīguma termiņš?",
+          "answer": "Dāvanu karte ir derīga vienu gadu no iegādes brīža."
+        },
+        {
+          "question": "Vai dāvanu kartes termiņu var pagarināt?",
+          "answer": "Jā. Sazinieties ar mums, un termiņu pagarināsim. Mums ir svarīgi, lai dāvana tiktu izmantota un cilvēks patiešām nonāktu uz pirts rituālu."
+        }
+      ]
+    }
+  ]
+}

@@ -64,6 +64,7 @@ const ROUTES = [
   { path: '/naksnosana', ns: ['accommodation'], service: true },
   { path: '/davanu-kartes', ns: ['giftcards'], service: true },
   { path: '/rezervet', ns: ['reserve'] },
+  { path: '/biezak-uzdotie-jautajumi', ns: ['faq'], faq: true },
   { path: '/ieksejas-kartibas-noteikumi', ns: ['rules'], noindexHint: true },
   { path: '/privatuma-politika', ns: ['privacy'], noindexHint: true },
 ]
@@ -239,6 +240,24 @@ function schemaFor(route, seo, nsData, language) {
         },
       ],
     })
+  }
+
+  if (route.faq) {
+    const groups = nsData.flatMap((n) => n.groups ?? [])
+    const questions = groups.flatMap((g) => g.items ?? [])
+    if (questions.length) {
+      graph.push({
+        '@context': 'https://schema.org',
+        '@type': 'FAQPage',
+        '@id': `${urlForLanguage(route.path, language)}#faq`,
+        inLanguage: language,
+        mainEntity: questions.map((q) => ({
+          '@type': 'Question',
+          name: q.question,
+          acceptedAnswer: { '@type': 'Answer', text: q.answer },
+        })),
+      })
+    }
   }
 
   if (route.service) {

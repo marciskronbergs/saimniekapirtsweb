@@ -42,6 +42,7 @@ const FooterSection = () => {
   ];
 
   const polisesLinks = [
+    { name: t('policies.faq'), path: '/biezak-uzdotie-jautajumi' },
     { name: t('policies.privacy'), path: '#' },
     { name: t('policies.rules'), path: '/ieksejas-kartibas-noteikumi' }
   ];

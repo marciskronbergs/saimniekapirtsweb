@@ -36,12 +36,12 @@ import enForms from './locales/en/forms.json';
 import lvForms from './locales/lv/forms.json';
 import enReserve from './locales/en/reserve.json';
 import lvReserve from './locales/lv/reserve.json';
+import enFaq from './locales/en/faq.json';
+import lvFaq from './locales/lv/faq.json';
 import enPrivacy from './locales/en/privacy.json';
 import lvPrivacy from './locales/lv/privacy.json';
 import enRules from './locales/en/rules.json';
 import lvRules from './locales/lv/rules.json';
-import enPrivacy from './locales/en/privacy.json';
-import lvPrivacy from './locales/lv/privacy.json';
 import enGroupRituals from './locales/en/groupRituals.json';
 import lvGroupRituals from './locales/lv/groupRituals.json';
 import enReviews from './locales/en/reviews.json';
@@ -50,8 +50,6 @@ import enLocation from './locales/en/location.json';
 import lvLocation from './locales/lv/location.json';
 import enCommon from './locales/en/common.json';
 import lvCommon from './locales/lv/common.json';
-import enLocation from './locales/en/location.json';
-import lvLocation from './locales/lv/location.json';
 
 const resources = {
   en: {
@@ -74,6 +72,7 @@ const resources = {
     reserve: enReserve,
     rules: enRules,
     privacy: enPrivacy,
+    faq: enFaq,
     groupRituals: enGroupRituals,
     reviews: enReviews,
     location: enLocation,
@@ -99,6 +98,7 @@ const resources = {
     reserve: lvReserve,
     rules: lvRules,
     privacy: lvPrivacy,
+    faq: lvFaq,
     groupRituals: lvGroupRituals,
     reviews: lvReviews,
     location: lvLocation,
