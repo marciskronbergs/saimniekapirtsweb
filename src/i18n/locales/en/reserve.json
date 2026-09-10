@@ -12,8 +12,6 @@
   "contactPhone": "Phone",
   "contactAddress": "Address",
   "companyInfo": "Company Info",
-  "companyName": "SARMA SPA SIA",
-  "companyReg": "Reg. No.",
-  "companyBank": "A/S SwedBank",
-  "companyIBAN": "Account No."
+  "companyName": "Company",
+  "companyReg": "Reg. No."
 }

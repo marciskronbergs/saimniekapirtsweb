@@ -7,6 +7,7 @@ const LocationSection = () => {
   const [isVisible, setIsVisible] = useState(false);
   const sectionRef = useRef<HTMLDivElement>(null);
   const { t } = useTranslation('location');
+  const { t: tCommon } = useTranslation('common');
 
   useEffect(() => {
     const observer = new IntersectionObserver(
@@ -111,28 +112,23 @@ const LocationSection = () => {
               <div className="space-y-2 sm:space-y-3">
                 <div className="bg-[#111] rounded-lg px-3 sm:px-4 py-3 text-white flex items-center gap-3">
                   <Building className="w-5 h-5 text-green-400 flex-shrink-0" />
-                  <span className="text-sm sm:text-base">SARMA SPA SIA</span>
+                  <span className="text-sm sm:text-base">{tCommon('company.legalName')}</span>
                 </div>
                 
                 <div className="bg-[#111] rounded-lg px-3 sm:px-4 py-3 text-white flex items-start gap-3">
                   <MapPin className="w-5 h-5 text-green-400 flex-shrink-0" />
-                  <span className="text-sm sm:text-base">Ķekavas nov., Baldones pag., "Kroņmeži", LV-2125</span>
+                  <span className="text-sm sm:text-base">{tCommon('company.legalAddress')}</span>
                 </div>
                 
                 <div className="bg-[#111] rounded-lg px-3 sm:px-4 py-3 text-white flex items-center gap-3">
                   <span className="w-5 h-5 text-green-400 flex-shrink-0 text-center font-bold">#</span>
-                  <span className="text-sm sm:text-base">{t('companyReg')}: 50203583111</span>
+                  <span className="text-sm sm:text-base">{t('companyReg')}: {tCommon('company.regNumber')}</span>
                 </div>
                 
-                <div className="bg-[#111] rounded-lg px-3 sm:px-4 py-3 text-white flex items-center gap-3">
-                  <span className="w-5 h-5 text-green-400 flex-shrink-0 text-center font-bold">$</span>
-                  <span className="text-sm sm:text-base">A/S SwedBank</span>
-                </div>
-                
-                <div className="bg-[#111] rounded-lg px-3 sm:px-4 py-3 text-white flex items-start gap-3">
-                  <span className="w-5 h-5 text-green-400 flex-shrink-0 text-center font-bold">№</span>
-                  <span className="text-sm sm:text-base break-all">{t('companyIBAN')}: LV03HABA0551058479323</span>
-                </div>
+                {/* Bank details are withheld until the account for
+                    SIA "Saimnieku Pirtis" is opened. Publishing the previous
+                    company's account under this name would send transfers to a
+                    different legal entity. */}
               </div>
             </div>
 

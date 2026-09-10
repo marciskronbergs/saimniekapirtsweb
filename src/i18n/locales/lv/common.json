@@ -39,5 +39,10 @@
     "hostExtra": "Pirtnieks pirts rituāla laikā",
     "group": "Grupas pirts rituāls",
     "herbTub": "Zāļu kubls"
+  },
+  "company": {
+    "legalName": "SIA \"Saimnieku Pirtis\"",
+    "regNumber": "40203778036",
+    "legalAddress": "Ķekavas nov., Baldones pag., \"Kroņmeži\", LV-2125"
   }
 }

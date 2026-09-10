@@ -8,6 +8,7 @@ const RezervetPage = () => {
   const [isVisible, setIsVisible] = useState(false);
   const sectionRef = useRef<HTMLDivElement>(null);
   const { t } = useTranslation('reserve');
+  const { t: tCommon } = useTranslation('common');
 
   useEffect(() => {
     const observer = new IntersectionObserver(
@@ -218,29 +219,23 @@ const RezervetPage = () => {
               <div className="space-y-3">
                 <div>
                   <span className="font-semibold text-green-400">{t('companyName')}:</span>
-                  <span className="ml-2">SARMA SPA SIA</span>
+                  <span className="ml-2">{tCommon('company.legalName')}</span>
                 </div>
                 
                 <div>
                   <span className="font-semibold text-green-400">{t('contactAddress')}:</span>
-                  <span className="ml-2">Ķekavas nov., Baldones pag., "Kroņmeži", LV-2125</span>
+                  <span className="ml-2">{tCommon('company.legalAddress')}</span>
                 </div>
               </div>
               
               <div className="space-y-3">
                 <div>
                   <span className="font-semibold text-green-400">{t('companyReg')}:</span>
-                  <span className="ml-2">50203583111</span>
+                  <span className="ml-2">{tCommon('company.regNumber')}</span>
                 </div>
                 
-                <div>
-                  <span className="font-semibold text-green-400">{t('companyBank')}:</span>
-                </div>
-                
-                <div>
-                  <span className="font-semibold text-green-400">{t('companyIBAN')}:</span>
-                  <span className="ml-2">LV03HABA0551058479323</span>
-                </div>
+                {/* Bank details are withheld until the account for
+                    SIA "Saimnieku Pirtis" is opened. See LocationSection. */}
               </div>
             </div>
           </div>

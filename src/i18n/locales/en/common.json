@@ -39,5 +39,10 @@
     "hostExtra": "Sauna master during a sauna ritual",
     "group": "Group sauna ritual",
     "herbTub": "Herbal hot tub"
+  },
+  "company": {
+    "legalName": "SIA \"Saimnieku Pirtis\"",
+    "regNumber": "40203778036",
+    "legalAddress": "\"Kroņmeži\", Baldone parish, Ķekava municipality, LV-2125, Latvia"
   }
 }

@@ -6,6 +6,7 @@ import { useTranslation } from 'react-i18next';
 
 const PrivacyPolicyPage = () => {
   const { t } = useTranslation('privacy');
+  const { t: tCommon } = useTranslation('common');
 
   return (
     <div className="min-h-screen bg-[#0a0a0a]">
@@ -43,9 +44,9 @@ const PrivacyPolicyPage = () => {
               <div className="mb-12">
                 <h3 className="text-2xl font-bold text-white mb-6">{t('controller.title')}</h3>
                 <div className="space-y-3 text-gray-300">
-                  <p><strong>{t('controller.company')}:</strong> SARMA SPA SIA</p>
-                  <p><strong>{t('controller.regNumber')}:</strong> 50203583111</p>
-                  <p><strong>{t('controller.address')}:</strong> Ķekavas nov., Baldones pag., "Kroņmeži", LV-2125</p>
+                  <p><strong>{t('controller.company')}:</strong> {tCommon('company.legalName')}</p>
+                  <p><strong>{t('controller.regNumber')}:</strong> {tCommon('company.regNumber')}</p>
+                  <p><strong>{t('controller.address')}:</strong> {tCommon('company.legalAddress')}</p>
                   <p><strong>{t('controller.website')}:</strong> www.saimniekapirts.lv</p>
                   <p><strong>{t('controller.email')}:</strong> info@saimniekapirts.lv</p>
                   <p><strong>{t('controller.phone')}:</strong> +371 26752661‬</p>
