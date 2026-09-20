@@ -29,13 +29,11 @@
     "success": "Reservation completed, we'll be waiting for you!",
     "personal_info": "Personal Information",
     "ritual_details": "Ritual Details",
-    "participants": "Number of People",
-    "participants_placeholder": "Choose number",
     "options": {
       "option1": "Individual Ritual with Herbal Tub 🌿😊 – 280€",
       "option2": "Individual Ritual without Tub 🌿 – 220€",
-      "option3": "Couples Ritual with Herbal Tub 🌿❤️ – 300€",
-      "option4": "Couples Ritual without Tub 🌿 – 360€",
+      "option3": "Couples Ritual with Herbal Tub 🌿❤️ – 360€",
+      "option4": "Couples Ritual without Tub 🌿 – 300€",
       "option5": "Family Ritual with Herbal Tub 🌿👨‍👩‍👧 – 380€",
       "option6": "Adventure with Sauna Master 🌿💆‍♀️ – (70€/person, Min 360€)",
       "option7": "Friends' Sauna 🌿🧘 – (100€/person, Min 360€)",
@@ -64,7 +62,7 @@
     "title": "Sauna Rental Reservation",
     "personal_info": "Personal Information",
     "name_placeholder": "Full Name",
-    "email_placeholder": "Email Address", 
+    "email_placeholder": "Email Address",
     "phone_placeholder": "Phone Number",
     "details": "Reservation Details",
     "select_sauna_label": "Which Sauna",
@@ -94,7 +92,7 @@
       "whisks": "Sauna Whisks – €4 /piece (birch & oak)",
       "scrubs": "Herbal Scrubs – €15 / 200ml",
       "overnight": "Accommodation – €19.99 /person"
-   },
-   "date_warning": "Please select a date and time in the calendar"
+    },
+    "date_warning": "Please select a date and time in the calendar"
   }
 }
