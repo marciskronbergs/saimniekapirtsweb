@@ -43,6 +43,8 @@
   "company": {
     "legalName": "SIA \"Saimnieku Pirtis\"",
     "regNumber": "40203778036",
-    "legalAddress": "Ķekavas nov., Baldones pag., \"Kroņmeži\", LV-2125"
+    "legalAddress": "Ķekavas nov., Baldones pag., \"Kroņmeži\", LV-2125",
+    "bank": "A/S Swedbank",
+    "iban": "LV72HABA0551066360107"
   }
 }

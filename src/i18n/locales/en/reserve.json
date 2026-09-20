@@ -13,5 +13,7 @@
   "contactAddress": "Address",
   "companyInfo": "Company Info",
   "companyName": "Company",
-  "companyReg": "Reg. No."
+  "companyReg": "Reg. No.",
+  "companyBank": "Bank",
+  "companyIBAN": "Account number"
 }

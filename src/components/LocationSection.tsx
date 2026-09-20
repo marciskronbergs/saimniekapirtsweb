@@ -125,10 +125,15 @@ const LocationSection = () => {
                   <span className="text-sm sm:text-base">{t('companyReg')}: {tCommon('company.regNumber')}</span>
                 </div>
                 
-                {/* Bank details are withheld until the account for
-                    SIA "Saimnieku Pirtis" is opened. Publishing the previous
-                    company's account under this name would send transfers to a
-                    different legal entity. */}
+                <div className="bg-[#111] rounded-lg px-3 sm:px-4 py-3 text-white flex items-center gap-3">
+                  <span className="w-5 h-5 text-green-400 flex-shrink-0 text-center font-bold">$</span>
+                  <span className="text-sm sm:text-base">{tCommon('company.bank')}</span>
+                </div>
+                
+                <div className="bg-[#111] rounded-lg px-3 sm:px-4 py-3 text-white flex items-start gap-3">
+                  <span className="w-5 h-5 text-green-400 flex-shrink-0 text-center font-bold">№</span>
+                  <span className="text-sm sm:text-base break-all">{t('companyIBAN')}: {tCommon('company.iban')}</span>
+                </div>
               </div>
             </div>
 

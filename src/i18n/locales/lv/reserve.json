@@ -13,5 +13,7 @@
   "contactAddress": "Adrese",
   "companyInfo": "Rekvizīti",
   "companyName": "Uzņēmums",
-  "companyReg": "Reģ. Nr."
+  "companyReg": "Reģ. Nr.",
+  "companyBank": "Banka",
+  "companyIBAN": "Konta numurs"
 }

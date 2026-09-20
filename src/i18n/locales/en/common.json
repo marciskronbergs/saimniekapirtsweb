@@ -43,6 +43,8 @@
   "company": {
     "legalName": "SIA \"Saimnieku Pirtis\"",
     "regNumber": "40203778036",
-    "legalAddress": "\"Kroņmeži\", Baldone parish, Ķekava municipality, LV-2125, Latvia"
+    "legalAddress": "\"Kroņmeži\", Baldone parish, Ķekava municipality, LV-2125, Latvia",
+    "bank": "A/S Swedbank",
+    "iban": "LV72HABA0551066360107"
   }
 }

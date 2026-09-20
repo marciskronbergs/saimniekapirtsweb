@@ -234,8 +234,15 @@ const RezervetPage = () => {
                   <span className="ml-2">{tCommon('company.regNumber')}</span>
                 </div>
                 
-                {/* Bank details are withheld until the account for
-                    SIA "Saimnieku Pirtis" is opened. See LocationSection. */}
+                <div>
+                  <span className="font-semibold text-green-400">{t('companyBank')}:</span>
+                  <span className="ml-2">{tCommon('company.bank')}</span>
+                </div>
+                
+                <div>
+                  <span className="font-semibold text-green-400">{t('companyIBAN')}:</span>
+                  <span className="ml-2 break-all">{tCommon('company.iban')}</span>
+                </div>
               </div>
             </div>
           </div>
