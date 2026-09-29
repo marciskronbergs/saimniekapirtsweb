@@ -29,8 +29,6 @@
     "success": "Rezervācija veikta, gaidīsim Jūs!",
     "personal_info": "Personīgā informācija",
     "ritual_details": "Rituāla detaļas",
-    "participants": "Cilvēku skaits",
-    "participants_placeholder": "Izvēlieties skaitu",
     "options": {
       "option1": "Pirts Rituāls Individuāli ar zāļu kublu 🌿😊 – 280€",
       "option2": "Pirts Rituāls Individuāli bez zāļu kubla 🌿 – 220€",
@@ -94,8 +92,10 @@
     "extras": {
       "whisks": "Pirts slotiņas – 4€ /gab (bērza & ozola)",
       "scrubs": "Augu skrubji – 15€ / 200ml",
-      "overnight": "Nakšņošana – 19.99 €/persona"
+      "overnight": "Nakšņošana – 19.99 €/persona",
+      "quantity": "Daudzums",
+      "people": "Personu skaits"
     },
     "date_warning": "Lūdzu izvēlieties datumu un laiku kalendārā"
-}
   }
+}

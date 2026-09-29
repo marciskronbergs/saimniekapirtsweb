@@ -27,12 +27,5 @@
     "submitting": "Apstrādā...",
     "success": "Paldies!",
     "successMessage": "Mēs ar jums sazināsimies 24 stundu laikā."
-  },
-  "rituals": [
-    { "value": "individuali-ar", "label": "Pirts Rituāls Individuāli (Ar Zāļu Kubulu) – 280€" },
-    { "value": "individuali-bez", "label": "Pirts Rituāls Individuāli (Bez Zāļu Kubulu) – 220€" },
-    { "value": "diviem-ar", "label": "Pirts Rituāls Diviem (Ar Zāļu Kubulu) – 360€" },
-    { "value": "diviem-bez", "label": "Pirts Rituāls Diviem (Bez Zāļu Kubulu) – 300€" },
-    { "value": "gimenei", "label": "Pirts Rituāls Ģimenei (ar zāļu kubulu) – 380€" }
-  ]
+  }
 }

@@ -4,6 +4,7 @@ import FooterSection from '../components/FooterSection';
 import { Gift, ChevronDown, ChevronUp, Check } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useTranslation } from 'react-i18next';
+import priceCatalog from '../data/priceCatalog.json';
 
 const DavanuKartesPage = () => {
   const [isVisible, setIsVisible] = useState(false);
@@ -20,7 +21,8 @@ const DavanuKartesPage = () => {
   });
   const sectionRef = useRef<HTMLDivElement>(null);
   const formRef = useRef<HTMLDivElement>(null);
-  const { t } = useTranslation('giftcards');
+  const { t, i18n } = useTranslation('giftcards');
+  const locale = i18n.language === 'en' ? 'en' : 'lv';
 
   useEffect(() => {
     const observer = new IntersectionObserver(
@@ -84,7 +86,13 @@ const DavanuKartesPage = () => {
     { code: '+353', country: 'IE', name: 'Ireland' }
   ];
 
-  const ritualOptions = t('rituals', { returnObjects: true });
+  // The labels come from the price list, which is what the invoice is priced
+  // from, so the figure a guest picks is the figure they are billed.
+  const ritualOptions = priceCatalog.giftCard.rituals.map(ritual => ({
+    value: ritual.value,
+    label: ritual.label[locale]
+  }));
+  const { min: customMin, max: customMax, step: customStep } = priceCatalog.giftCard.custom;
 
   const handleSectionToggle = (section: 'ritual' | 'custom') => {
     if (activeSection === section) {
@@ -134,7 +142,8 @@ const DavanuKartesPage = () => {
         ritual_type: submissionPayload.ritual_type,
         specific_ritual_type: submissionPayload.specific_ritual_type,
         custom_price_value: submissionPayload.custom_price_value,
-        created_at: submissionPayload.created_at
+        created_at: submissionPayload.created_at,
+        locale
       };
 
       const { error } = await supabase
@@ -459,9 +468,9 @@ const DavanuKartesPage = () => {
                     <div className="relative">
                       <input
                         type="range"
-                        min="80"
-                        max="380"
-                        step="10"
+                        min={customMin}
+                        max={customMax}
+                        step={customStep}
                         value={customValue}
                         onChange={(e) => setCustomValue(Number(e.target.value))}
                         className="w-full h-2 sm:h-3 bg-black/30 rounded-lg appearance-none cursor-pointer slider"
@@ -469,8 +478,8 @@ const DavanuKartesPage = () => {
                       
                       {/* Range Labels */}
                       <div className="flex justify-between text-gray-400 text-xs sm:text-sm mt-2">
-                        <span>80€</span>
-                        <span>380€</span>
+                        <span>{customMin}€</span>
+                        <span>{customMax}€</span>
                       </div>
                     </div>
                   </div>

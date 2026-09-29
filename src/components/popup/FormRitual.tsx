@@ -11,29 +11,14 @@ import {
 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 
-const ritualTypes = [
-  'Pirts Rituāls Individuāli ar zāļu kublu 🌿😊 – 280€',
-  'Pirts Rituāls Individuāli bez zāļu kubla 🌿 – 220€',
-  'Pirts Rituāls Diviem ar zāļu kublu 🌿❤️ – 360€',
-  'Pirts Rituāls Diviem bez zāļu kubla 🌿 – 300€',
-  'Pirts Rituāls Ģimenei ar zāļu kublu 🌿😊 – 380€',
-  'Pirts piedzīvojums ar pirts meistaru 🌿💆‍♀️ – (70€ /no personas, Min 360€)',
-  'Pirts kūre "Draugu pirts" 🌿🧘 – (100€ /no personas, Min 360€)',
-  'Pirts kūre "Draugu pirts +" 🌿🧘 – (140€ /no personas, Min 360€)',
-  'VECMEITAS PŪRS 🌿🧔 – 360€ (līdz 8 cilvēkiem)',
-  'VĪRU PAKA 🌿💪 – 360€ (līdz 8 cilvēkiem)',
-];
+import priceCatalog from '../../data/priceCatalog.json';
 
-const groupRitualsLarge = [
-  'Pirts piedzīvojums ar pirts meistaru 🌿💆‍♀️ – (70€ /no personas, Min 360€)',
-  'Pirts kūre "Draugu pirts" 🌿🧘 – (100€ /no personas, Min 360€)',
-  'Pirts kūre "Draugu pirts +" 🌿🧘 – (140€ /no personas, Min 360€)',
-];
-
-const groupRitualsSmall = [
-  'VECMEITAS PŪRS 🌿🧔 – 360€ (līdz 8 cilvēkiem)',
-  'VĪRU PAKA 🌿💪 – 360€ (līdz 8 cilvēkiem)',
-];
+// The labels come from the shared price list, the same one the invoice function
+// prices bookings from. They are stored verbatim, so they must not be reworded
+// here without updating the list.
+const ritualTypes = priceCatalog.ritual.map((r) => r.label);
+const groupRitualsLarge = priceCatalog.ritual.filter((r) => r.group === 'large').map((r) => r.label);
+const groupRitualsSmall = priceCatalog.ritual.filter((r) => r.group === 'small').map((r) => r.label);
 
 const groupRituals = [...groupRitualsLarge, ...groupRitualsSmall];
 
@@ -46,7 +31,7 @@ interface FormRitualProps {
 }
 
 const FormRitual: React.FC<FormRitualProps> = ({ selectedDate, selectedTime, onClose }) => {
-  const { t } = useTranslation(['forms', 'common']);
+  const { t, i18n } = useTranslation(['forms', 'common']);
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -141,6 +126,7 @@ const reservationData = {
   reservation_date: selectedDate.toLocaleDateString('en-CA'),
   reservation_time: selectedTime,
   ritual_type: formData.ritualType,
+  locale: i18n.language === 'en' ? 'en' : 'lv',
   ritual_participants: formData.participants ? parseInt(formData.participants) : null,
   overnight_stay: formData.overnightStay,
   ritual_message: formData.message || '',

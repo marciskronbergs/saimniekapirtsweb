@@ -2,24 +2,16 @@ import React, { useState, useEffect } from 'react';
 import { User, Mail, Phone, MessageSquare, Home, Plus } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { useTranslation } from 'react-i18next';
+import priceCatalog from '../../data/priceCatalog.json';
 
 const allSaunaTypes = ['Baltā pirts', 'Pelēkā pirts'];
 
-const rentalOptions = [
-  '4h – 150€ (Pirts & Kubls diviem)',
-  '3h – 80€ (Pirts bez kubla diviem)',
-  '4h – 90€ (Pirts bez kubla diviem)',
-  '5h – 170€ (Pirts & Kubls / līdz 5 cilvēkiem)',
-  '5h – 120€ (Pirts bez kubla / līdz 5 cilvēkiem)',
-  '5h – 200€ (Pirts & Kubls / 6–10 cilvēkiem)',
-  '5h – 150€ (Pirts bez kubla / 6–10 cilvēkiem)',
-];
-
-const baseExtraOptions = [
-  'Pirts slotiņas – 4€ /gab (bērza & ozola)',
-  'Augu skrubji – 15€ / 200ml',
-];
-const overnightOption = 'Nakšņošana – 19.99 €/persona';
+// Labels come from the shared price list, the same one the invoice function
+// prices bookings from. They are stored verbatim and sent to Make, so they must
+// not be reworded here without updating the list.
+const rentalOptions = priceCatalog.rental.map((r) => r.label);
+const baseExtraOptions = priceCatalog.extras.filter((e) => !e.overnight).map((e) => e.label);
+const overnightOption = priceCatalog.extras.find((e) => e.overnight)!.label;
 
 interface FormNomaProps {
   selectedDate: Date | null;
@@ -28,7 +20,7 @@ interface FormNomaProps {
 }
 
 const FormNoma: React.FC<FormNomaProps> = ({ selectedDate, selectedTime, onClose }) => {
-  const { t } = useTranslation('forms');
+  const { t, i18n } = useTranslation('forms');
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -38,6 +30,9 @@ const FormNoma: React.FC<FormNomaProps> = ({ selectedDate, selectedTime, onClose
     extras: [] as string[],
     message: ''
   });
+  // How many of each ticked extra. Without it an invoice could not total a
+  // booking of "whisks, 4 € each" or "overnight, per person".
+  const [extraQuantities, setExtraQuantities] = useState<Record<string, number>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [submitSuccess, setSubmitSuccess] = useState(false);
@@ -92,6 +87,18 @@ const FormNoma: React.FC<FormNomaProps> = ({ selectedDate, selectedTime, onClose
         : [...prev.extras, option];
       return { ...prev, extras: updatedExtras };
     });
+    // Ticking an extra means at least one of it; unticking forgets the count.
+    setExtraQuantities(prev => {
+      const next = { ...prev };
+      if (next[option]) delete next[option];
+      else next[option] = 1;
+      return next;
+    });
+  };
+
+  const handleQuantityChange = (option: string, value: string) => {
+    const quantity = Math.max(1, Math.min(20, Math.floor(Number(value)) || 1));
+    setExtraQuantities(prev => ({ ...prev, [option]: quantity }));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -122,7 +129,15 @@ const FormNoma: React.FC<FormNomaProps> = ({ selectedDate, selectedTime, onClose
         ritual_message: '',
         sauna_type: formData.saunaType,
         rental_type: formData.rentalType,
+        // Kept exactly as before: Make's email reads this list.
         rental_extras: cleanedExtras,
+        // What the invoice needs and the list above cannot hold. Only the label
+        // and count are sent; the price is looked up on the server.
+        rental_extras_detail: cleanedExtras.map(label => ({
+          label,
+          quantity: extraQuantities[label] ?? 1,
+        })),
+        locale: i18n.language === 'en' ? 'en' : 'lv',
         rental_message: formData.message || ''
       };
 
@@ -256,22 +271,42 @@ const FormNoma: React.FC<FormNomaProps> = ({ selectedDate, selectedTime, onClose
       {t('noma.addons')}
     </label>
     <div className="space-y-3">
-      {[...baseExtraOptions, ...(selectedTime === '17:00' || selectedTime === '18:00' ? [overnightOption] : [])].map(option => (
-        <label key={option} className="flex items-center">
-          <input
-            type="checkbox"
-            checked={formData.extras.includes(option)}
-            onChange={() => handleCheckboxChange(option)}
-            className="w-5 h-5 text-green-600 bg-gray-800 border-gray-600 rounded focus:ring-green-500 focus:ring-2"
-          />
-          <span className="ml-3 text-white">
-            {option === 'Pirts slotiņas – 4€ /gab (bērza & ozola)' ? t('noma.extras.whisks') :
-             option === 'Augu skrubji – 15€ / 200ml' ? t('noma.extras.scrubs') :
-             option === 'Nakšņošana – 19.99 €/persona' ? t('noma.extras.overnight') :
-             option}
-          </span>
-        </label>
-      ))}
+      {[...baseExtraOptions, ...(selectedTime === '17:00' || selectedTime === '18:00' ? [overnightOption] : [])].map(option => {
+        const checked = formData.extras.includes(option);
+        const isOvernight = option === overnightOption;
+        return (
+          <div key={option} className="flex flex-wrap items-center gap-x-3 gap-y-2">
+            <label className="flex items-center">
+              <input
+                type="checkbox"
+                checked={checked}
+                onChange={() => handleCheckboxChange(option)}
+                className="w-5 h-5 text-green-600 bg-gray-800 border-gray-600 rounded focus:ring-green-500 focus:ring-2"
+              />
+              <span className="ml-3 text-white">
+                {option === baseExtraOptions[0] ? t('noma.extras.whisks') :
+                 option === baseExtraOptions[1] ? t('noma.extras.scrubs') :
+                 isOvernight ? t('noma.extras.overnight') :
+                 option}
+              </span>
+            </label>
+            {checked && (
+              <label className="flex items-center gap-2 text-sm text-gray-300">
+                {isOvernight ? t('noma.extras.people') : t('noma.extras.quantity')}
+                <input
+                  type="number"
+                  min={1}
+                  max={20}
+                  inputMode="numeric"
+                  value={extraQuantities[option] ?? 1}
+                  onChange={(e) => handleQuantityChange(option, e.target.value)}
+                  className="w-20 px-3 py-2 bg-gray-800 border border-gray-600 rounded-lg text-white focus:border-green-500 focus:ring-2 focus:ring-green-500/20"
+                />
+              </label>
+            )}
+          </div>
+        );
+      })}
     </div>
   </div>
 </div>

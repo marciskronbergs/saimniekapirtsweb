@@ -27,12 +27,5 @@
     "submitting": "Processing...",
     "success": "Thank you!",
     "successMessage": "We will contact you within 24 hours."
-  },
-  "rituals": [
-    { "value": "individuali-ar", "label": "Individual Sauna Ritual (With Herbal Hot Tub) – 280€" },
-    { "value": "individuali-bez", "label": "Individual Sauna Ritual (Without Herbal Hot Tub) – 220€" },
-    { "value": "diviem-ar", "label": "Sauna Ritual for Two (With Herbal Hot Tub) – 360€" },
-    { "value": "diviem-bez", "label": "Sauna Ritual for Two (Without Herbal Hot Tub) – 300€" },
-    { "value": "gimenei", "label": "Family Sauna Ritual (with herbal hot tub) – 380€" }
-  ]
+  }
 }
