@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   User,
@@ -12,6 +12,8 @@ import {
 import { supabase } from '../../lib/supabase';
 
 import priceCatalog from '../../data/priceCatalog.json';
+import BookingConfirmation, { type ConfirmedBooking } from './BookingConfirmation';
+import { scrollIntoPopup } from './scrollIntoPopup';
 
 // The labels come from the shared price list, the same one the invoice function
 // prices bookings from. They are stored verbatim, so they must not be reworded
@@ -43,7 +45,16 @@ const FormRitual: React.FC<FormRitualProps> = ({ selectedDate, selectedTime, onC
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
-  const [submitSuccess, setSubmitSuccess] = useState(false);
+  const [confirmed, setConfirmed] = useState<ConfirmedBooking | null>(null);
+  // The button is disabled through state, which only takes effect on the next
+  // render; a quick double click lands before that and used to book twice.
+  const submittingRef = useRef(false);
+  const errorRef = useRef<HTMLDivElement>(null);
+
+  // The message sits above the form, out of sight of the button just pressed.
+  useEffect(() => {
+    if (submitError) scrollIntoPopup(errorRef.current);
+  }, [submitError]);
 
 
   // Auto-reset overnightStay if time is changed to a non-evening slot
@@ -106,6 +117,8 @@ React.useEffect(() => {
       return;
     }
 
+    if (submittingRef.current) return;
+    submittingRef.current = true;
     setIsSubmitting(true);
     setSubmitError(null);
 
@@ -143,6 +156,12 @@ const reservationData = {
         .insert([reservationData])
         .select('id');
 
+      // The database allows one booking per sauna and time, so a second guest
+      // who picked the same slot a moment later is told so plainly.
+      if (error?.code === '23505') {
+        setSubmitError(t('forms:confirmation.slot_taken'));
+        return;
+      }
       if (error) {
         throw new Error(`Supabase error: ${error.message}`);
       }
@@ -165,30 +184,40 @@ const reservationData = {
   rental_message: ''           // <- Empty for rituals
 };
 
-      // Send to Make.com webhook
-      const webhookResponse = await fetch('https://hook.eu2.make.com/4lyknzb8yu44wvfojo9eahoju5q16zif', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(webhookData)
-      });
+      // The booking is saved at this point. If the notification fails the guest
+      // must still see it confirmed, or they would try again and book twice.
+      try {
+        const webhookResponse = await fetch('https://hook.eu2.make.com/4lyknzb8yu44wvfojo9eahoju5q16zif', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(webhookData)
+        });
 
-      if (!webhookResponse.ok) {
-        console.warn('Webhook failed, but reservation was saved to database');
+        if (!webhookResponse.ok) {
+          console.warn('Webhook failed, but reservation was saved to database');
+        }
+      } catch (webhookError) {
+        console.error('Webhook error:', webhookError);
       }
 
-      // Success - close popup and reset form
-     setSubmitSuccess(true);
+      // Show what was booked in place of the form.
+      setConfirmed(reservationData);
 
       
     } catch (error) {
       console.error('Submission error:', error);
       setSubmitError(error instanceof Error ? error.message : 'Radās kļūda. Lūdzu mēģiniet vēlreiz.');
     } finally {
+      submittingRef.current = false;
       setIsSubmitting(false);
     }
   };
+
+  if (confirmed) {
+    return <BookingConfirmation booking={confirmed} onClose={onClose} />;
+  }
 
   return (
     <div className="space-y-6">
@@ -198,7 +227,7 @@ const reservationData = {
       </div>
 
       {submitError && (
-        <div className="mb-4 p-4 bg-red-600/20 border border-red-500 rounded-lg">
+        <div ref={errorRef} className="mb-4 p-4 bg-red-600/20 border border-red-500 rounded-lg">
           <p className="text-red-400">{submitError}</p>
         </div>
       )}
@@ -328,11 +357,6 @@ const reservationData = {
           </div>
        
         </div>
-        {submitSuccess && (
-  <div className="mb-4 p-4 bg-green-600/20 border border-green-500 rounded-lg text-green-300 text-sm text-center">
-    {t('forms:ritual.success')}
-  </div>
-)}
 
         <button
           type="submit"

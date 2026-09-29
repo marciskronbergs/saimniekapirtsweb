@@ -97,5 +97,16 @@
       "people": "Personu skaits"
     },
     "date_warning": "Lūdzu izvēlieties datumu un laiku kalendārā"
+  },
+  "confirmation": {
+    "title": "Rezervācija saņemta!",
+    "thanks": "Paldies, {{name}}! Jūsu pirts laiks ir rezervēts – gaidīsim Jūs.",
+    "total": "Kopā",
+    "total_tbc": "Summu precizēsim",
+    "contact": "Ar Jums sazināsimies pa e-pastu {{email}} vai tālruni {{phone}}.",
+    "payment": "Norēķināties var ar pārskaitījumu pirms apmeklējuma vai skaidrā naudā uz vietas.",
+    "changes": "Ja plāni mainās, lūdzu, zvaniet +371 26 752 661 – atcelšana ir bez maksas.",
+    "close": "Aizvērt",
+    "slot_taken": "Šo pirti šajā laikā kāds tikko rezervēja. Lūdzu, izvēlieties citu pirti vai laiku."
   }
 }

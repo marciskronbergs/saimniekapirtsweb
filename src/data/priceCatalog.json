@@ -1,25 +1,25 @@
 {
   "_comment": "The one price list. The booking forms offer exactly these labels, and the invoice function prices a booking by looking its label up here -- never by trusting a figure sent from the browser, since the anon key lets anyone insert any text. Labels are stored verbatim in reservations and sent to Make, so change a price by editing its label and figure together; a label that no longer matches is held for review rather than invoiced.",
   "ritual": [
-    { "label": "Pirts Rituāls Individuāli ar zāļu kublu 🌿😊 – 280€", "price": 280, "en": "Individual sauna ritual with herbal hot tub" },
-    { "label": "Pirts Rituāls Individuāli bez zāļu kubla 🌿 – 220€", "price": 220, "en": "Individual sauna ritual without hot tub" },
-    { "label": "Pirts Rituāls Diviem ar zāļu kublu 🌿❤️ – 360€", "price": 360, "en": "Sauna ritual for two with herbal hot tub" },
-    { "label": "Pirts Rituāls Diviem bez zāļu kubla 🌿 – 300€", "price": 300, "en": "Sauna ritual for two without hot tub" },
-    { "label": "Pirts Rituāls Ģimenei ar zāļu kublu 🌿😊 – 380€", "price": 380, "en": "Family sauna ritual with herbal hot tub" },
-    { "label": "Pirts piedzīvojums ar pirts meistaru 🌿💆‍♀️ – (70€ /no personas, Min 360€)", "perPerson": 70, "minimum": 360, "group": "large", "en": "Sauna adventure with a sauna master" },
-    { "label": "Pirts kūre \"Draugu pirts\" 🌿🧘 – (100€ /no personas, Min 360€)", "perPerson": 100, "minimum": 360, "group": "large", "en": "\"Friends' sauna\" treatment" },
-    { "label": "Pirts kūre \"Draugu pirts +\" 🌿🧘 – (140€ /no personas, Min 360€)", "perPerson": 140, "minimum": 360, "group": "large", "en": "\"Friends' sauna +\" treatment" },
-    { "label": "VECMEITAS PŪRS 🌿🧔 – 360€ (līdz 8 cilvēkiem)", "price": 360, "group": "small", "en": "Bachelorette sauna ritual" },
-    { "label": "VĪRU PAKA 🌿💪 – 360€ (līdz 8 cilvēkiem)", "price": 360, "group": "small", "en": "Bachelor sauna ritual" }
+    { "label": "Pirts Rituāls Individuāli ar zāļu kublu 🌿😊 – 280€", "price": 280, "people": 1, "lv": "Pirts rituāls individuāli ar zāļu kublu", "en": "Individual sauna ritual with herbal hot tub" },
+    { "label": "Pirts Rituāls Individuāli bez zāļu kubla 🌿 – 220€", "price": 220, "people": 1, "lv": "Pirts rituāls individuāli bez zāļu kubla", "en": "Individual sauna ritual without hot tub" },
+    { "label": "Pirts Rituāls Diviem ar zāļu kublu 🌿❤️ – 360€", "price": 360, "people": 2, "lv": "Pirts rituāls diviem ar zāļu kublu", "en": "Sauna ritual for two with herbal hot tub" },
+    { "label": "Pirts Rituāls Diviem bez zāļu kubla 🌿 – 300€", "price": 300, "people": 2, "lv": "Pirts rituāls diviem bez zāļu kubla", "en": "Sauna ritual for two without hot tub" },
+    { "label": "Pirts Rituāls Ģimenei ar zāļu kublu 🌿😊 – 380€", "price": 380, "lv": "Pirts rituāls ģimenei ar zāļu kublu", "en": "Family sauna ritual with herbal hot tub" },
+    { "label": "Pirts piedzīvojums ar pirts meistaru 🌿💆‍♀️ – (70€ /no personas, Min 360€)", "perPerson": 70, "minimum": 360, "group": "large", "lv": "Pirts piedzīvojums ar pirts meistaru", "en": "Sauna adventure with a sauna master" },
+    { "label": "Pirts kūre \"Draugu pirts\" 🌿🧘 – (100€ /no personas, Min 360€)", "perPerson": 100, "minimum": 360, "group": "large", "lv": "Pirts kūre \"Draugu pirts\"", "en": "\"Friends' sauna\" treatment" },
+    { "label": "Pirts kūre \"Draugu pirts +\" 🌿🧘 – (140€ /no personas, Min 360€)", "perPerson": 140, "minimum": 360, "group": "large", "lv": "Pirts kūre \"Draugu pirts +\"", "en": "\"Friends' sauna +\" treatment" },
+    { "label": "VECMEITAS PŪRS 🌿🧔 – 360€ (līdz 8 cilvēkiem)", "price": 360, "group": "small", "lv": "Pirts rituāls \"Vecmeitas pūrs\"", "en": "Bachelorette sauna ritual" },
+    { "label": "VĪRU PAKA 🌿💪 – 360€ (līdz 8 cilvēkiem)", "price": 360, "group": "small", "lv": "Pirts rituāls \"Vīru paka\"", "en": "Bachelor sauna ritual" }
   ],
   "rental": [
-    { "label": "4h – 150€ (Pirts & Kubls diviem)", "price": 150, "en": "Sauna and hot tub for two, 4 h" },
-    { "label": "3h – 80€ (Pirts bez kubla diviem)", "price": 80, "en": "Sauna for two without hot tub, 3 h" },
-    { "label": "4h – 90€ (Pirts bez kubla diviem)", "price": 90, "en": "Sauna for two without hot tub, 4 h" },
-    { "label": "5h – 170€ (Pirts & Kubls / līdz 5 cilvēkiem)", "price": 170, "en": "Sauna and hot tub, up to 5 people, 5 h" },
-    { "label": "5h – 120€ (Pirts bez kubla / līdz 5 cilvēkiem)", "price": 120, "en": "Sauna without hot tub, up to 5 people, 5 h" },
-    { "label": "5h – 200€ (Pirts & Kubls / 6–10 cilvēkiem)", "price": 200, "en": "Sauna and hot tub, 6–10 people, 5 h" },
-    { "label": "5h – 150€ (Pirts bez kubla / 6–10 cilvēkiem)", "price": 150, "en": "Sauna without hot tub, 6–10 people, 5 h" }
+    { "label": "4h – 150€ (Pirts & Kubls diviem)", "price": 150, "lv": "Pirts un kubls diviem, 4 h", "en": "Sauna and hot tub for two, 4 h" },
+    { "label": "3h – 80€ (Pirts bez kubla diviem)", "price": 80, "lv": "Pirts bez kubla diviem, 3 h", "en": "Sauna for two without hot tub, 3 h" },
+    { "label": "4h – 90€ (Pirts bez kubla diviem)", "price": 90, "lv": "Pirts bez kubla diviem, 4 h", "en": "Sauna for two without hot tub, 4 h" },
+    { "label": "5h – 170€ (Pirts & Kubls / līdz 5 cilvēkiem)", "price": 170, "lv": "Pirts un kubls līdz 5 cilvēkiem, 5 h", "en": "Sauna and hot tub, up to 5 people, 5 h" },
+    { "label": "5h – 120€ (Pirts bez kubla / līdz 5 cilvēkiem)", "price": 120, "lv": "Pirts bez kubla līdz 5 cilvēkiem, 5 h", "en": "Sauna without hot tub, up to 5 people, 5 h" },
+    { "label": "5h – 200€ (Pirts & Kubls / 6–10 cilvēkiem)", "price": 200, "lv": "Pirts un kubls 6–10 cilvēkiem, 5 h", "en": "Sauna and hot tub, 6–10 people, 5 h" },
+    { "label": "5h – 140€ (Pirts bez kubla / 6–10 cilvēkiem)", "price": 140, "lv": "Pirts bez kubla 6–10 cilvēkiem, 5 h", "en": "Sauna without hot tub, 6–10 people, 5 h" }
   ],
   "extras": [
     { "label": "Pirts slotiņas – 4€ /gab (bērza & ozola)", "unitPrice": 4, "unit": "pcs", "lv": "Pirts slotiņas (bērza un ozola)", "en": "Sauna whisks (birch and oak)" },

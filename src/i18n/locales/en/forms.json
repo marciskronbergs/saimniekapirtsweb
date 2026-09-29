@@ -96,5 +96,16 @@
       "people": "Number of people"
     },
     "date_warning": "Please select a date and time in the calendar"
+  },
+  "confirmation": {
+    "title": "Booking received!",
+    "thanks": "Thank you, {{name}}! Your sauna time is reserved – we look forward to seeing you.",
+    "total": "Total",
+    "total_tbc": "To be confirmed",
+    "contact": "We will be in touch by email at {{email}} or by phone at {{phone}}.",
+    "payment": "You can pay by bank transfer before your visit or in cash on site.",
+    "changes": "If your plans change, please call +371 26 752 661 – cancellation is free.",
+    "close": "Close",
+    "slot_taken": "Someone has just booked this sauna for this time. Please choose another sauna or time."
   }
 }

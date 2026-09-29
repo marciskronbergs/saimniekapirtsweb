@@ -1,8 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { User, Mail, Phone, MessageSquare, Home, Plus } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { useTranslation } from 'react-i18next';
 import priceCatalog from '../../data/priceCatalog.json';
+import BookingConfirmation, { type ConfirmedBooking } from './BookingConfirmation';
+import { scrollIntoPopup } from './scrollIntoPopup';
 
 const allSaunaTypes = ['Baltā pirts', 'Pelēkā pirts'];
 
@@ -35,7 +37,16 @@ const FormNoma: React.FC<FormNomaProps> = ({ selectedDate, selectedTime, onClose
   const [extraQuantities, setExtraQuantities] = useState<Record<string, number>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
-  const [submitSuccess, setSubmitSuccess] = useState(false);
+  const [confirmed, setConfirmed] = useState<ConfirmedBooking | null>(null);
+  // The button is disabled through state, which only takes effect on the next
+  // render; a quick double click lands before that and used to book twice.
+  const submittingRef = useRef(false);
+  const errorRef = useRef<HTMLDivElement>(null);
+
+  // The message sits above the form, out of sight of the button just pressed.
+  useEffect(() => {
+    if (submitError) scrollIntoPopup(errorRef.current);
+  }, [submitError]);
   const [availableSaunas, setAvailableSaunas] = useState<string[]>(allSaunaTypes);
 
   const handleInputChange = (field: string, value: string | boolean) => {
@@ -108,6 +119,8 @@ const FormNoma: React.FC<FormNomaProps> = ({ selectedDate, selectedTime, onClose
       return;
     }
 
+    if (submittingRef.current) return;
+    submittingRef.current = true;
     setIsSubmitting(true);
     setSubmitError(null);
 
@@ -142,23 +155,40 @@ const FormNoma: React.FC<FormNomaProps> = ({ selectedDate, selectedTime, onClose
       };
 
       const { error } = await supabase.from('reservations').insert([reservationData]);
+      // The database allows one booking per sauna and time, so a second guest
+      // who picked the same slot a moment later is told so plainly.
+      if (error?.code === '23505') {
+        setSubmitError(t('confirmation.slot_taken'));
+        return;
+      }
       if (error) throw new Error(`Supabase error: ${error.message}`);
 
-      await fetch('https://hook.eu2.make.com/4lyknzb8yu44wvfojo9eahoju5q16zif', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(reservationData)
-      });
+      // The booking is saved at this point. If the notification fails the guest
+      // must still see it confirmed, or they would try again and book twice.
+      try {
+        await fetch('https://hook.eu2.make.com/4lyknzb8yu44wvfojo9eahoju5q16zif', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(reservationData)
+        });
+      } catch (webhookError) {
+        console.error('Webhook error:', webhookError);
+      }
 
-      setSubmitSuccess(true);
+      setConfirmed(reservationData);
 
     } catch (error) {
       console.error('Submission error:', error);
       setSubmitError(error instanceof Error ? error.message : 'Radās kļūda. Lūdzu mēģiniet vēlreiz.');
     } finally {
+      submittingRef.current = false;
       setIsSubmitting(false);
     }
   };
+
+  if (confirmed) {
+    return <BookingConfirmation booking={confirmed} onClose={onClose} />;
+  }
 
   return (
     <div className="space-y-6">
@@ -168,7 +198,7 @@ const FormNoma: React.FC<FormNomaProps> = ({ selectedDate, selectedTime, onClose
       </div>
 
       {submitError && (
-        <div className="mb-4 p-4 bg-red-600/20 border border-red-500 rounded-lg">
+        <div ref={errorRef} className="mb-4 p-4 bg-red-600/20 border border-red-500 rounded-lg">
           <p className="text-red-400">{submitError}</p>
         </div>
       )}
@@ -327,11 +357,6 @@ const FormNoma: React.FC<FormNomaProps> = ({ selectedDate, selectedTime, onClose
           </div>
         </div>
 
-        {submitSuccess && (
-  <div className="mb-4 p-4 bg-green-600/20 border border-green-500 rounded-lg text-green-300 text-sm text-center">
-    {t('noma.success')}
-  </div>
-)}
 
         {/* Submit */}
         <button
