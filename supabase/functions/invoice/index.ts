@@ -1,6 +1,7 @@
 // Issues invoices for bookings and gift card orders and mails them to the
 // office, which checks each one and forwards it to the guest. Nothing here
-// ever writes to a guest.
+// ever writes to a guest: the mail goes out through the Make scenario
+// "Rēķini → info@saimniekapirts.lv", whose only recipient is the office.
 //
 // Called by the database, never by browsers:
 //   { source_type, source_id }            after a booking or order is saved
@@ -10,8 +11,9 @@
 //                                         (no number is used) and returns it
 // Every call must carry the secret kept in Vault as invoice_hook_secret.
 //
-// Until RESEND_API_KEY is set the function issues nothing, so no invoice
-// numbers are used up before invoices can actually be delivered.
+// Until that scenario's webhook address is stored in Vault (as
+// invoice_make_webhook_url) the function issues nothing, so no invoice numbers
+// are used up before invoices can actually be delivered.
 
 import { createClient } from 'npm:@supabase/supabase-js@2';
 import catalog from './priceCatalog.json' with { type: 'json' };
@@ -25,9 +27,6 @@ type SourceType = 'reservation' | 'gift_card';
 const db = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!, {
   auth: { persistSession: false },
 });
-const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY') ?? '';
-const OFFICE = Deno.env.get('INVOICE_TO') ?? 'info@saimniekapirts.lv';
-const FROM = Deno.env.get('INVOICE_FROM') ?? 'Saimnieka pirts <onboarding@resend.dev>';
 const VAT_NOTE = 'Nav PVN maksātājs';
 const prices = catalog as PriceCatalog;
 
@@ -125,35 +124,33 @@ async function loadSource(type: SourceType, id: string): Promise<Source | null> 
 // ---------------------------------------------------------------------------
 // Mail.
 
+// The Make webhook's address, or null while delivery is not switched on.
+async function deliveryUrl(): Promise<string | null> {
+  const { data, error } = await db.rpc('invoice_delivery_url');
+  if (error) throw error;
+  return data || null;
+}
+
+// Hands a message to Make, which mails it to the office. The recipient is set
+// in the scenario, not here, so nothing this function sends can reach a guest.
 async function sendToOffice(
   message: { subject: string; html: string; text: string },
-  idempotencyKey: string,
-  customerEmail: string,
   attachment?: { filename: string; content: string }
 ) {
-  // The one rule this function exists to keep.
-  if (OFFICE.trim().toLowerCase() === customerEmail.trim().toLowerCase()) {
-    throw new Error('Refusing to mail a guest directly');
-  }
-  const res = await fetch('https://api.resend.com/emails', {
+  const url = await deliveryUrl();
+  if (!url) throw new Error('Invoice delivery is not switched on');
+  const res = await fetch(url, {
     method: 'POST',
-    headers: {
-      Authorization: `Bearer ${RESEND_API_KEY}`,
-      'Content-Type': 'application/json',
-      // Resend drops a repeat of the same key for a day, so a retry after a
-      // lost response cannot deliver the same invoice twice.
-      'Idempotency-Key': idempotencyKey,
-    },
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
-      from: FROM,
-      to: [OFFICE],
       subject: message.subject,
       html: message.html,
       text: message.text,
-      attachments: attachment ? [attachment] : undefined,
+      // Make sends invoices with the file attached and hold notices without.
+      ...(attachment ? { filename: attachment.filename, pdf_base64: attachment.content } : {}),
     }),
   });
-  if (!res.ok) throw new Error(`Resend ${res.status}: ${await res.text()}`);
+  if (!res.ok) throw new Error(`Make ${res.status}: ${await res.text()}`);
 }
 
 // Mails an issued invoice unless it has gone out, or another call is sending it.
@@ -172,7 +169,7 @@ async function deliver(invoice: InvoiceRow & { emailed_at?: string | null }) {
 
   const pdf = await renderInvoicePdf(invoice);
   const message = invoiceEmail(invoice);
-  await sendToOffice(message, `invoice-${invoice.id}`, invoice.customer_email, {
+  await sendToOffice(message, {
     filename: message.filename,
     content: toBase64(pdf),
   });
@@ -180,8 +177,8 @@ async function deliver(invoice: InvoiceRow & { emailed_at?: string | null }) {
   return { status: 'sent', number: invoice.number };
 }
 
-async function notifyHold(type: SourceType, id: string, reason: string, fields: [string, string][], customerEmail: string) {
-  await sendToOffice(holdEmail({ sourceType: type, reason, fields }), `hold-${type}-${id}`, customerEmail);
+async function notifyHold(type: SourceType, id: string, reason: string, fields: [string, string][]) {
+  await sendToOffice(holdEmail({ sourceType: type, reason, fields }));
   await db.from('invoice_holds').update({ notified_at: new Date().toISOString() })
     .eq('source_type', type).eq('source_id', id);
 }
@@ -215,7 +212,7 @@ async function processSource(type: SourceType, id: string) {
       .upsert({ source_type: type, source_id: id, reason }, { onConflict: 'source_type,source_id', ignoreDuplicates: true })
       .select('source_id');
     if (error) throw error;
-    if (inserted?.length) await notifyHold(type, id, reason, source.fields, source.email);
+    if (inserted?.length) await notifyHold(type, id, reason, source.fields);
     return { status: 'held', reason };
   }
 
@@ -279,7 +276,7 @@ async function sweep() {
       ...(await attempt(async () => {
         const source = await loadSource(hold.source_type, hold.source_id);
         if (!source) return { status: 'not_found' };
-        await notifyHold(hold.source_type, hold.source_id, hold.reason, source.fields, source.email);
+        await notifyHold(hold.source_type, hold.source_id, hold.reason, source.fields);
         return { status: 'notified' };
       })),
     });
@@ -345,7 +342,7 @@ Deno.serve(async (req) => {
     if (body.dry_run) {
       return validSource ? json(await preview(type, body.source_id)) : json({ error: 'source required' }, 400);
     }
-    if (!RESEND_API_KEY) return json({ status: 'disabled', reason: 'RESEND_API_KEY is not set' });
+    if (!(await deliveryUrl())) return json({ status: 'disabled', reason: 'invoice_make_webhook_url is not in Vault' });
     if (body.sweep) return json(await sweep());
     if (validSource) return json(await processSource(type, body.source_id));
     return json({ error: 'nothing to do' }, 400);
