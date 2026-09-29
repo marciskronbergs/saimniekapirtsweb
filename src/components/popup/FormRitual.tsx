@@ -14,6 +14,7 @@ import { supabase } from '../../lib/supabase';
 import priceCatalog from '../../data/priceCatalog.json';
 import BookingConfirmation, { type ConfirmedBooking } from './BookingConfirmation';
 import { scrollIntoPopup } from './scrollIntoPopup';
+import { cancelUrl } from './cancelUrl';
 
 // The labels come from the shared price list, the same one the invoice function
 // prices bookings from. They are stored verbatim, so they must not be reworded
@@ -131,7 +132,11 @@ if (!assignedSaunaType) {
   return;
 }
 
+// The id is made here rather than read back after saving: it is the secret in
+// the office's cancel link, so the public cannot read ids.
+const id = crypto.randomUUID();
 const reservationData = {
+  id,
   form_type: 'ritual',
   name: formData.name,
   email: formData.email,
@@ -149,12 +154,11 @@ const reservationData = {
   rental_message: ''
 };
 
-      // Insert into Supabase. Only the id comes back: visitors may read the
-      // columns that show availability, never other guests' contact details.
+      // Nothing is read back: visitors may read only the columns that show
+      // availability, never other guests' details or booking ids.
       const { error } = await supabase
         .from('reservations')
-        .insert([reservationData])
-        .select('id');
+        .insert([reservationData]);
 
       // The database allows one booking per sauna and time, so a second guest
       // who picked the same slot a moment later is told so plainly.
@@ -182,7 +186,10 @@ const reservationData = {
   rental_type: '',             // <- Empty for rituals
   rental_extras: [],           // <- Empty for rituals
   rental_message: '',          // <- Empty for rituals
-  locale: i18n.language === 'en' ? 'en' : 'lv' // lets Make answer in the guest's language
+  locale: i18n.language === 'en' ? 'en' : 'lv', // lets Make answer in the guest's language
+  // For the office's calendar: cancels the booking, freeing the slot and
+  // annulling its advance invoice.
+  cancel_url: cancelUrl(id)
 };
 
       // The booking is saved at this point. If the notification fails the guest

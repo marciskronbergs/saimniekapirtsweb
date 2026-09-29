@@ -3,11 +3,15 @@
 // Everything is drawn from the stored invoice row, never from the booking, so
 // sending the same invoice again always produces the same document.
 //
+// Two kinds: an advance invoice (avansa rēķins) when the guest books, and the
+// invoice (rēķins) itself after the visit, marked paid. An annulled invoice is
+// stamped so, for the archive.
+//
 // A Latvian guest gets a Latvian invoice. An English-speaking guest gets one
 // with Latvian and English side by side: the company keeps its books in
 // Latvian, and the guest can still read what they are paying for.
 
-import { PDFDocument, rgb, type PDFFont, type PDFPage } from 'npm:pdf-lib@1.17.1';
+import { PDFDocument, rgb, degrees, type PDFFont, type PDFPage } from 'npm:pdf-lib@1.17.1';
 import fontkit from 'npm:@pdf-lib/fontkit@1.1.1';
 import { amountInWords } from './words.ts';
 import type { PricedItem } from './pricing.ts';
@@ -30,10 +34,15 @@ export interface InvoiceDetails {
   date?: string;
   time?: string;
   sauna?: string;
+  // On a final invoice, the advance invoice it settles.
+  advance_number?: string;
 }
 
 export interface InvoiceRow {
   id: string;
+  kind: 'advance' | 'final';
+  status?: 'issued' | 'annulled';
+  paid?: boolean;
   number: string;
   issued_on: string;
   due_on: string;
@@ -73,6 +82,24 @@ const loadFonts = () => {
   return fonts;
 };
 
+// The logo the website header shows: white and green, made for a dark
+// background, so the invoice opens with a dark band as the site does. If it
+// cannot be fetched the invoice is still drawn, with the name in its place.
+const LOGO_URL = Deno.env.get('INVOICE_LOGO_URL') ??
+  'https://wigoyeorqnssgbrgexku.supabase.co/storage/v1/object/public/websiteassets/logo/logoTitle.png';
+let logo: Promise<ArrayBuffer | null> | null = null;
+
+const loadLogo = () => {
+  logo ??= fetch(LOGO_URL)
+    .then((res) => (res.ok ? res.arrayBuffer() : null))
+    .catch(() => null)
+    .then((bytes) => {
+      if (!bytes) logo = null; // try again next time
+      return bytes;
+    });
+  return logo;
+};
+
 export const formatDate = (iso: string) => {
   const [y, m, d] = iso.slice(0, 10).split('-');
   return `${d}.${m}.${y}`;
@@ -96,11 +123,15 @@ const unitNames = {
 
 const ink = rgb(0.1, 0.1, 0.1);
 const grey = rgb(0.42, 0.42, 0.42);
-const green = rgb(0.13, 0.5, 0.25);
 const rule = rgb(0.82, 0.82, 0.82);
+const band = rgb(0.04, 0.04, 0.04);
+const white = rgb(1, 1, 1);
+const brandGreen = rgb(0.31, 0.79, 0.29);
 
 export async function renderInvoicePdf(invoice: InvoiceRow): Promise<Uint8Array> {
   const bilingual = invoice.locale === 'en';
+  const final = invoice.kind === 'final';
+  const annulled = invoice.status === 'annulled';
   const L = (lv: string, en: string) => (bilingual ? `${lv} / ${en}` : lv);
   const money = (n: number) => formatMoney(n, invoice.locale);
   const total = Number(invoice.total);
@@ -111,7 +142,7 @@ export async function renderInvoicePdf(invoice: InvoiceRow): Promise<Uint8Array>
   const [regularBytes, boldBytes] = await loadFonts();
   const regular = await doc.embedFont(regularBytes, { subset: true });
   const bold = await doc.embedFont(boldBytes, { subset: true });
-  doc.setTitle(`${L('Rēķins', 'Invoice')} ${invoice.number}`);
+  doc.setTitle(`${final ? L('Rēķins', 'Invoice') : L('Avansa rēķins', 'Advance invoice')} ${invoice.number}`);
   doc.setAuthor(seller.name);
   doc.setCreator(seller.web);
 
@@ -173,19 +204,38 @@ export async function renderInvoicePdf(invoice: InvoiceRow): Promise<Uint8Array>
     y = pageSize[1] - 56;
   };
 
-  // Heading: who is issuing, and which invoice this is.
-  text(seller.tradeName, left, { font: bold, size: 18, color: green });
-  text(L('RĒĶINS', 'INVOICE'), right, { font: bold, size: 18, align: 'right' });
-  y -= 16;
+  // Heading: a dark band with the logo, and which invoice this is.
+  const bandHeight = 84;
+  const bandBottom = pageSize[1] - bandHeight;
+  page.drawRectangle({ x: 0, y: bandBottom, width: pageSize[0], height: bandHeight, color: band });
+  const logoBytes = await loadLogo();
+  const logoImage = logoBytes ? await doc.embedPng(logoBytes).catch(() => null) : null;
+  if (logoImage) {
+    const scale = Math.min(44 / logoImage.height, 230 / logoImage.width);
+    const w = logoImage.width * scale;
+    const h = logoImage.height * scale;
+    page.drawImage(logoImage, { x: left, y: bandBottom + (bandHeight - h) / 2, width: w, height: h });
+  } else {
+    y = bandBottom + 34;
+    text('Saimnieka', left, { font: bold, size: 22, color: white });
+    text('Pirts', left + bold.widthOfTextAtSize('Saimnieka', 22), { font: bold, size: 22, color: brandGreen });
+  }
+  y = bandBottom + 44;
+  const title = final ? L('RĒĶINS', 'INVOICE') : L('AVANSA RĒĶINS', 'ADVANCE INVOICE');
+  text(title, right, { font: bold, size: bilingual && !final ? 15 : 18, color: white, align: 'right' });
+  y = bandBottom + 24;
+  text(`Nr. ${invoice.number}`, right, { font: bold, size: 11, color: brandGreen, align: 'right' });
+
+  y = bandBottom - 24;
   text(`${seller.web} · ${seller.email} · ${seller.phone}`, left, { size: 8.5, color: grey });
-  text(`Nr. ${invoice.number}`, right, { font: bold, size: 11, align: 'right' });
-  y -= 14;
   text(`${L('Datums', 'Date')}: ${formatDate(invoice.issued_on)}`, right, { align: 'right' });
-  y -= 13;
-  text(`${L('Apmaksāt līdz', 'Due by')}: ${formatDate(invoice.due_on)}`, right, { font: bold, align: 'right' });
-  y -= 22;
-  hr(green, 1.2);
-  y -= 22;
+  y -= 14;
+  if (final) {
+    text(L('Apmaksāts', 'Paid'), right, { font: bold, color: brandGreen, align: 'right' });
+  } else {
+    text(`${L('Apmaksāt līdz', 'Due by')}: ${formatDate(invoice.due_on)}`, right, { font: bold, align: 'right' });
+  }
+  y -= 30;
 
   // Seller and buyer side by side.
   const col2 = left + 270;
@@ -226,6 +276,10 @@ export async function renderInvoicePdf(invoice: InvoiceRow): Promise<Uint8Array>
     const sauna = d.sauna ? saunaNames[d.sauna] ?? { lv: d.sauna, en: d.sauna } : null;
     const when = [formatDate(d.date), d.time, sauna ? L(sauna.lv, sauna.en) : ''].filter(Boolean).join(', ');
     text(`${L('Apmeklējuma laiks', 'Visit')}: ${when}`, left, { size: 9.5 });
+    y -= 18;
+  }
+  if (final && d?.advance_number) {
+    text(`${L('Avansa rēķins', 'Advance invoice')}: ${d.advance_number}`, left, { size: 9.5 });
     y -= 18;
   }
 
@@ -282,7 +336,7 @@ export async function renderInvoicePdf(invoice: InvoiceRow): Promise<Uint8Array>
   text(L('PVN', 'VAT'), labelX);
   text(L('nav piemērojams', 'not applicable'), cols.amount, { align: 'right', color: grey });
   y -= 18;
-  text(L('Kopā apmaksai', 'Total due'), labelX, { font: bold, size: 11 });
+  text(final ? L('Kopā', 'Total') : L('Kopā apmaksai', 'Total due'), labelX, { font: bold, size: 11 });
   text(`${money(total)} EUR`, cols.amount, { font: bold, size: 11, align: 'right' });
   y -= 26;
 
@@ -293,22 +347,40 @@ export async function renderInvoicePdf(invoice: InvoiceRow): Promise<Uint8Array>
   }
   y -= 26;
 
-  // How to pay.
+  // How to pay, or that it has been paid.
   ensureRoom(80);
   text(L('Apmaksa', 'Payment'), left, { font: bold, size: 10 });
   y -= 15;
-  const payment = [
+  const payment = final ? [
+    L('Rēķins ir apmaksāts. Paldies!', 'This invoice has been paid in full. Thank you!'),
+  ] : [
     L(`Ar pārskaitījumu līdz ${formatDate(invoice.due_on)}`, `By bank transfer by ${formatDate(invoice.due_on)}`) +
       ` – ${seller.name}, ${seller.iban}, ${seller.bank}.`,
     L(`Maksājuma mērķī norādiet rēķina numuru ${invoice.number}.`, `Please quote invoice number ${invoice.number} as the payment reference.`),
   ];
-  if (invoice.source_type === 'reservation') {
-    payment.push(L('Var norēķināties arī skaidrā naudā uz vietas.', 'You can also pay in cash on site.'));
-  }
   for (const para of payment) {
     for (const line of wrap(para, regular, 9, right - left)) {
       text(line, left, { size: 9 });
       y -= 12;
+    }
+  }
+
+  // An annulled invoice keeps its number and is stamped, never deleted.
+  if (annulled) {
+    const stamp = L('ANULĒTS', 'ANNULLED');
+    const size = 54;
+    const red = rgb(0.8, 0.1, 0.1);
+    for (const p of doc.getPages()) {
+      const w = bold.widthOfTextAtSize(stamp, size);
+      p.drawText(stamp, {
+        x: (pageSize[0] - w * Math.cos(Math.PI / 7)) / 2,
+        y: pageSize[1] / 2 - 60,
+        size,
+        font: bold,
+        color: red,
+        opacity: 0.35,
+        rotate: degrees(25),
+      });
     }
   }
 

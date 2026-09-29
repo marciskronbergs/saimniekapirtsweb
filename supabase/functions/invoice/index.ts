@@ -1,37 +1,68 @@
-// Issues invoices for bookings and gift card orders and mails them to the
-// office, which checks each one and forwards it to the guest. Nothing here
-// ever writes to a guest: the mail goes out through the Make scenario
-// "Rēķini → info@saimniekapirts.lv", whose only recipient is the office.
+// Invoices and guest mail for bookings and gift card orders.
 //
-// Called by the database, never by browsers:
-//   { source_type, source_id }            after a booking or order is saved
-//   { sweep: true }                       every 15 minutes, to finish anything
-//                                         a failed call left undone
-//   { source_type, source_id, dry_run }   draws the invoice without issuing it
-//                                         (no number is used) and returns it
-// Every call must carry the secret kept in Vault as invoice_hook_secret.
+// When a guest books or orders a gift card:
+//   * an advance invoice (AR-<year>-<nnnn>) is issued and mailed to the office
+//     through the Make scenario "Rēķini → info@saimniekapirts.lv", whose only
+//     recipient is the office; a person checks it and forwards it;
+//   * a copy is filed in Google Drive and the invoice list, through the second
+//     Make scenario "Klientu e-pasti + rēķinu arhīvs";
+//   * once switched on (app_settings.guest_confirmations = 'on'), the guest
+//     gets a booking confirmation in the language they booked in.
 //
-// Until that scenario's webhook address is stored in Vault (as
-// invoice_make_webhook_url) the function issues nothing, so no invoice numbers
-// are used up before invoices can actually be delivered.
+// The morning after a visit, unless its advance invoice was annulled, the
+// invoice proper (SP-<year>-<nnnn>, marked paid) is issued, sent to the guest
+// with thanks and a request for a review, and filed. A gift card's invoice is
+// issued when the office confirms payment. Official numbers are therefore only
+// used for visits that happened and sales that were paid, and run without gaps.
+//
+// Called by the database, with the secret kept in Vault as invoice_hook_secret:
+//   { source_type, source_id }              after a booking or order is saved
+//   { sweep: true }                         every 15 minutes: anything left undone
+//   { finals: true }                        every morning: final invoices
+//   { source_type, source_id, dry_run }     a preview; no number is used
+//   { source_type, source_id, preview_to_office }
+//                                           what the guest would get, sent to
+//                                           the office instead
+// And by the website's page for the office, with a link and the office PIN:
+//   { manage: { id, token, pin?, action: 'view' | 'annul' | 'final' } }
+//                                           an invoice, from the office's email
+//   { manage: { reservation, pin?, action: 'view' | 'cancel' } }
+//                                           a booking, from the office's calendar:
+//                                           cancelling annuls its advance invoice
+//                                           and frees the time slot
 
 import { createClient } from 'npm:@supabase/supabase-js@2';
 import catalog from './priceCatalog.json' with { type: 'json' };
 import { priceReservation, priceGiftCard, type PriceCatalog } from './pricing.ts';
 import seller from './seller.json' with { type: 'json' };
-import { renderInvoicePdf, type InvoiceRow, type InvoiceDetails } from './pdf.ts';
-import { invoiceEmail, holdEmail } from './email.ts';
+import { renderInvoicePdf, formatDate, type InvoiceRow, type InvoiceDetails } from './pdf.ts';
+import { invoiceEmail, holdEmail, confirmationEmail, finalInvoiceGuestEmail } from './email.ts';
 
 type SourceType = 'reservation' | 'gift_card';
+type Invoice = InvoiceRow & {
+  emailed_at?: string | null;
+  customer_emailed_at?: string | null;
+  logged_at?: string | null;
+  annul_logged_at?: string | null;
+  manage_token: string;
+  advance_id?: string | null;
+  source_id: string;
+};
 
 const db = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!, {
   auth: { persistSession: false },
 });
 const VAT_NOTE = 'Nav PVN maksātājs';
 const prices = catalog as PriceCatalog;
+const typedSeller = seller as InvoiceRow['seller'];
 
+const cors = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'content-type',
+  'Access-Control-Allow-Methods': 'POST, OPTIONS',
+};
 const json = (body: unknown, status = 200) =>
-  new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json' } });
+  new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json', ...cors } });
 
 const rigaToday = () => new Date().toLocaleDateString('en-CA', { timeZone: 'Europe/Riga' });
 const addDays = (iso: string, days: number) => {
@@ -49,6 +80,19 @@ const toBase64 = (bytes: Uint8Array) => {
   return btoa(binary);
 };
 
+// Database errors arrive as plain objects, not Error instances.
+const describe = (e: unknown) =>
+  e instanceof Error ? e.message : (e as { message?: string })?.message ?? String(e);
+
+async function attempt<T>(fn: () => Promise<T>) {
+  try {
+    return await fn();
+  } catch (e) {
+    console.error(e);
+    return { status: 'error', error: describe(e) };
+  }
+}
+
 // ---------------------------------------------------------------------------
 // Reading a booking or an order into one shape.
 
@@ -63,6 +107,8 @@ interface Source {
   details: InvoiceDetails;
   priced: ReturnType<typeof priceReservation>;
   fields: [string, string][];
+  // deno-lint-ignore no-explicit-any
+  row: any;
 }
 
 async function loadSource(type: SourceType, id: string): Promise<Source | null> {
@@ -75,6 +121,7 @@ async function loadSource(type: SourceType, id: string): Promise<Source | null> 
     return {
       type,
       id,
+      row: r,
       locale: r.locale === 'en' ? 'en' : 'lv',
       name: r.name ?? '',
       email: r.email ?? '',
@@ -104,6 +151,7 @@ async function loadSource(type: SourceType, id: string): Promise<Source | null> 
   return {
     type,
     id,
+    row: g,
     locale: g.locale === 'en' ? 'en' : 'lv',
     name: g.vards_uzvards ?? '',
     email: g.epasts ?? '',
@@ -122,51 +170,73 @@ async function loadSource(type: SourceType, id: string): Promise<Source | null> 
 }
 
 // ---------------------------------------------------------------------------
-// Mail.
+// Where mail goes. Both Make webhook addresses live in Vault; while one is
+// absent, the work that needs it waits and the sweep picks it up later.
 
-// The Make webhook's address, or null while delivery is not switched on.
-async function deliveryUrl(): Promise<string | null> {
-  const { data, error } = await db.rpc('invoice_delivery_url');
+async function rpcText(name: string): Promise<string | null> {
+  const { data, error } = await db.rpc(name);
   if (error) throw error;
   return data || null;
 }
+const officeUrl = () => rpcText('invoice_delivery_url');
+const guestUrl = () => rpcText('guest_delivery_url');
 
-// Hands a message to Make, which mails it to the office. The recipient is set
-// in the scenario, not here, so nothing this function sends can reach a guest.
-async function sendToOffice(
-  message: { subject: string; html: string; text: string },
-  attachment?: { filename: string; content: string }
-) {
-  const url = await deliveryUrl();
-  if (!url) throw new Error('Invoice delivery is not switched on');
+async function setting(key: string): Promise<string | null> {
+  const { data, error } = await db.from('app_settings').select('value').eq('key', key).maybeSingle();
+  if (error) throw error;
+  return data?.value ?? null;
+}
+
+async function post(url: string | null, what: string, payload: Record<string, unknown>) {
+  if (!url) throw new Error(`${what} is not switched on`);
   const res = await fetch(url, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      subject: message.subject,
-      html: message.html,
-      text: message.text,
-      // Make sends invoices with the file attached and hold notices without.
-      ...(attachment ? { filename: attachment.filename, pdf_base64: attachment.content } : {}),
-    }),
+    body: JSON.stringify(payload),
   });
   if (!res.ok) throw new Error(`Make ${res.status}: ${await res.text()}`);
 }
 
-// Mails an issued invoice unless it has gone out, or another call is sending it.
-async function deliver(invoice: InvoiceRow & { emailed_at?: string | null }) {
-  if (invoice.emailed_at) return { status: 'already_sent', number: invoice.number };
+// To the office only: the recipient is fixed in that scenario.
+async function sendToOffice(
+  message: { subject: string; html: string; text: string },
+  attachment?: { filename: string; content: string }
+) {
+  await post(await officeUrl(), 'Office mail', {
+    subject: message.subject,
+    html: message.html,
+    text: message.text,
+    ...(attachment ? { filename: attachment.filename, pdf_base64: attachment.content } : {}),
+  });
+}
 
+// To a guest, through the second scenario.
+async function sendToGuest(
+  to: string,
+  message: { subject: string; html: string },
+  attachment?: { filename: string; content: string }
+) {
+  await post(await guestUrl(), 'Guest mail', {
+    route: 'email',
+    to,
+    subject: message.subject,
+    html: message.html,
+    ...(attachment ? { filename: attachment.filename, pdf_base64: attachment.content } : {}),
+  });
+}
+
+// ---------------------------------------------------------------------------
+// Advance invoices, to the office.
+
+async function deliverAdvance(invoice: Invoice) {
+  if (invoice.emailed_at) return { status: 'already_sent', number: invoice.number };
   const { data: claimed, error } = await db.rpc('claim_invoice_email', { p_invoice_id: invoice.id });
   if (error) throw error;
   if (!claimed) return { status: 'in_progress', number: invoice.number };
 
   const pdf = await renderInvoicePdf(invoice);
   const message = invoiceEmail(invoice);
-  await sendToOffice(message, {
-    filename: message.filename,
-    content: toBase64(pdf),
-  });
+  await sendToOffice(message, { filename: message.filename, content: toBase64(pdf) });
   await db.from('invoices').update({ emailed_at: new Date().toISOString() }).eq('id', invoice.id);
   return { status: 'sent', number: invoice.number };
 }
@@ -178,20 +248,100 @@ async function notifyHold(type: SourceType, id: string, reason: string, fields: 
 }
 
 // ---------------------------------------------------------------------------
-// One booking or order.
+// The archive: every invoice as a PDF in Drive and a line in the list, and an
+// annulled one again, stamped, when it is annulled.
+
+async function archive(invoice: Invoice) {
+  const annulled = invoice.status === 'annulled';
+  if (annulled ? invoice.annul_logged_at : invoice.logged_at) return { status: 'already_filed' };
+  const url = await guestUrl();
+  if (!url) return { status: 'archive_off' };
+
+  const pdf = await renderInvoicePdf(invoice);
+  const d = invoice.details;
+  await post(url, 'Archive', {
+    route: 'archive',
+    filename: `${invoice.number}${annulled ? '-ANULETS' : ''}.pdf`,
+    pdf_base64: toBase64(pdf),
+    date: formatDate(annulled ? rigaToday() : invoice.issued_on),
+    number: invoice.number,
+    kind: invoice.kind === 'final' ? 'Rēķins' : 'Avansa rēķins',
+    status: annulled ? 'Anulēts' : invoice.kind === 'final' ? 'Apmaksāts' : 'Izrakstīts',
+    customer: invoice.customer_name,
+    email: invoice.customer_email,
+    visit: d?.kind === 'reservation' && d.date ? `${formatDate(d.date)} ${d.time ?? ''} ${d.sauna ?? ''}`.trim() : 'Dāvanu karte',
+    total: Number(invoice.total).toFixed(2).replace('.', ','),
+  });
+  await db.from('invoices')
+    .update(annulled ? { annul_logged_at: new Date().toISOString() } : { logged_at: new Date().toISOString() })
+    .eq('id', invoice.id);
+  return { status: 'filed' };
+}
+
+// ---------------------------------------------------------------------------
+// Guest booking confirmation.
+
+function confirmationFor(source: Source) {
+  const r = source.row;
+  const ritual = prices.ritual.find((x) => x.label === r.ritual_type);
+  return confirmationEmail({
+    type: source.type,
+    locale: source.locale,
+    name: source.name,
+    formType: r.form_type,
+    date: source.details.date,
+    time: source.details.time,
+    sauna: source.details.sauna,
+    participants: r.ritual_participants ?? null,
+    overnight: !!r.overnight_stay || (r.rental_extras ?? []).some((e: string) => e.startsWith('Nakšņošana')),
+    giftLabel: source.type === 'gift_card' ? r.ritual_type ?? '' : undefined,
+    priced: source.priced,
+    individual: ritual?.people === 1,
+    seller: typedSeller,
+  });
+}
+
+async function confirmGuest(source: Source) {
+  if ((await setting('guest_confirmations')) !== 'on') return { status: 'confirmations_off' };
+  if (!source.email.includes('@')) return { status: 'no_email' };
+  const { data: claimed, error } = await db.rpc('claim_guest_email', {
+    p_source_type: source.type, p_source_id: source.id, p_kind: 'confirmation',
+  });
+  if (error) throw error;
+  if (!claimed) return { status: 'already_sent' };
+
+  await sendToGuest(source.email, confirmationFor(source));
+  await db.from('guest_emails').update({ sent_at: new Date().toISOString() })
+    .eq('source_type', source.type).eq('source_id', source.id).eq('kind', 'confirmation');
+  return { status: 'confirmed' };
+}
+
+// ---------------------------------------------------------------------------
+// One booking or order, when it is saved (and again from the sweep).
 
 async function processSource(type: SourceType, id: string) {
+  const source = await loadSource(type, id);
+  if (!source) return { status: 'not_found' };
+  // The guest's confirmation does not wait on, or fail with, the invoice.
+  const confirmation = await attempt(() => confirmGuest(source));
+  const advance = await attempt(() => issueAdvance(source));
+  return { advance, confirmation };
+}
+
+async function issueAdvance(source: Source) {
+  const { type, id } = source;
   const { data: existing, error: existingError } = await db
-    .from('invoices').select('*').eq('source_type', type).eq('source_id', id).maybeSingle();
+    .from('invoices').select('*').eq('source_type', type).eq('source_id', id).eq('kind', 'advance').maybeSingle();
   if (existingError) throw existingError;
-  if (existing) return await deliver(existing);
+  if (existing) {
+    const sent = await deliverAdvance(existing);
+    const filed = await attempt(() => archive(existing));
+    return { ...sent, filed };
+  }
 
   const { data: hold } = await db
     .from('invoice_holds').select('notified_at').eq('source_type', type).eq('source_id', id).maybeSingle();
   if (hold) return { status: 'held' };
-
-  const source = await loadSource(type, id);
-  if (!source) return { status: 'not_found' };
 
   const problems = [...source.priced.problems];
   if (source.priced.items.length === 0 && problems.length === 0) problems.push('Nothing to invoice');
@@ -211,6 +361,7 @@ async function processSource(type: SourceType, id: string) {
   }
 
   const { data: invoice, error } = await db.rpc('create_invoice', {
+    p_kind: 'advance',
     p_source_type: type,
     p_source_id: id,
     p_due_on: source.dueOn,
@@ -225,18 +376,115 @@ async function processSource(type: SourceType, id: string) {
     p_details: source.details,
   });
   if (error) throw error;
-  return await deliver(invoice);
+  const sent = await deliverAdvance(invoice);
+  const filed = await attempt(() => archive(invoice));
+  return { ...sent, filed };
 }
 
 // ---------------------------------------------------------------------------
-// The 15-minute sweep: bookings from the last day without an invoice, invoices
-// not yet mailed, and holds the office has not been told about. It leaves the
-// last two minutes alone, which belong to the call each new row makes itself.
+// Final invoices.
+
+// Issues the invoice that settles an advance, unless the advance was annulled.
+// The lines and the seller are the advance's, word for word.
+async function issueFinal(advance: Invoice) {
+  if (advance.kind !== 'advance') throw new Error('Not an advance invoice');
+  if (advance.status === 'annulled') return { status: 'annulled' };
+  const { data: invoice, error } = await db.rpc('create_invoice', {
+    p_kind: 'final',
+    p_source_type: advance.source_type,
+    p_source_id: advance.source_id,
+    p_due_on: rigaToday(),
+    p_locale: advance.locale,
+    p_customer_name: advance.customer_name,
+    p_customer_email: advance.customer_email,
+    p_customer_phone: advance.customer_phone,
+    p_items: advance.items,
+    p_total: advance.total,
+    p_seller: advance.seller,
+    p_vat_note: advance.vat_note,
+    p_details: { ...(advance.details ?? {}), advance_number: advance.number },
+    p_paid: true,
+    p_advance_id: advance.id,
+  });
+  if (error) throw error;
+  return await deliverFinal(invoice);
+}
+
+async function deliverFinal(invoice: Invoice) {
+  let sent: Record<string, unknown> = { status: 'already_sent' };
+  if (!invoice.customer_emailed_at) {
+    const { data: claimed, error } = await db.rpc('claim_customer_invoice_email', { p_invoice_id: invoice.id });
+    if (error) throw error;
+    if (claimed) {
+      const pdf = await renderInvoicePdf(invoice);
+      const message = finalInvoiceGuestEmail(invoice);
+      await sendToGuest(invoice.customer_email, message, { filename: message.filename, content: toBase64(pdf) });
+      await db.from('invoices').update({ customer_emailed_at: new Date().toISOString() }).eq('id', invoice.id);
+      sent = { status: 'sent_to_guest' };
+    } else {
+      sent = { status: 'in_progress' };
+    }
+  }
+  const filed = await attempt(() => archive(invoice));
+  return { number: invoice.number, ...sent, filed };
+}
+
+async function annul(invoice: Invoice) {
+  if (invoice.kind !== 'advance') throw new Error('Only an advance invoice can be annulled');
+  if (invoice.status === 'annulled') return { status: 'already_annulled' };
+  const { data: final } = await db.from('invoices').select('id').eq('advance_id', invoice.id).maybeSingle();
+  if (final) throw new Error('A final invoice has already been issued');
+  const { data: updated, error } = await db.from('invoices')
+    .update({ status: 'annulled', annulled_at: new Date().toISOString() })
+    .eq('id', invoice.id).eq('status', 'issued').select('*').maybeSingle();
+  if (error) throw error;
+  if (!updated) return { status: 'already_annulled' };
+  const filed = await attempt(() => archive(updated));
+  return { status: 'annulled', number: invoice.number, filed };
+}
+
+// The morning run: bookings whose visit was yesterday or earlier (up to two
+// weeks back, in case a run was missed). A booking that has since been deleted
+// is taken as cancelled and its advance annulled.
+async function finals() {
+  if (!(await guestUrl())) return { status: 'finals_off' };
+  const today = rigaToday();
+  const earliest = addDays(today, -14);
+  const { data: advances, error } = await db.from('invoices').select('*')
+    .eq('kind', 'advance').eq('status', 'issued').eq('source_type', 'reservation');
+  if (error) throw error;
+  const due = (advances ?? []).filter((a) => {
+    const date = a.details?.date as string | undefined;
+    return date && date < today && date >= earliest;
+  });
+  if (due.length === 0) return { status: 'nothing_due' };
+
+  const { data: existing } = await db.from('invoices').select('advance_id').eq('kind', 'final')
+    .in('advance_id', due.map((a) => a.id));
+  const done = new Set((existing ?? []).map((f) => f.advance_id));
+  const results: unknown[] = [];
+  for (const advance of due.filter((a) => !done.has(a.id))) {
+    results.push({
+      advance: advance.number,
+      ...(await attempt(async () => {
+        const { data: booking } = await db.from('reservations').select('id').eq('id', advance.source_id).maybeSingle();
+        if (!booking) return await annul(advance);
+        return await issueFinal(advance);
+      })),
+    });
+  }
+  return { status: 'finals', results };
+}
+
+// ---------------------------------------------------------------------------
+// The 15-minute sweep: anything a failed call left undone.
 
 async function sweep() {
   const since = minutesAgo(24 * 60);
   const settled = minutesAgo(2);
+  const recent = minutesAgo(3 * 24 * 60);
   const results: unknown[] = [];
+  const confirmationsOn = (await setting('guest_confirmations')) === 'on';
 
   for (const [type, table] of [['reservation', 'reservations'], ['gift_card', 'davanu_kartes_pasutijumi']] as const) {
     const { data: rows, error } = await db
@@ -245,25 +493,64 @@ async function sweep() {
     const ids = (rows ?? []).map((r) => r.id as string);
     if (ids.length === 0) continue;
 
-    const [{ data: invoiced }, { data: held }] = await Promise.all([
-      db.from('invoices').select('source_id').eq('source_type', type).in('source_id', ids),
+    const [{ data: invoiced }, { data: held }, { data: confirmed }] = await Promise.all([
+      db.from('invoices').select('source_id').eq('source_type', type).eq('kind', 'advance').in('source_id', ids),
       db.from('invoice_holds').select('source_id').eq('source_type', type).in('source_id', ids),
+      db.from('guest_emails').select('source_id').eq('source_type', type).eq('kind', 'confirmation')
+        .not('sent_at', 'is', null).in('source_id', ids),
     ]);
-    const done = new Set([...(invoiced ?? []), ...(held ?? [])].map((r) => r.source_id));
-    for (const id of ids.filter((id) => !done.has(id))) {
-      results.push({ type, id, ...(await attempt(() => processSource(type, id))) });
+    const hasAdvance = new Set([...(invoiced ?? []), ...(held ?? [])].map((r) => r.source_id));
+    const hasConfirmation = new Set((confirmed ?? []).map((r) => r.source_id));
+    for (const id of ids) {
+      const needsAdvance = !hasAdvance.has(id);
+      const needsConfirmation = confirmationsOn && !hasConfirmation.has(id);
+      if (!needsAdvance && !needsConfirmation) continue;
+      results.push({
+        type, id,
+        ...(await attempt(async () => {
+          const source = await loadSource(type, id);
+          if (!source) return { status: 'not_found' };
+          return {
+            advance: needsAdvance ? await attempt(() => issueAdvance(source)) : 'done',
+            confirmation: needsConfirmation ? await attempt(() => confirmGuest(source)) : 'done',
+          };
+        })),
+      });
     }
   }
 
-  const { data: unsent } = await db
-    .from('invoices').select('*').is('emailed_at', null).gte('created_at', minutesAgo(3 * 24 * 60));
+  // Advance invoices not yet mailed to the office.
+  const { data: unsent } = await db.from('invoices').select('*')
+    .eq('kind', 'advance').is('emailed_at', null).gte('created_at', recent);
   for (const invoice of unsent ?? []) {
-    results.push({ number: invoice.number, ...(await attempt(() => deliver(invoice))) });
+    results.push({ number: invoice.number, ...(await attempt(() => deliverAdvance(invoice))) });
   }
 
+  // Final invoices not yet with the guest.
+  const { data: finalsUnsent } = await db.from('invoices').select('*')
+    .eq('kind', 'final').is('customer_emailed_at', null).gte('created_at', minutesAgo(7 * 24 * 60));
+  for (const invoice of finalsUnsent ?? []) {
+    results.push({ number: invoice.number, ...(await attempt(() => deliverFinal(invoice))) });
+  }
+
+  // Invoices not yet filed, or annulled and not yet filed as such.
+  if (await guestUrl()) {
+    const { data: unfiled } = await db.from('invoices').select('*')
+      .or('logged_at.is.null,and(status.eq.annulled,annul_logged_at.is.null)')
+      .gte('created_at', minutesAgo(30 * 24 * 60));
+    for (const invoice of unfiled ?? []) {
+      if (invoice.status === 'annulled' && !invoice.logged_at) {
+        // Filed first as issued, then as annulled, so the list tells the story.
+        await attempt(() => archive({ ...invoice, status: 'issued' }));
+      }
+      results.push({ filed: invoice.number, ...(await attempt(() => archive(invoice))) });
+    }
+  }
+
+  // Hold notices the office has not received.
   const { data: unnotified } = await db
     .from('invoice_holds').select('*').is('notified_at', null)
-    .gte('created_at', minutesAgo(3 * 24 * 60)).lt('created_at', minutesAgo(10));
+    .gte('created_at', recent).lt('created_at', minutesAgo(10));
   for (const hold of unnotified ?? []) {
     results.push({
       hold: hold.source_id,
@@ -278,52 +565,161 @@ async function sweep() {
   return { status: 'swept', results };
 }
 
-// Database errors arrive as plain objects, not Error instances.
-const describe = (e: unknown) =>
-  e instanceof Error ? e.message : (e as { message?: string })?.message ?? String(e);
+// ---------------------------------------------------------------------------
+// The office's invoice page on the website.
 
-async function attempt<T>(fn: () => Promise<T>) {
+const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+async function manage(body: { id?: string; token?: string; pin?: string; action?: string }) {
+  const { id, token, pin, action = 'view' } = body;
+  if (!id || !token || !uuidPattern.test(id) || !uuidPattern.test(token)) return json({ error: 'bad_link' }, 400);
+  const { data: invoice } = await db.from('invoices').select('*').eq('id', id).eq('manage_token', token).maybeSingle();
+  if (!invoice) return json({ error: 'not_found' }, 404);
+  const { data: final } = await db.from('invoices').select('number').eq('advance_id', invoice.id).maybeSingle();
+
+  const view = (status = invoice.status, finalNumber = final?.number ?? null) => ({
+    number: invoice.number,
+    kind: invoice.kind,
+    status,
+    source_type: invoice.source_type,
+    customer_name: invoice.customer_name,
+    total: invoice.total,
+    visit: invoice.details?.date ? `${formatDate(invoice.details.date)} ${invoice.details.time ?? ''}`.trim() : null,
+    final_number: finalNumber,
+  });
+  if (action === 'view') return json(view());
+
+  const pinResult = await pinCheck(pin);
+  if (pinResult !== 'ok') return pinRefusal(pinResult);
   try {
-    return await fn();
+    if (action === 'annul') {
+      const result = await annul(invoice);
+      return json({ ...result, invoice: view('annulled') });
+    }
+    if (action === 'final') {
+      if (final) return json({ error: 'final_exists', invoice: view() }, 409);
+      if (!(await guestUrl())) return json({ error: 'guest_mail_off' }, 409);
+      const result = await issueFinal(invoice);
+      return json({ ...result, invoice: view(invoice.status, (result as { number?: string }).number ?? null) });
+    }
+    return json({ error: 'unknown_action' }, 400);
   } catch (e) {
-    console.error(e);
-    return { status: 'error', error: describe(e) };
+    return json({ error: describe(e) }, 409);
   }
 }
 
-// ---------------------------------------------------------------------------
+// 'ok', 'wrong' or 'locked': after ten wrong PINs in fifteen minutes the
+// database refuses every PIN until the window passes.
+async function pinCheck(pin: unknown): Promise<string> {
+  const { data, error } = await db.rpc('invoice_admin_pin_check', { p_pin: String(pin ?? '') });
+  if (error) throw error;
+  if (data !== 'ok') await new Promise((r) => setTimeout(r, 1500)); // slows guessing
+  return data;
+}
+const pinRefusal = (result: string) =>
+  json({ error: result === 'locked' ? 'pin_locked' : 'wrong_pin' }, result === 'locked' ? 429 : 403);
 
-async function preview(type: SourceType, id: string) {
+// A booking, opened from the link in the office's calendar. The booking's id
+// is the link's secret; cancelling also needs the PIN.
+async function manageReservation(body: { reservation?: string; pin?: string; action?: string }) {
+  const { reservation: id, pin, action = 'view' } = body;
+  if (!id || !uuidPattern.test(id)) return json({ error: 'bad_link' }, 400);
+  const { data: booking } = await db.from('reservations').select('*').eq('id', id).maybeSingle();
+  const { data: cancelled } = booking
+    ? { data: null }
+    : await db.from('cancelled_reservations').select('reservation, cancelled_at').eq('id', id).maybeSingle();
+  if (!booking && !cancelled) return json({ error: 'not_found' }, 404);
+  const row = booking ?? cancelled!.reservation;
+  const { data: invoices } = await db.from('invoices').select('*')
+    .eq('source_type', 'reservation').eq('source_id', id);
+  const advance = (invoices ?? []).find((i) => i.kind === 'advance') ?? null;
+  const final = (invoices ?? []).find((i) => i.kind === 'final') ?? null;
+
+  const view = (isCancelled = !booking, advanceStatus = advance?.status ?? null) => ({
+    type: 'reservation',
+    cancelled: isCancelled,
+    customer_name: row.name,
+    visit: `${formatDate(row.reservation_date)} ${row.reservation_time ?? ''}`.trim(),
+    sauna: row.sauna_type,
+    service: row.form_type === 'noma' ? row.rental_type : row.ritual_type,
+    advance_number: advance?.number ?? null,
+    advance_status: advanceStatus,
+    final_number: final?.number ?? null,
+  });
+  if (action === 'view') return json(view());
+  const pinResult = await pinCheck(pin);
+  if (pinResult !== 'ok') return pinRefusal(pinResult);
+
+  if (action === 'cancel') {
+    if (final) return json({ error: 'final_exists', ...view() }, 409);
+    if (!booking) return json({ status: 'already_cancelled', ...view() });
+    const annulled = advance ? await attempt(() => annul(advance)) : null;
+    const { error } = await db.rpc('cancel_reservation', { p_id: id });
+    if (error) return json({ error: describe(error) }, 409);
+    return json({ status: 'cancelled', annulled, ...view(true, advance ? 'annulled' : null) });
+  }
+  return json({ error: 'unknown_action' }, 400);
+}
+
+// ---------------------------------------------------------------------------
+// Previews, which use no numbers and reach only the office.
+
+async function preview(type: SourceType, id: string, kind: 'advance' | 'final' = 'advance') {
   const source = await loadSource(type, id);
-  if (!source) return { status: 'not_found' };
-  const invoice: InvoiceRow = {
+  if (!source) return null;
+  const invoice: Invoice = {
     id: 'preview',
-    number: source.locale === 'en' ? 'PARAUGS / PREVIEW' : 'PARAUGS',
+    kind,
+    status: 'issued',
+    paid: kind === 'final',
+    number: kind === 'final' ? 'SP-PARAUGS' : 'AR-PARAUGS',
     issued_on: rigaToday(),
-    due_on: source.dueOn,
+    due_on: kind === 'final' ? rigaToday() : source.dueOn,
     source_type: type,
+    source_id: id,
     locale: source.locale,
     customer_name: source.name,
     customer_email: source.email,
     customer_phone: source.phone || null,
     items: source.priced.items,
     total: source.priced.total,
-    seller: seller as InvoiceRow['seller'],
+    seller: typedSeller,
     vat_note: VAT_NOTE,
-    details: source.details,
+    details: kind === 'final' ? { ...source.details, advance_number: 'AR-PARAUGS' } : source.details,
+    manage_token: '00000000-0000-0000-0000-000000000000',
   };
-  const pdf = await renderInvoicePdf(invoice);
-  return {
-    status: 'preview',
-    total: source.priced.total,
-    problems: source.priced.problems,
-    email: invoiceEmail(invoice),
-    pdf_base64: toBase64(pdf),
-  };
+  const pdf = toBase64(await renderInvoicePdf(invoice));
+  return { source, invoice, pdf };
+}
+
+// What the guest would receive for one booking, sent to the office instead.
+async function previewToOffice(type: SourceType, id: string) {
+  const advance = await preview(type, id, 'advance');
+  const final = await preview(type, id, 'final');
+  if (!advance || !final) return { status: 'not_found' };
+  const confirmation = confirmationFor(advance.source);
+  await sendToOffice({ subject: `PARAUGS · klienta apstiprinājums · ${confirmation.subject}`, html: confirmation.html, text: '' });
+  const office = invoiceEmail(advance.invoice);
+  await sendToOffice(
+    { subject: `PARAUGS · ${office.subject}`, html: office.html, text: office.text },
+    { filename: office.filename, content: advance.pdf },
+  );
+  const guest = finalInvoiceGuestEmail(final.invoice);
+  await sendToOffice(
+    { subject: `PARAUGS · gala rēķins klientam · ${guest.subject}`, html: guest.html, text: '' },
+    { filename: guest.filename, content: final.pdf },
+  );
+  return { status: 'previews_sent' };
 }
 
 Deno.serve(async (req) => {
+  if (req.method === 'OPTIONS') return new Response(null, { headers: cors });
   if (req.method !== 'POST') return json({ error: 'POST only' }, 405);
+  const body = await req.json().catch(() => ({}));
+
+  // The website's office page: guarded by the link and the PIN.
+  if (body.manage?.reservation) return await manageReservation(body.manage);
+  if (body.manage) return await manage(body.manage);
 
   const secret = req.headers.get('x-invoice-secret') ?? '';
   const { data: allowed, error: authError } = secret
@@ -332,16 +728,29 @@ Deno.serve(async (req) => {
   if (authError) return json({ error: 'auth check failed' }, 500);
   if (!allowed) return json({ error: 'forbidden' }, 403);
 
-  const body = await req.json().catch(() => ({}));
   const type = body.source_type as SourceType;
   const validSource = (type === 'reservation' || type === 'gift_card') && typeof body.source_id === 'string';
 
   try {
     if (body.dry_run) {
-      return validSource ? json(await preview(type, body.source_id)) : json({ error: 'source required' }, 400);
+      if (!validSource) return json({ error: 'source required' }, 400);
+      const p = await preview(type, body.source_id, body.kind === 'final' ? 'final' : 'advance');
+      if (!p) return json({ status: 'not_found' });
+      return json({
+        status: 'preview',
+        total: p.source.priced.total,
+        problems: p.source.priced.problems,
+        email: p.invoice.kind === 'final' ? finalInvoiceGuestEmail(p.invoice) : invoiceEmail(p.invoice),
+        confirmation: confirmationFor(p.source),
+        pdf_base64: p.pdf,
+      });
     }
-    if (!(await deliveryUrl())) return json({ status: 'disabled', reason: 'invoice_make_webhook_url is not in Vault' });
+    if (body.preview_to_office) {
+      return validSource ? json(await previewToOffice(type, body.source_id)) : json({ error: 'source required' }, 400);
+    }
+    if (!(await officeUrl())) return json({ status: 'disabled', reason: 'invoice_make_webhook_url is not in Vault' });
     if (body.sweep) return json(await sweep());
+    if (body.finals) return json(await finals());
     if (validSource) return json(await processSource(type, body.source_id));
     return json({ error: 'nothing to do' }, 400);
   } catch (e) {

@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next';
 import priceCatalog from '../../data/priceCatalog.json';
 import BookingConfirmation, { type ConfirmedBooking } from './BookingConfirmation';
 import { scrollIntoPopup } from './scrollIntoPopup';
+import { cancelUrl } from './cancelUrl';
 
 const allSaunaTypes = ['Baltā pirts', 'Pelēkā pirts'];
 
@@ -129,7 +130,11 @@ const FormNoma: React.FC<FormNomaProps> = ({ selectedDate, selectedTime, onClose
         extra !== overnightOption || (selectedTime === '17:00' || selectedTime === '18:00')
       );
 
+      // The id is made here rather than read back after saving: it is the
+      // secret in the office's cancel link, so the public cannot read ids.
+      const id = crypto.randomUUID();
       const reservationData = {
+        id,
         form_type: 'noma',
         name: formData.name,
         email: formData.email,
@@ -169,7 +174,9 @@ const FormNoma: React.FC<FormNomaProps> = ({ selectedDate, selectedTime, onClose
         await fetch('https://hook.eu2.make.com/4lyknzb8yu44wvfojo9eahoju5q16zif', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(reservationData)
+          // cancel_url: the office's calendar can link to it to cancel the
+          // booking, which frees the slot and annuls its advance invoice.
+          body: JSON.stringify({ ...reservationData, cancel_url: cancelUrl(id) })
         });
       } catch (webhookError) {
         console.error('Webhook error:', webhookError);

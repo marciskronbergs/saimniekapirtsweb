@@ -3,6 +3,7 @@ Allow: /
 
 Disallow: /admin/
 Disallow: /api/
+Disallow: /rekins
 
 # The assistants people now ask for recommendations. They are covered by the
 # rule above, but several of them only look for their own name, and naming them
