@@ -1,0 +1,15 @@
+{
+  "name": "SIA \"Saimnieku Pirtis\"",
+  "tradeName": "Saimnieka pirts",
+  "regNumber": "40203778036",
+  "address": {
+    "lv": "Ķekavas nov., Baldones pag., \"Kroņmeži\", LV-2125",
+    "en": "\"Kroņmeži\", Baldone parish, Ķekava municipality, LV-2125, Latvia"
+  },
+  "bank": "A/S Swedbank",
+  "swift": "HABALV22",
+  "iban": "LV72HABA0551066360107",
+  "email": "info@saimniekapirts.lv",
+  "phone": "+371 26 752 661",
+  "web": "saimniekapirts.lv"
+}

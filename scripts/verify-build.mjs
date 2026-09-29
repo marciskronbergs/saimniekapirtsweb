@@ -109,6 +109,50 @@ if (bundle) {
   }
 }
 
+// The invoice Edge Function is deployed on its own, so it carries copies of the
+// price list and the pricing code. An invoice must bill what the guest was
+// shown on the site, so the copies may not drift from the originals.
+for (const [original, copy] of [
+  ['src/data/priceCatalog.json', 'supabase/functions/invoice/priceCatalog.json'],
+  ['src/lib/pricing.ts', 'supabase/functions/invoice/pricing.ts'],
+]) {
+  if (readFileSync(original, 'utf8') !== readFileSync(copy, 'utf8')) {
+    fail(`${copy} differs from ${original}. Copy it over and redeploy the invoice function.`)
+  }
+}
+
+// The invoice function draws its PDFs with fonts it fetches from the live site.
+for (const font of ['SaimniekaInvoiceSans-Regular.ttf', 'SaimniekaInvoiceSans-Bold.ttf']) {
+  try {
+    readFileSync(join(DIST, 'fonts', 'invoice', font))
+  } catch {
+    fail(`dist/fonts/invoice/${font} is missing; invoices could not be drawn.`)
+  }
+}
+
+// Likewise the company details printed on invoices and shown on the site.
+{
+  const seller = JSON.parse(readFileSync('supabase/functions/invoice/seller.json', 'utf8'))
+  const lv = JSON.parse(readFileSync('src/i18n/locales/lv/common.json', 'utf8')).company
+  const en = JSON.parse(readFileSync('src/i18n/locales/en/common.json', 'utf8')).company
+  const pairs = [
+    [seller.name, lv.legalName, 'name'],
+    [seller.regNumber, lv.regNumber, 'registration number'],
+    [seller.address.lv, lv.legalAddress, 'Latvian address'],
+    [seller.address.en, en.legalAddress, 'English address'],
+    [seller.bank, lv.bank, 'bank'],
+    [seller.iban, lv.iban, 'account'],
+  ]
+  for (const [onInvoice, onSite, what] of pairs) {
+    if (onInvoice !== onSite) {
+      fail(
+        `The company ${what} in supabase/functions/invoice/seller.json ` +
+          `("${onInvoice}") differs from the site's ("${onSite}").`
+      )
+    }
+  }
+}
+
 if (problems.length > 0) {
   console.error('\nBuild verification failed:\n')
   for (const p of problems) console.error(`  - ${p}`)
