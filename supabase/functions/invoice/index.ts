@@ -28,8 +28,10 @@
 //                                           an invoice, from the office's email
 //   { manage: { reservation, pin?, action: 'view' | 'cancel' } }
 //                                           a booking, from the office's calendar:
-//                                           cancelling annuls its advance invoice
-//                                           and frees the time slot
+//                                           cancelling annuls its advance invoice,
+//                                           frees the time slot and asks Make to
+//                                           take it off the calendar
+//   { office: { pin, action: 'list' } }     the office's page: upcoming bookings
 
 import { createClient } from 'npm:@supabase/supabase-js@2';
 import catalog from './priceCatalog.json' with { type: 'json' };
@@ -656,9 +658,113 @@ async function manageReservation(body: { reservation?: string; pin?: string; act
     const annulled = advance ? await attempt(() => annul(advance)) : null;
     const { error } = await db.rpc('cancel_reservation', { p_id: id });
     if (error) return json({ error: describe(error) }, 409);
-    return json({ status: 'cancelled', annulled, ...view(true, advance ? 'annulled' : null) });
+    const calendar = await attempt(() => removeFromCalendar(row));
+    return json({ status: 'cancelled', annulled, calendar, ...view(true, advance ? 'annulled' : null) });
   }
   return json({ error: 'unknown_action' }, 400);
+}
+
+// The Make scenario the old CRM called after deleting a booking, which takes
+// the booking off the office's Google Calendar. It gets the same fields the
+// CRM sent. Its address is in Vault as booking_cancelled_webhook_url.
+// deno-lint-ignore no-explicit-any
+async function removeFromCalendar(r: any) {
+  const url = await rpcText('booking_cancelled_url');
+  if (!url) return { status: 'calendar_off' };
+  await post(url, 'Calendar removal', {
+    form_type: r.form_type,
+    name: r.name,
+    email: r.email,
+    phone: r.phone ?? '',
+    reservation_date: r.reservation_date,
+    reservation_time: r.reservation_time,
+    ritual_type: r.ritual_type ?? '',
+    ritual_participants: r.ritual_participants ?? null,
+    overnight_stay: !!r.overnight_stay,
+    ritual_message: r.ritual_message ?? '',
+    sauna_type: r.sauna_type ?? '',
+    rental_type: r.rental_type ?? '',
+    rental_extras: r.rental_extras ?? [],
+    rental_message: r.rental_message ?? '',
+  });
+  return { status: 'sent' };
+}
+
+// The office's page on the website (/birojs): upcoming bookings and recent
+// gift card orders, with their prices and advance invoices. Every call needs
+// the PIN, since the list holds guests' names, emails and phone numbers.
+async function office(body: { pin?: string; action?: string }) {
+  const pinResult = await pinCheck(body.pin);
+  if (pinResult !== 'ok') return pinRefusal(pinResult);
+  if (body.action !== 'list') return json({ error: 'unknown_action' }, 400);
+
+  const today = rigaToday();
+  const [bookings, cards] = await Promise.all([
+    db.from('reservations').select('*')
+      .gte('reservation_date', today).lte('reservation_date', addDays(today, 90))
+      .order('reservation_date').order('reservation_time'),
+    db.from('davanu_kartes_pasutijumi').select('*')
+      .gte('created_at', minutesAgo(90 * 24 * 60)).order('created_at', { ascending: false }),
+  ]);
+  if (bookings.error) return json({ error: describe(bookings.error) }, 500);
+  if (cards.error) return json({ error: describe(cards.error) }, 500);
+
+  const ids = [...(bookings.data ?? []), ...(cards.data ?? [])].map((r) => r.id as string);
+  const { data: invoices, error } = ids.length
+    ? await db.from('invoices').select('id, number, kind, status, source_id, manage_token, total').in('source_id', ids)
+    : { data: [], error: null };
+  if (error) return json({ error: describe(error) }, 500);
+
+  // deno-lint-ignore no-explicit-any
+  const invoiceOf = (sourceId: string) => (invoices ?? []).filter((i: any) => i.source_id === sourceId);
+  // deno-lint-ignore no-explicit-any
+  const invoiceView = (sourceId: string, priced: any) => {
+    const mine = invoiceOf(sourceId);
+    const advance = mine.find((i) => i.kind === 'advance');
+    const final = mine.find((i) => i.kind === 'final');
+    return {
+      items: priced.items.map((i: { name: { lv: string }; quantity: number; amount: number }) =>
+        ({ name: i.name.lv, quantity: i.quantity, amount: i.amount })),
+      total: advance ? Number(advance.total) : priced.problems.length ? null : priced.total,
+      advance: advance
+        ? { number: advance.number, status: advance.status, link: `/rekins?id=${advance.id}&t=${advance.manage_token}` }
+        : null,
+      final: final ? { number: final.number } : null,
+    };
+  };
+
+  return json({
+    today,
+    bookings: (bookings.data ?? []).map((r) => ({
+      id: r.id,
+      type: r.form_type === 'noma' ? 'noma' : 'ritual',
+      date: r.reservation_date,
+      time: r.reservation_time,
+      sauna: r.sauna_type,
+      service: r.form_type === 'noma' ? r.rental_type : r.ritual_type,
+      participants: r.ritual_participants,
+      overnight: !!r.overnight_stay,
+      message: (r.form_type === 'noma' ? r.rental_message : r.ritual_message) || null,
+      name: r.name,
+      email: r.email,
+      phone: r.phone || null,
+      locale: r.locale === 'en' ? 'en' : 'lv',
+      created_at: r.created_at,
+      ...invoiceView(r.id, priceReservation(prices, r)),
+    })),
+    gift_cards: (cards.data ?? []).map((g) => ({
+      id: g.id,
+      name: g.vards_uzvards,
+      email: g.epasts,
+      phone: g.talrunis || null,
+      service: String(g.ritual_type ?? '').startsWith('Custom Value')
+        ? `Dāvanu karte, ${g.custom_price_value ?? ''}`
+        : g.ritual_type,
+      locale: g.locale === 'en' ? 'en' : 'lv',
+      created_at: g.created_at,
+      ...invoiceView(g.id, priceGiftCard(prices, g)),
+    })),
+  });
 }
 
 // ---------------------------------------------------------------------------
@@ -718,6 +824,7 @@ Deno.serve(async (req) => {
   const body = await req.json().catch(() => ({}));
 
   // The website's office page: guarded by the link and the PIN.
+  if (body.office) return await office(body.office);
   if (body.manage?.reservation) return await manageReservation(body.manage);
   if (body.manage) return await manage(body.manage);
 

@@ -4,7 +4,7 @@
 -- sauna.
 --
 -- (While the old booking form, which read the id back, was still live, the id
--- was granted again by hand; 20260929131500_hide_booking_ids takes it away
+-- was granted again by hand; 20260929131136_hide_booking_ids takes it away
 -- once the new form is deployed.)
 revoke select on public.reservations from anon, authenticated;
 grant select (reservation_date, reservation_time, sauna_type) on public.reservations to anon, authenticated;

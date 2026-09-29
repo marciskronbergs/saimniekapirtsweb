@@ -19,11 +19,13 @@ import PrivacyPolicyPage from './pages/PrivacyPolicyPage';
 import GrupuRitualiPage from './pages/GrupuRitualiPage';
 import FaqPage from './pages/FaqPage';
 import RekinsPage from './pages/RekinsPage';
+import BirojsPage from './pages/BirojsPage';
 
 // Create a global popup context
 export const PopupContext = React.createContext<{
   openCustomPopup: (type: 'noma' | 'ritual') => void;
   closeCustomPopup: () => void;
+  isPopupOpen: boolean;
 } | null>(null);
 
 // Component to handle scroll to top on route change
@@ -62,7 +64,7 @@ function App() {
   }, [openCustomPopup, closeCustomPopup]);
 
   return (
-    <PopupContext.Provider value={{ openCustomPopup, closeCustomPopup }}>
+    <PopupContext.Provider value={{ openCustomPopup, closeCustomPopup, isPopupOpen: isOpen }}>
       <ScrollToTop />
       <StickyRezervetButton openCustomPopup={openCustomPopup} />
       <PopupWrapper 
@@ -85,6 +87,7 @@ function App() {
         <Route path="/grupu-rituali" element={<GrupuRitualiPage />} />
         <Route path="/biezak-uzdotie-jautajumi" element={<FaqPage />} />
         <Route path="/rekins" element={<RekinsPage />} />
+        <Route path="/birojs" element={<BirojsPage />} />
       </Routes>
     </PopupContext.Provider>
   );

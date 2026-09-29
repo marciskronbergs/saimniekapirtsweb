@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
+import { callInvoiceFunction, eur, useOfficePage } from '../lib/officeApi';
 
 // The office's page for one invoice or one booking, opened from a link:
 //   /rekins?id=<invoice>&t=<token>   from the advance invoice email
@@ -8,7 +9,9 @@ import { useSearchParams } from 'react-router-dom';
 // invoice also needs the office PIN, because the invoice email is the one
 // forwarded to guests. It is in Latvian only and kept out of search engines.
 
-const endpoint = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/invoice`;
+// The replies differ by action; each use below knows which it asked for.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const call = (body: Record<string, unknown>) => callInvoiceFunction<any>({ manage: body });
 
 interface InvoiceView {
   number: string;
@@ -33,26 +36,6 @@ interface BookingView {
   final_number: string | null;
 }
 
-const errors: Record<string, string> = {
-  bad_link: 'Saite nav pilnīga. Atveriet to vēlreiz no e-pasta vai kalendāra.',
-  not_found: 'Šāds rēķins vai rezervācija netika atrasta.',
-  wrong_pin: 'Nepareizs PIN.',
-  pin_locked: 'Pārāk daudz nepareizu PIN mēģinājumu. Mēģiniet vēlreiz pēc 15 minūtēm.',
-  final_exists: 'Gala rēķins jau ir izrakstīts, tāpēc to vairs nevar mainīt.',
-  guest_mail_off: 'Klientu e-pasti vēl nav ieslēgti, tāpēc gala rēķinu vēl nevar nosūtīt.',
-};
-
-async function call(body: Record<string, unknown>) {
-  const res = await fetch(endpoint, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ manage: body }),
-  });
-  const data = await res.json().catch(() => ({}));
-  if (!res.ok) throw new Error(errors[data.error] ?? data.error ?? 'Neizdevās. Mēģiniet vēlreiz.');
-  return data;
-}
-
 const Row = ({ label, value }: { label: string; value: string | null | undefined }) =>
   value ? (
     <div className="flex justify-between gap-4 py-2 border-b border-gray-800 last:border-0">
@@ -75,22 +58,7 @@ const RekinsPage = () => {
   const [notice, setNotice] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
-  // Every page carries a robots tag saying "index"; this one must say the opposite.
-  useEffect(() => {
-    let robots = document.querySelector<HTMLMetaElement>('meta[name="robots"]');
-    const previous = robots?.content ?? null;
-    if (!robots) {
-      robots = document.createElement('meta');
-      robots.name = 'robots';
-      document.head.appendChild(robots);
-    }
-    robots.content = 'noindex, nofollow';
-    document.title = 'Rēķins · SaimniekaPirts';
-    return () => {
-      if (previous === null) robots?.remove();
-      else if (robots) robots.content = previous;
-    };
-  }, []);
+  useOfficePage(bookingId ? 'Rezervācija' : 'Rēķins');
 
   useEffect(() => {
     call({ ...target, action: 'view' })
@@ -117,7 +85,6 @@ const RekinsPage = () => {
     }
   };
 
-  const eur = (n: number) => `${Number(n).toFixed(2).replace('.', ',')} €`;
   const canAct = invoice
     ? invoice.kind === 'advance' && invoice.status === 'issued' && !invoice.final_number
     : booking
@@ -173,7 +140,7 @@ const RekinsPage = () => {
                 disabled={busy}
                 onClick={() =>
                   act('cancel', 'Atcelt šo rezervāciju? Laiks atkal būs brīvs mājaslapā, un avansa rēķins tiks anulēts.', () =>
-                    'Rezervācija atcelta: laiks ir brīvs, avansa rēķins anulēts. Neaizmirstiet izdzēst notikumu kalendārā.'
+                    'Rezervācija atcelta: laiks ir brīvs, avansa rēķins anulēts, un Make to izņem no kalendāra. Ja notikums kalendārā paliek, izdzēsiet to ar roku.'
                   )
                 }
                 className="w-full rounded-lg bg-red-700 hover:bg-red-600 disabled:bg-gray-600 py-3 font-semibold"
