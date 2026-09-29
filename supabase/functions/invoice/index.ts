@@ -1,13 +1,14 @@
 // Invoices and guest mail for bookings and gift card orders.
 //
 // When a guest books or orders a gift card:
-//   * an advance invoice (AR-<year>-<nnnn>) is issued and mailed to the office
-//     through the Make scenario "Rēķini → info@saimniekapirts.lv", whose only
-//     recipient is the office; a person checks it and forwards it;
+//   * the guest gets a booking confirmation in the language they booked in
+//     (while app_settings.guest_confirmations = 'on');
+//   * an advance invoice (AR-<year>-<nnnn>) is issued and sent to the guest in
+//     a separate email, with a copy to the office through the Make scenario
+//     "Rēķini → info@saimniekapirts.lv";
 //   * a copy is filed in Google Drive and the invoice list, through the second
-//     Make scenario "Klientu e-pasti + rēķinu arhīvs";
-//   * once switched on (app_settings.guest_confirmations = 'on'), the guest
-//     gets a booking confirmation in the language they booked in.
+//     Make scenario "Klientu e-pasti + rēķinu arhīvs", which also carries every
+//     email to guests.
 //
 // The morning after a visit, unless its advance invoice was annulled, the
 // invoice proper (SP-<year>-<nnnn>, marked paid) is issued, sent to the guest
@@ -38,7 +39,7 @@ import catalog from './priceCatalog.json' with { type: 'json' };
 import { priceReservation, priceGiftCard, type PriceCatalog } from './pricing.ts';
 import seller from './seller.json' with { type: 'json' };
 import { renderInvoicePdf, formatDate, type InvoiceRow, type InvoiceDetails } from './pdf.ts';
-import { invoiceEmail, holdEmail, confirmationEmail, finalInvoiceGuestEmail } from './email.ts';
+import { invoiceEmail, holdEmail, confirmationEmail, advanceInvoiceGuestEmail, finalInvoiceGuestEmail } from './email.ts';
 
 type SourceType = 'reservation' | 'gift_card';
 type Invoice = InvoiceRow & {
@@ -228,7 +229,7 @@ async function sendToGuest(
 }
 
 // ---------------------------------------------------------------------------
-// Advance invoices, to the office.
+// Advance invoices: to the guest, and a copy to the office.
 
 async function deliverAdvance(invoice: Invoice) {
   if (invoice.emailed_at) return { status: 'already_sent', number: invoice.number };
@@ -241,6 +242,23 @@ async function deliverAdvance(invoice: Invoice) {
   await sendToOffice(message, { filename: message.filename, content: toBase64(pdf) });
   await db.from('invoices').update({ emailed_at: new Date().toISOString() }).eq('id', invoice.id);
   return { status: 'sent', number: invoice.number };
+}
+
+// The guest's own email with the advance invoice, sent once, after the
+// confirmation. It waits while the guest scenario is not set up.
+async function deliverAdvanceToGuest(invoice: Invoice) {
+  if (invoice.customer_emailed_at) return { status: 'already_sent' };
+  if (invoice.status !== 'issued') return { status: 'annulled' };
+  if (!(await guestUrl())) return { status: 'guest_mail_off' };
+  const { data: claimed, error } = await db.rpc('claim_customer_invoice_email', { p_invoice_id: invoice.id });
+  if (error) throw error;
+  if (!claimed) return { status: 'in_progress' };
+
+  const pdf = await renderInvoicePdf(invoice);
+  const message = advanceInvoiceGuestEmail(invoice);
+  await sendToGuest(invoice.customer_email, message, { filename: message.filename, content: toBase64(pdf) });
+  await db.from('invoices').update({ customer_emailed_at: new Date().toISOString() }).eq('id', invoice.id);
+  return { status: 'sent_to_guest' };
 }
 
 async function notifyHold(type: SourceType, id: string, reason: string, fields: [string, string][]) {
@@ -336,9 +354,10 @@ async function issueAdvance(source: Source) {
     .from('invoices').select('*').eq('source_type', type).eq('source_id', id).eq('kind', 'advance').maybeSingle();
   if (existingError) throw existingError;
   if (existing) {
+    const guest = await attempt(() => deliverAdvanceToGuest(existing));
     const sent = await deliverAdvance(existing);
     const filed = await attempt(() => archive(existing));
-    return { ...sent, filed };
+    return { ...sent, guest, filed };
   }
 
   const { data: hold } = await db
@@ -378,9 +397,10 @@ async function issueAdvance(source: Source) {
     p_details: source.details,
   });
   if (error) throw error;
+  const guest = await attempt(() => deliverAdvanceToGuest(invoice));
   const sent = await deliverAdvance(invoice);
   const filed = await attempt(() => archive(invoice));
-  return { ...sent, filed };
+  return { ...sent, guest, filed };
 }
 
 // ---------------------------------------------------------------------------
@@ -518,6 +538,15 @@ async function sweep() {
           };
         })),
       });
+    }
+  }
+
+  // Advance invoices not yet with the guest.
+  if (await guestUrl()) {
+    const { data: guestUnsent } = await db.from('invoices').select('*')
+      .eq('kind', 'advance').eq('status', 'issued').is('customer_emailed_at', null).gte('created_at', recent);
+    for (const invoice of guestUnsent ?? []) {
+      results.push({ to_guest: invoice.number, ...(await attempt(() => deliverAdvanceToGuest(invoice))) });
     }
   }
 
@@ -805,6 +834,11 @@ async function previewToOffice(type: SourceType, id: string) {
   if (!advance || !final) return { status: 'not_found' };
   const confirmation = confirmationFor(advance.source);
   await sendToOffice({ subject: `PARAUGS · klienta apstiprinājums · ${confirmation.subject}`, html: confirmation.html, text: '' });
+  const guestAdvance = advanceInvoiceGuestEmail(advance.invoice);
+  await sendToOffice(
+    { subject: `PARAUGS · avansa rēķins klientam · ${guestAdvance.subject}`, html: guestAdvance.html, text: '' },
+    { filename: guestAdvance.filename, content: advance.pdf },
+  );
   const office = invoiceEmail(advance.invoice);
   await sendToOffice(
     { subject: `PARAUGS · ${office.subject}`, html: office.html, text: office.text },
