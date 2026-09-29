@@ -150,11 +150,12 @@ const reservationData = {
   rental_message: ''
 };
 
-      // Insert into Supabase
-      const { data, error } = await supabase
+      // Insert into Supabase. Only the id comes back: visitors may read the
+      // columns that show availability, never other guests' contact details.
+      const { error } = await supabase
         .from('reservations')
         .insert([reservationData])
-        .select();
+        .select('id');
 
       if (error) {
         throw new Error(`Supabase error: ${error.message}`);
