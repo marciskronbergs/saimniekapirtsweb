@@ -157,15 +157,9 @@ async function sendToOffice(
 async function deliver(invoice: InvoiceRow & { emailed_at?: string | null }) {
   if (invoice.emailed_at) return { status: 'already_sent', number: invoice.number };
 
-  const { data: claimed, error } = await db
-    .from('invoices')
-    .update({ email_attempted_at: new Date().toISOString() })
-    .eq('id', invoice.id)
-    .is('emailed_at', null)
-    .or(`email_attempted_at.is.null,email_attempted_at.lt.${minutesAgo(10)}`)
-    .select('id');
+  const { data: claimed, error } = await db.rpc('claim_invoice_email', { p_invoice_id: invoice.id });
   if (error) throw error;
-  if (!claimed?.length) return { status: 'in_progress', number: invoice.number };
+  if (!claimed) return { status: 'in_progress', number: invoice.number };
 
   const pdf = await renderInvoicePdf(invoice);
   const message = invoiceEmail(invoice);
@@ -284,12 +278,16 @@ async function sweep() {
   return { status: 'swept', results };
 }
 
+// Database errors arrive as plain objects, not Error instances.
+const describe = (e: unknown) =>
+  e instanceof Error ? e.message : (e as { message?: string })?.message ?? String(e);
+
 async function attempt<T>(fn: () => Promise<T>) {
   try {
     return await fn();
   } catch (e) {
     console.error(e);
-    return { status: 'error', error: e instanceof Error ? e.message : String(e) };
+    return { status: 'error', error: describe(e) };
   }
 }
 
@@ -348,6 +346,6 @@ Deno.serve(async (req) => {
     return json({ error: 'nothing to do' }, 400);
   } catch (e) {
     console.error(e);
-    return json({ status: 'error', error: e instanceof Error ? e.message : String(e) }, 500);
+    return json({ status: 'error', error: describe(e) }, 500);
   }
 });

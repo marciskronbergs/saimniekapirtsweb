@@ -181,7 +181,8 @@ const reservationData = {
   sauna_type: assignedSaunaType, // ← Send correct type
   rental_type: '',             // <- Empty for rituals
   rental_extras: [],           // <- Empty for rituals
-  rental_message: ''           // <- Empty for rituals
+  rental_message: '',          // <- Empty for rituals
+  locale: i18n.language === 'en' ? 'en' : 'lv' // lets Make answer in the guest's language
 };
 
       // The booking is saved at this point. If the notification fails the guest

@@ -169,7 +169,9 @@ const DavanuKartesPage = () => {
               specific_ritual_type: submissionPayload.specific_ritual_type,
               custom_price_value: submissionPayload.custom_price_value,
               form_type: type,
-              created_at: submissionPayload.created_at
+              created_at: submissionPayload.created_at,
+              // Lets Make answer in the language the order was placed in.
+              locale
             })
           });
         } catch (webhookError) {
