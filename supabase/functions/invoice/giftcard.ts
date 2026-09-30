@@ -6,13 +6,14 @@
 
 import { PDFDocument, rgb, setCharacterSpacing, type PDFFont, type PDFImage, type PDFPage, type RGB } from 'npm:pdf-lib@1.17.1';
 import fontkit from 'npm:@pdf-lib/fontkit@1.1.1';
+import type { GiftCardRitual } from './pricing.ts';
 
 export interface GiftCardData {
   code: string;
   validUntil: string; // ISO date
   locale: 'lv' | 'en';
   // A ritual card names the ritual; a value card has only its value.
-  ritual: { lv: string; en: string } | null;
+  ritual: GiftCardRitual | null;
   value: number;
 }
 
@@ -119,6 +120,12 @@ function ornament(page: PDFPage, cx: number, y: number, half: number) {
   page.drawSvgPath('M 0 -3.2 L 3.2 0 L 0 3.2 L -3.2 0 Z', { x: cx, y, color: gold });
 }
 
+// "Pirts rituāls diviem ar zāļu kublu" / "Sauna ritual for two with herbal hot tub".
+const ritualName = (r: GiftCardRitual, locale: 'lv' | 'en') =>
+  locale === 'lv'
+    ? `Pirts rituāls ${r.who.lv} ${r.tub ? 'ar zāļu kublu' : 'bez zāļu kubla'}`
+    : `Sauna ritual ${r.who.en} ${r.tub ? 'with herbal hot tub' : 'without hot tub'}`;
+
 const ADDRESS = {
   lv: '“SARMA NR. 123”, BALDONES PAGASTS, ĶEKAVAS NOVADS, LV-2125',
   en: '“SARMA NR. 123”, BALDONE PARISH, ĶEKAVA MUNICIPALITY, LV-2125, LATVIA',
@@ -159,7 +166,7 @@ export async function renderGiftCardPdf(card: GiftCardData): Promise<Uint8Array>
   ornament(front, cx, H - 144, 92);
 
   if (card.ritual) {
-    const name = card.ritual[card.locale];
+    const name = ritualName(card.ritual, card.locale);
     const size = fit(name, serif, 19, 300);
     draw(front, name, cx, H - 168, { font: serif, size, color: cream, align: 'center' });
     draw(front, t(`vērtība ${amount(card.value, 'lv')}`, `value ${amount(card.value, 'en')}`).toUpperCase(), cx, H - 184, {
@@ -227,7 +234,7 @@ export async function renderGiftCardPdf(card: GiftCardData): Promise<Uint8Array>
   y -= 6;
   const notes = [
     card.ritual
-      ? t(`Dāvanu karte paredzēta: ${card.ritual.lv}.`, `This gift card is for: ${card.ritual.en}.`)
+      ? t(`Dāvanu karte paredzēta: ${ritualName(card.ritual, 'lv')}.`, `This gift card is for: ${ritualName(card.ritual, 'en')}.`)
       : t('Kartes vērtību var izmantot jebkuram mūsu pakalpojumam – pirts rituālam, pirts nomai vai papildu pakalpojumiem.',
         'The value can be used for any of our services – a sauna ritual, sauna rental or extras.'),
     t(`Nr. ${card.code}, derīga līdz ${formatDate(card.validUntil)}. Dāvanu karte nav apmaināma pret naudu.`,

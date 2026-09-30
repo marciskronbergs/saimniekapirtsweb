@@ -34,11 +34,11 @@
   ],
   "giftCard": {
     "rituals": [
-      { "value": "individuali-ar", "price": 280, "label": { "lv": "Pirts Rituāls Individuāli (Ar Zāļu Kubulu) – 280€", "en": "Individual Sauna Ritual (With Herbal Hot Tub) – 280€" }, "card": { "lv": "Pirts rituāls individuāli ar zāļu kublu", "en": "Individual sauna ritual with herbal hot tub" } },
-      { "value": "individuali-bez", "price": 220, "label": { "lv": "Pirts Rituāls Individuāli (Bez Zāļu Kubulu) – 220€", "en": "Individual Sauna Ritual (Without Herbal Hot Tub) – 220€" }, "card": { "lv": "Pirts rituāls individuāli bez zāļu kubla", "en": "Individual sauna ritual without hot tub" } },
-      { "value": "diviem-ar", "price": 360, "label": { "lv": "Pirts Rituāls Diviem (Ar Zāļu Kubulu) – 360€", "en": "Sauna Ritual for Two (With Herbal Hot Tub) – 360€" }, "card": { "lv": "Pirts rituāls diviem ar zāļu kublu", "en": "Sauna ritual for two with herbal hot tub" } },
-      { "value": "diviem-bez", "price": 300, "label": { "lv": "Pirts Rituāls Diviem (Bez Zāļu Kubulu) – 300€", "en": "Sauna Ritual for Two (Without Herbal Hot Tub) – 300€" }, "card": { "lv": "Pirts rituāls diviem bez zāļu kubla", "en": "Sauna ritual for two without hot tub" } },
-      { "value": "gimenei", "price": 380, "label": { "lv": "Pirts Rituāls Ģimenei (ar zāļu kubulu) – 380€", "en": "Family Sauna Ritual (with herbal hot tub) – 380€" }, "card": { "lv": "Pirts rituāls ģimenei ar zāļu kublu", "en": "Family sauna ritual with herbal hot tub" } }
+      { "value": "individuali-ar", "price": 280, "label": { "lv": "Pirts Rituāls Individuāli (Ar Zāļu Kubulu) – 280€", "en": "Individual Sauna Ritual (With Herbal Hot Tub) – 280€" }, "card": { "who": { "lv": "individuāli", "en": "for one" }, "tub": true, "people": { "lv": "1 persona", "en": "1 person" }, "hours": 3 } },
+      { "value": "individuali-bez", "price": 220, "label": { "lv": "Pirts Rituāls Individuāli (Bez Zāļu Kubulu) – 220€", "en": "Individual Sauna Ritual (Without Herbal Hot Tub) – 220€" }, "card": { "who": { "lv": "individuāli", "en": "for one" }, "tub": false, "people": { "lv": "1 persona", "en": "1 person" }, "hours": 3 } },
+      { "value": "diviem-ar", "price": 360, "label": { "lv": "Pirts Rituāls Diviem (Ar Zāļu Kubulu) – 360€", "en": "Sauna Ritual for Two (With Herbal Hot Tub) – 360€" }, "card": { "who": { "lv": "diviem", "en": "for two" }, "tub": true, "people": { "lv": "2 personas", "en": "2 people" }, "hours": 4 } },
+      { "value": "diviem-bez", "price": 300, "label": { "lv": "Pirts Rituāls Diviem (Bez Zāļu Kubulu) – 300€", "en": "Sauna Ritual for Two (Without Herbal Hot Tub) – 300€" }, "card": { "who": { "lv": "diviem", "en": "for two" }, "tub": false, "people": { "lv": "2 personas", "en": "2 people" }, "hours": 4 } },
+      { "value": "gimenei", "price": 380, "label": { "lv": "Pirts Rituāls Ģimenei (ar zāļu kubulu) – 380€", "en": "Family Sauna Ritual (with herbal hot tub) – 380€" }, "card": { "who": { "lv": "ģimenei", "en": "for the family" }, "tub": true, "people": { "lv": "2 pieaugušie + 3 bērni", "en": "2 adults + 3 children" }, "hours": 5 } }
     ],
     "custom": { "min": 80, "max": 380, "step": 10 }
   }

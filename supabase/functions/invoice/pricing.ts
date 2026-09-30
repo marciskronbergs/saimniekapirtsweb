@@ -50,10 +50,19 @@ export interface PriceCatalog {
   extras: CatalogExtra[];
   transport: CatalogTransport[];
   giftCard: {
-    // `card` is what the gift card itself says the card is for.
-    rituals: { value: string; price: number; label: Named; card: Named }[];
+    // `card` is what the gift card itself says: who the ritual is for,
+    // whether the herbal hot tub is part of it, for how many people and for
+    // how many hours at most.
+    rituals: { value: string; price: number; label: Named; card: GiftCardRitual }[];
     custom: { min: number; max: number; step: number };
   };
+}
+
+export interface GiftCardRitual {
+  who: Named;
+  tub: boolean;
+  people: Named;
+  hours: number;
 }
 
 export interface PricedItem {
