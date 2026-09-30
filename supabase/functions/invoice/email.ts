@@ -4,8 +4,9 @@
 // annulling it; and the notice that a booking could not be priced.
 //
 // To guests (in the language they booked in): the booking confirmation, then
-// in a separate email the advance invoice, and after the visit the final
-// invoice with thanks and a request for a review.
+// in a separate email the advance invoice, a reminder the day before the
+// visit, and after the visit the final invoice with thanks and a request for
+// a review.
 
 import { formatDate, formatMoney, type InvoiceRow, type InvoiceDetails } from './pdf.ts';
 import type { PricedOrder } from './pricing.ts';
@@ -87,6 +88,32 @@ function detailsTable(rows: [string, string][], priced: PricedOrder | null, loca
   return `<table role="presentation" cellpadding="0" cellspacing="0" style="width:100%;background:#f6f8f6;border-radius:8px;padding:10px 16px;margin:0 0 16px">${html}</table>`;
 }
 
+type Tr = (lv: string, en: string) => string;
+
+// Directions, in the confirmation and again in the reminder.
+const findUs = (t: Tr) =>
+  h2(t('Kā pie mums nokļūt', 'How to find us')) +
+  p(t(`Atrašanās vieta kartē: <a href="${MAP_URL}" style="color:#2e7d32">atvērt Google Maps</a>. Waze lietotnē meklējiet <strong>"saimniekapirts"</strong> – tā atvedīs līdz pašiem vārtiem (<a href="${WAZE_URL}" style="color:#2e7d32">atvērt Waze</a>). Teritorijā ir plaša privāta autostāvvieta.`,
+    `Location on the map: <a href="${MAP_URL}" style="color:#2e7d32">open Google Maps</a>. In Waze, search for <strong>"saimniekapirts"</strong> – it takes you right to the gate (<a href="${WAZE_URL}" style="color:#2e7d32">open Waze</a>). There is plenty of private parking on site.`));
+
+const whatToBring = (t: Tr, ritual: boolean) =>
+  h2(ritual ? t('Kas ir iekļauts un ko ņemt līdzi', 'What is included and what to bring') : t('Ko ņemt līdzi', 'What to bring')) +
+  list(ritual
+    ? [
+        t('Iekļauts: dvieļi, lina dvieļi, pirts cepures un halāti.', 'Included: towels, linen sheets, sauna hats and bathrobes.'),
+        t('Paņemiet līdzi gumijas vai baseina čības.', 'Bring rubber or pool slippers.'),
+        t('Dienu iepriekš un rituāla dienā dzeriet daudz ūdens; dienu iepriekš ieteicams vieglāks ēdiens bez gaļas.', 'Drink plenty of water the day before and on the day; a lighter meal without meat the day before is best.'),
+        t('Pirms rituāla pastāstiet pirtniekam par savu veselību, alerģijām un lietotajiem medikamentiem.', 'Before the ritual, tell the sauna master about your health, any allergies and medication.'),
+        t('Savu ēdienu drīkst ņemt līdzi. Alkohols un citas apreibinošas vielas teritorijā nav atļautas.', 'You are welcome to bring your own food. Alcohol and other intoxicants are not allowed on the premises.'),
+      ]
+    : [
+        t('Dvieļus var izīrēt uz vietas – 4 € par dvieli – vai paņemt savus.', 'Towels can be rented on site for €4 each, or bring your own.'),
+        t('Paņemiet līdzi gumijas vai baseina čības.', 'Bring rubber or pool slippers.'),
+        t('Savu ēdienu drīkst ņemt līdzi. Alkohols un citas apreibinošas vielas teritorijā nav atļautas.', 'You are welcome to bring your own food. Alcohol and other intoxicants are not allowed on the premises.'),
+      ]);
+
+const callUs = `<a href="tel:+37126752661" style="color:#2e7d32">+371 26 752 661</a>`;
+
 // ---------------------------------------------------------------------------
 // Booking confirmation to the guest.
 
@@ -158,23 +185,8 @@ export function confirmationEmail(c: ConfirmationInput) {
       [t('Nakšņošana', 'Overnight stay'), c.overnight ? t('jā', 'yes') : ''],
     ], c.priced, c.locale),
     duration ? p(duration) : '',
-    h2(t('Kā pie mums nokļūt', 'How to find us')),
-    p(t(`Atrašanās vieta kartē: <a href="${MAP_URL}" style="color:#2e7d32">atvērt Google Maps</a>. Waze lietotnē meklējiet <strong>"saimniekapirts"</strong> – tā atvedīs līdz pašiem vārtiem (<a href="${WAZE_URL}" style="color:#2e7d32">atvērt Waze</a>). Teritorijā ir plaša privāta autostāvvieta.`,
-      `Location on the map: <a href="${MAP_URL}" style="color:#2e7d32">open Google Maps</a>. In Waze, search for <strong>"saimniekapirts"</strong> – it takes you right to the gate (<a href="${WAZE_URL}" style="color:#2e7d32">open Waze</a>). There is plenty of private parking on site.`)),
-    h2(ritual ? t('Kas ir iekļauts un ko ņemt līdzi', 'What is included and what to bring') : t('Ko ņemt līdzi', 'What to bring')),
-    list(ritual
-      ? [
-          t('Iekļauts: dvieļi, lina dvieļi, pirts cepures un halāti.', 'Included: towels, linen sheets, sauna hats and bathrobes.'),
-          t('Paņemiet līdzi gumijas vai baseina čības.', 'Bring rubber or pool slippers.'),
-          t('Dienu iepriekš un rituāla dienā dzeriet daudz ūdens; dienu iepriekš ieteicams vieglāks ēdiens bez gaļas.', 'Drink plenty of water the day before and on the day; a lighter meal without meat the day before is best.'),
-          t('Pirms rituāla pastāstiet pirtniekam par savu veselību, alerģijām un lietotajiem medikamentiem.', 'Before the ritual, tell the sauna master about your health, any allergies and medication.'),
-          t('Savu ēdienu drīkst ņemt līdzi. Alkohols un citas apreibinošas vielas teritorijā nav atļautas.', 'You are welcome to bring your own food. Alcohol and other intoxicants are not allowed on the premises.'),
-        ]
-      : [
-          t('Dvieļus var izīrēt uz vietas – 4 € par dvieli – vai paņemt savus.', 'Towels can be rented on site for €4 each, or bring your own.'),
-          t('Paņemiet līdzi gumijas vai baseina čības.', 'Bring rubber or pool slippers.'),
-          t('Savu ēdienu drīkst ņemt līdzi. Alkohols un citas apreibinošas vielas teritorijā nav atļautas.', 'You are welcome to bring your own food. Alcohol and other intoxicants are not allowed on the premises.'),
-        ]),
+    findUs(t),
+    whatToBring(t, ritual),
     h2(t('Apmaksa', 'Payment')),
     p(t('Norēķināties var ar pārskaitījumu pirms apmeklējuma (avansa rēķinu nosūtām atsevišķā e-pastā) vai skaidrā naudā uz vietas.',
       'You can pay by bank transfer before your visit (the advance invoice follows in a separate email) or in cash on site.')),
@@ -185,6 +197,45 @@ export function confirmationEmail(c: ConfirmationInput) {
   ].join('');
 
   return { subject, html: guestLayout(t('Rezervācija apstiprināta', 'Your booking is confirmed'), body, c.locale, c.seller) };
+}
+
+// ---------------------------------------------------------------------------
+// Reminder to the guest, the day before the visit.
+
+export function reminderEmail(c: ConfirmationInput) {
+  const lv = c.locale === 'lv';
+  const who = escapeHtml(firstName(c.name));
+  const t: Tr = (a, b) => (lv ? a : b);
+  const ritual = c.formType === 'ritual';
+  const subject = t(
+    `Atgādinājums: rīt plkst. ${c.time ?? ''} ${ritual ? 'pirts rituāls' : 'pirts noma'} · SaimniekaPirts`,
+    `Reminder: your ${ritual ? 'sauna ritual' : 'sauna rental'} tomorrow at ${c.time ?? ''} · SaimniekaPirts`
+  );
+  const body = [
+    p(t(`Sveiki, ${who}!`, `Hello ${who},`)),
+    p(ritual
+      ? t(`Atgādinām, ka rīt, <strong>${c.date ? longDate(c.date, 'lv') : ''}, plkst. ${c.time ?? ''}</strong>, Jūs gaida pirts rituāls SaimniekaPirts. Mēs jau gatavojam pirti!`,
+        `A reminder that your sauna ritual at SaimniekaPirts is tomorrow, <strong>${c.date ? longDate(c.date, 'en') : ''}, at ${c.time ?? ''}</strong>. We are getting the sauna ready!`)
+      : t(`Atgādinām, ka rīt, <strong>${c.date ? longDate(c.date, 'lv') : ''}, plkst. ${c.time ?? ''}</strong>, Jūs gaida pirts noma SaimniekaPirts.`,
+        `A reminder that your sauna rental at SaimniekaPirts is tomorrow, <strong>${c.date ? longDate(c.date, 'en') : ''}, at ${c.time ?? ''}</strong>.`)),
+    detailsTable([
+      [t('Sākuma laiks', 'Start time'), c.time ?? ''],
+      [t('Pirts', 'Sauna'), saunaName(c.sauna, c.locale)],
+      [t('Personu skaits', 'Number of people'), c.participants ? String(c.participants) : ''],
+      [t('Nakšņošana', 'Overnight stay'), c.overnight ? t('jā', 'yes') : ''],
+    ], null, c.locale),
+    p(t('Lūdzu, ierodieties laicīgi – ap 10 minūtes pirms sākuma.', 'Please arrive in good time – about 10 minutes before the start.')),
+    findUs(t),
+    whatToBring(t, ritual),
+    h2(t('Apmaksa', 'Payment')),
+    p(t('Ja avansa rēķins vēl nav apmaksāts, var norēķināties arī skaidrā naudā uz vietas.',
+      'If the advance invoice has not been paid yet, you can also pay in cash on site.')),
+    h2(t('Ja plāni mainījušies', 'If your plans have changed')),
+    p(t(`Lūdzu, paziņojiet mums pēc iespējas ātrāk – zvaniet ${callUs} vai atbildiet uz šo e-pastu.`,
+      `Please let us know as soon as possible – call ${callUs} or reply to this email.`)),
+    p(t('Uz tikšanos rīt! 🌿', 'See you tomorrow! 🌿')),
+  ].join('');
+  return { subject, html: guestLayout(t('Uz tikšanos rīt!', 'See you tomorrow!'), body, c.locale, c.seller) };
 }
 
 // ---------------------------------------------------------------------------

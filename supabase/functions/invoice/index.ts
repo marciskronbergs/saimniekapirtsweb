@@ -39,7 +39,10 @@ import catalog from './priceCatalog.json' with { type: 'json' };
 import { priceReservation, priceGiftCard, type PriceCatalog } from './pricing.ts';
 import seller from './seller.json' with { type: 'json' };
 import { renderInvoicePdf, formatDate, type InvoiceRow, type InvoiceDetails } from './pdf.ts';
-import { invoiceEmail, holdEmail, confirmationEmail, advanceInvoiceGuestEmail, finalInvoiceGuestEmail } from './email.ts';
+import {
+  invoiceEmail, holdEmail, confirmationEmail, reminderEmail, advanceInvoiceGuestEmail, finalInvoiceGuestEmail, manageLink,
+  type ConfirmationInput,
+} from './email.ts';
 
 type SourceType = 'reservation' | 'gift_card';
 type Invoice = InvoiceRow & {
@@ -291,6 +294,13 @@ async function archive(invoice: Invoice) {
     email: invoice.customer_email,
     visit: d?.kind === 'reservation' && d.date ? `${formatDate(d.date)} ${d.time ?? ''} ${d.sauna ?? ''}`.trim() : 'Dāvanu karte',
     total: Number(invoice.total).toFixed(2).replace('.', ','),
+    // Cancels the booking (and annuls this invoice), or for a gift card
+    // annuls the invoice; empty once there is nothing left to undo.
+    cancel_url: invoice.kind !== 'advance' || annulled
+      ? ''
+      : invoice.source_type === 'reservation'
+        ? `https://saimniekapirts.lv/rekins?r=${invoice.source_id}`
+        : manageLink(invoice),
   });
   await db.from('invoices')
     .update(annulled ? { annul_logged_at: new Date().toISOString() } : { logged_at: new Date().toISOString() })
@@ -301,10 +311,10 @@ async function archive(invoice: Invoice) {
 // ---------------------------------------------------------------------------
 // Guest booking confirmation.
 
-function confirmationFor(source: Source) {
+function guestInput(source: Source): ConfirmationInput {
   const r = source.row;
   const ritual = prices.ritual.find((x) => x.label === r.ritual_type);
-  return confirmationEmail({
+  return {
     type: source.type,
     locale: source.locale,
     name: source.name,
@@ -318,7 +328,52 @@ function confirmationFor(source: Source) {
     priced: source.priced,
     individual: ritual?.people === 1,
     seller: typedSeller,
-  });
+  };
+}
+const confirmationFor = (source: Source) => confirmationEmail(guestInput(source));
+
+// The reminder the day before a visit, sent from 10:00 Riga time by the
+// sweep, so a failed send is tried again a quarter of an hour later. A
+// booking made in the last 18 hours has just had its confirmation and gets
+// no reminder.
+const REMINDER_HOUR = 10;
+async function reminders() {
+  if ((await setting('guest_confirmations')) !== 'on') return { status: 'confirmations_off' };
+  const hour = Number(new Intl.DateTimeFormat('en-GB', { timeZone: 'Europe/Riga', hour: 'numeric', hourCycle: 'h23' })
+    .formatToParts(new Date()).find((part) => part.type === 'hour')?.value ?? 0);
+  if (hour < REMINDER_HOUR) return { status: 'too_early' };
+  if (!(await guestUrl())) return { status: 'guest_mail_off' };
+
+  const { data: rows, error } = await db.from('reservations').select('id')
+    .eq('reservation_date', addDays(rigaToday(), 1)).lt('created_at', minutesAgo(18 * 60));
+  if (error) throw error;
+  const ids = (rows ?? []).map((r) => r.id as string);
+  if (ids.length === 0) return { status: 'none' };
+  const { data: done } = await db.from('guest_emails').select('source_id')
+    .eq('source_type', 'reservation').eq('kind', 'reminder').not('sent_at', 'is', null).in('source_id', ids);
+  const sent = new Set((done ?? []).map((r) => r.source_id));
+
+  const results: unknown[] = [];
+  for (const id of ids.filter((i) => !sent.has(i))) {
+    results.push({
+      reminder: id,
+      ...(await attempt(async () => {
+        const source = await loadSource('reservation', id);
+        if (!source) return { status: 'not_found' };
+        if (!source.email.includes('@')) return { status: 'no_email' };
+        const { data: claimed, error: claimError } = await db.rpc('claim_guest_email', {
+          p_source_type: 'reservation', p_source_id: id, p_kind: 'reminder',
+        });
+        if (claimError) throw claimError;
+        if (!claimed) return { status: 'in_progress' };
+        await sendToGuest(source.email, reminderEmail(guestInput(source)));
+        await db.from('guest_emails').update({ sent_at: new Date().toISOString() })
+          .eq('source_type', 'reservation').eq('source_id', id).eq('kind', 'reminder');
+        return { status: 'reminded' };
+      })),
+    });
+  }
+  return { status: 'reminders', results };
 }
 
 async function confirmGuest(source: Source) {
@@ -593,6 +648,7 @@ async function sweep() {
       })),
     });
   }
+  results.push({ reminders: await attempt(() => reminders()) });
   return { status: 'swept', results };
 }
 
@@ -834,6 +890,10 @@ async function previewToOffice(type: SourceType, id: string) {
   if (!advance || !final) return { status: 'not_found' };
   const confirmation = confirmationFor(advance.source);
   await sendToOffice({ subject: `PARAUGS · klienta apstiprinājums · ${confirmation.subject}`, html: confirmation.html, text: '' });
+  if (type === 'reservation') {
+    const reminder = reminderEmail(guestInput(advance.source));
+    await sendToOffice({ subject: `PARAUGS · atgādinājums dienu iepriekš · ${reminder.subject}`, html: reminder.html, text: '' });
+  }
   const guestAdvance = advanceInvoiceGuestEmail(advance.invoice);
   await sendToOffice(
     { subject: `PARAUGS · avansa rēķins klientam · ${guestAdvance.subject}`, html: guestAdvance.html, text: '' },
