@@ -4,14 +4,15 @@
 // gift card page shows a preview of it with them. The function keeps a copy of
 // this file (the build fails if the copy drifts), so it imports only a type.
 //
-// There are three cards: a ritual card, which names the ritual and shows no
-// price; a value card, which shows its amount; and the same value card without
-// the amount, for a gift that does not say what it cost. A value card order
-// gets both of the last two, and the buyer gives whichever they like.
+// A value card shows its amount. A ritual card names the ritual instead, in
+// the same design, and comes with an A4 version too (the owner's own
+// two-page layout); the buyer gives whichever they like. Every card carries
+// its number (its advance invoice's) and a short code: with both, the card
+// can be used when booking online.
 
 import type { GiftCardRitual, Locale } from './pricing.ts';
 
-export type GiftCardKind = 'ritual' | 'a4' | 'value' | 'plain';
+export type GiftCardKind = 'value' | 'ritual' | 'a4';
 
 // Lines on the backs wrap, so the phone number and a few word pairs are held
 // together with no-break spaces, and a dash never starts a line.
@@ -25,118 +26,77 @@ const PAY_MORE_EN = `If you choose a dearer service, ${nb('you can pay the diffe
 export interface GiftCardWords {
   giftCard: string;
   no: string;
+  // The card's code, asked for with its number when booking online.
+  code: string;
   validUntil: string;
   contact: string;
+  // The value card: the amount, then this line under it.
   tagline: string;
-  plainTitle: string;
-  plainLine: string;
-  plainFacts: string;
-  // Tells the two value card PDFs apart: "Dāvanu karte M-… · bez summas".
-  withoutAmount: string;
+  // The ritual card: its title, a line naming the ritual, and its facts.
   ritual: string;
   tub: (tub: boolean) => string;
   facts: (r: GiftCardRitual) => string;
   howTo: string;
   steps: string[];
   anyService: string;
-  anyServicePlain: string;
-  course: string;
-  led: string;
-  ritualSteps: string[];
-  book: string;
+  ritualService: (r: GiftCardRitual) => string;
   validity: (date: string) => string;
   address: string;
-  photos: { valueFront: string; valueBack: string; ritualFront: string; ritualBack: string };
+  photos: { valueFront: string; valueBack: string };
 }
 
 export const giftCardWords: Record<Locale, GiftCardWords> = {
   lv: {
     giftCard: 'Dāvanu karte',
     no: 'Nr.',
+    code: 'Kods',
     validUntil: 'Derīga līdz',
     contact: `saimniekapirts.lv · ${PHONE}`,
-    // The value card: the amount, then this line under it.
     tagline: 'pirts priekiem',
-    // The value card without its amount.
-    plainTitle: 'Pirts priekiem',
-    plainLine: 'pēc Jūsu izvēles',
-    plainFacts: 'rituāls · pirts noma · nakšņošana',
-    withoutAmount: 'bez summas',
-    // The ritual card.
     ritual: 'Pirts rituāls',
     tub: (tub: boolean) => (tub ? 'ar zāļu kublu' : 'bez zāļu kubla'),
     facts: (r: GiftCardRitual) => `${r.people.lv} · līdz ${r.hours} stundām`,
-    // The backs.
     howTo: 'Kā izmantot dāvanu karti',
     steps: [
-      `Piesakiet apmeklējumu: zvaniet ${PHONE} vai rakstiet uz info@saimniekapirts.lv un nosauciet kartes numuru.`,
-      'Vienosimies par Jums ērtu dienu un laiku.',
+      `Rezervējiet laiku ${nb('saimniekapirts.lv/rezervet')}${DASH}ievadiet kartes numuru un kodu, un karte tiks ieskaitīta automātiski.`,
+      `Vai zvaniet ${PHONE} vai rakstiet uz info@saimniekapirts.lv.`,
       `Ierodoties uzrādiet dāvanu karti${DASH}izdrukātu vai telefonā.`,
     ],
     anyService: `Kartes vērtību var izmantot jebkuram mūsu pakalpojumam${DASH}${nb('pirts rituālam')}, ${nb('pirts nomai')} vai nakšņošanai. ${PAY_MORE_LV}`,
-    anyServicePlain: `Karti var izmantot jebkuram mūsu pakalpojumam${DASH}${nb('pirts rituālam')}, ${nb('pirts nomai vai nakšņošanai')}. ${PAY_MORE_LV}`,
-    course: 'Rituāla gaita',
-    led: 'sertificēta pirtnieka vadībā',
-    ritualSteps: [
-      'Sildīšanās zāļu kublā',
-      'Zāļu tējas baudīšana',
-      'Slotu pēriens',
-      'Zāļu skrubja iestrādāšana',
-      'Siltā medus masāža',
-      'Peldināšana vēsā dīķī',
-      'Guldīšana pledos',
-    ],
-    book: `Lai pieteiktos, zvaniet ${PHONE} vai rakstiet uz info@saimniekapirts.lv un nosauciet kartes numuru. Ierodoties uzrādiet karti${DASH}izdrukātu vai telefonā.`,
-    validity: (date: string) => `Derīga līdz ${date} · nav apmaināma pret naudu`,
+    ritualService: (r: GiftCardRitual) =>
+      `Karte der ${nb('pirts rituālam')} ${nb(`${r.who.lv} ${giftCardWords.lv.tub(r.tub)}`)} sertificēta pirtnieka vadībā. ${PAY_MORE_LV}`,
+    validity: (date: string) => `Derīga līdz ${date}`,
     address: '„Sarma Nr. 123“, Baldones pagasts, Ķekavas novads, LV-2125',
     // What the photos show, for the preview on the site.
     photos: {
       valueFront: 'Viesi zāļu kublā, saimnieks lej zāļu tēju',
       valueBack: 'Peldēšana dīķī starp ūdensrozēm',
-      ritualFront: 'Pirtnieks pērienā ar bērza slotām',
-      ritualBack: 'Zāļu skrubis koka bļodā uz papardēm',
     },
   },
   en: {
     giftCard: 'Gift card',
     no: 'No.',
+    code: 'Code',
     validUntil: 'Valid until',
     contact: `saimniekapirts.lv · ${PHONE}`,
     tagline: 'a sauna treat',
-    plainTitle: 'A sauna treat',
-    plainLine: 'of your choosing',
-    plainFacts: 'ritual · sauna rental · overnight stay',
-    withoutAmount: 'without the amount',
     ritual: 'Sauna ritual',
     tub: (tub: boolean) => (tub ? 'with herbal hot tub' : 'without herbal hot tub'),
     facts: (r: GiftCardRitual) => `${r.people.en} · up to ${r.hours} hours`,
     howTo: 'How to use your gift card',
     steps: [
-      `Book your visit: call ${PHONE} or write to info@saimniekapirts.lv and quote the ${nb('card number')}.`,
-      'We will agree on a day and time that suits you.',
+      `Book online at ${nb('saimniekapirts.lv/rezervet')}${DASH}enter the card number and code, and the card is applied automatically.`,
+      `Or call ${PHONE} or write to info@saimniekapirts.lv.`,
       `When you arrive, show the gift card${DASH}printed or on your phone.`,
     ],
     anyService: `The value can be used for any of our services${DASH}${nb('a sauna ritual')}, ${nb('sauna rental')} or ${nb('an overnight stay')}. ${PAY_MORE_EN}`,
-    anyServicePlain: `The card can be used for any of our services${DASH}${nb('a sauna ritual')}, ${nb('sauna rental')} or ${nb('an overnight stay')}. ${PAY_MORE_EN}`,
-    course: 'The ritual, step by step',
-    led: 'led by a certified sauna master',
-    ritualSteps: [
-      'Warming in herbal hot tub',
-      'Enjoying herbal tea',
-      'Whisk massage',
-      'Herbal scrub',
-      'Warm honey massage',
-      'Dip in the cool pond',
-      'Resting in warm blankets',
-    ],
-    book: `To book, call ${PHONE} or write to info@saimniekapirts.lv and quote the ${nb('card number')}. On arrival, show the card${DASH}printed or on your phone.`,
-    validity: (date: string) => `Valid until ${date} · not exchangeable for cash`,
+    ritualService: (r: GiftCardRitual) =>
+      `The card is for ${nb('a sauna ritual')} ${nb(`${r.who.en} ${giftCardWords.en.tub(r.tub)}`)}, led by a certified sauna master. ${PAY_MORE_EN}`,
+    validity: (date: string) => `Valid until ${date}`,
     address: '“Sarma Nr. 123”, Baldone parish, Ķekava municipality, LV-2125, Latvia',
     photos: {
       valueFront: 'Guests in the herbal hot tub, the host pouring herbal tea',
       valueBack: 'Floating in the pond among water lilies',
-      ritualFront: 'A sauna master with birch whisks',
-      ritualBack: 'Herbal scrub in a wooden bowl on ferns',
     },
   },
 };
@@ -168,7 +128,8 @@ export interface GiftCardA4Words {
   hours: (hours: number) => string;
   cardNo: string;
   valid: string;
-  validNote: string;
+  // Under the card's number: its code, for booking online.
+  codeLine: (code: string) => string;
   photos: [string, string, string];
 }
 
@@ -197,13 +158,13 @@ export const giftCardA4Words: Record<Locale, GiftCardA4Words> = {
     place: 'Pakalpojuma vieta',
     placeLines: [`SaimniekaPirts, „Sarma ${nb('Nr. 123')}“`, 'Baldones pagasts, Ķekavas novads, LV-2125'],
     book: 'Pieteikšanās',
-    bookLines: [`${PHONE} · info@saimniekapirts.lv`, 'nosauciet kartes numuru'],
+    bookLines: [`${nb('saimniekapirts.lv/rezervet')} · ievadiet kartes Nr. un kodu`, `${PHONE} · info@saimniekapirts.lv`],
     people: 'Personu skaits',
     duration: 'Ilgums',
     hours: (hours) => `līdz ${hours} stundām`,
     cardNo: 'Kartes Nr.',
     valid: 'Derīga līdz',
-    validNote: 'nav apmaināma pret naudu',
+    codeLine: (code) => `kods online rezervācijai: ${code}`,
     photos: ['Pirtniece ar bērza slotām', 'Pelde dīķī starp ūdensrozēm', 'Ietīšana siltā pledā'],
   },
   en: {
@@ -230,13 +191,13 @@ export const giftCardA4Words: Record<Locale, GiftCardA4Words> = {
     place: 'Venue',
     placeLines: [`SaimniekaPirts, “Sarma ${nb('Nr. 123')}”`, 'Baldone parish, Ķekava municipality, LV-2125, Latvia'],
     book: 'Booking',
-    bookLines: [`${PHONE} · info@saimniekapirts.lv`, 'quote the card number'],
+    bookLines: [`${nb('saimniekapirts.lv/rezervet')} · enter the card no. and code`, `${PHONE} · info@saimniekapirts.lv`],
     people: 'Number of people',
     duration: 'Duration',
     hours: (hours) => `up to ${hours} hours`,
     cardNo: 'Card no.',
     valid: 'Valid until',
-    validNote: 'not exchangeable for cash',
+    codeLine: (code) => `code for booking online: ${code}`,
     photos: ['A sauna master with birch whisks', 'Floating in the pond among water lilies', 'Wrapping in a warm blanket'],
   },
 };
@@ -252,10 +213,6 @@ export const ritualLine = (r: GiftCardRitual, locale: Locale) =>
 // "Pirts rituāls diviem ar zāļu kublu" / "Sauna ritual for two with herbal hot tub"
 export const ritualName = (r: GiftCardRitual, locale: Locale) =>
   `${giftCardWords[locale].ritual} ${r.who[locale]} ${giftCardWords[locale].tub(r.tub)}`;
-
-// Without the herbal hot tub the ritual starts with the tea.
-export const ritualSteps = (r: GiftCardRitual, locale: Locale) =>
-  r.tub ? giftCardWords[locale].ritualSteps : giftCardWords[locale].ritualSteps.slice(1);
 
 // "2027-09-30" → "30.09.2027"
 export const formatCardDate = (iso: string) => iso.split('-').reverse().join('.');

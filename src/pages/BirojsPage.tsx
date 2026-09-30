@@ -39,6 +39,8 @@ interface Booking extends InvoiceInfo {
   // Paid through Stripe; a card booking not yet paid is waiting for the guest.
   card_paid: boolean;
   master_id: string | null;
+  // The gift card the guest gave when booking online.
+  gift_card_code: string | null;
   message: string | null;
   name: string;
   email: string;
@@ -56,10 +58,14 @@ interface GiftCard extends InvoiceInfo {
   created_at: string;
   payment: 'transfer' | 'card';
   card_paid: boolean;
-  // The gift card's number, once its PDF has been made.
-  gift_card: { code: string; valid_until: string } | null;
-  // A value card comes in two versions: with its amount and without it.
+  // The gift card's number and the code it is booked online with, once it
+  // exists; locked after too many wrong codes.
+  gift_card: { code: string; pin: string; valid_until: string; locked: boolean } | null;
+  // A ritual card comes as a card and as an A4 page too.
   kind?: 'ritual' | 'value';
+  cancelled: boolean;
+  // The booking the card was used for.
+  used_for: { date: string; time: string } | null;
 }
 
 interface OfficeList {
@@ -235,14 +241,13 @@ const BirojsPage = () => {
     setError(null);
   };
 
-  // The card itself, or its second version: without the amount (plain) for
-  // a value card, the A4 card for a ritual.
-  const downloadGiftCard = async (g: GiftCard, second = false) => {
-    setBusyId(second ? `${g.id}:second` : g.id);
+  // The card itself, or a ritual card's A4 version.
+  const downloadGiftCard = async (g: GiftCard, a4 = false) => {
+    setBusyId(a4 ? `${g.id}:second` : g.id);
     setError(null);
     try {
       const r = await callInvoiceFunction<{ code: string; filename: string; pdf_base64: string }>({
-        office: { pin, action: 'gift_card_pdf', order: g.id, plain: second && g.kind === 'value', a4: second && g.kind !== 'value' },
+        office: { pin, action: 'gift_card_pdf', order: g.id, a4 },
       });
       const bytes = Uint8Array.from(atob(r.pdf_base64), (c) => c.charCodeAt(0));
       const url = URL.createObjectURL(new Blob([bytes], { type: 'application/pdf' }));
@@ -334,6 +339,29 @@ const BirojsPage = () => {
         office: { pin, action: 'pay_link', type, id: item.id },
       });
       setPayLink({ name: item.name, number: r.number, total: r.total, link: r.link });
+      await load(pin);
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setBusyId(null);
+    }
+  };
+
+  // A gift card order cancelled: the card no longer holds, and an unpaid
+  // advance invoice is annulled.
+  const cancelGiftCard = async (g: GiftCard) => {
+    const paid = !!g.final || g.card_paid || !!g.advance?.paid;
+    const note = paid
+      ? '\n\nKarte ir apmaksāta: rēķins paliek spēkā, naudu atmaksājiet atsevišķi (ar karti – Stripe panelī).'
+      : g.advance?.status === 'issued' ? `\n\nAvansa rēķins ${g.advance.number} tiks anulēts.` : '';
+    if (!window.confirm(`Atcelt ${g.name} dāvanu karti${g.gift_card ? ` Nr. ${g.gift_card.code}` : ''}?\n\nKarti vairs nevarēs izmantot.${note}`)) return;
+    setBusyId(`${g.id}:cancel`);
+    setError(null);
+    setNotice(null);
+    try {
+      const r = await callInvoiceFunction<{ status: string; annulled?: string }>({ office: { pin, action: 'cancel_gift_card', order: g.id } });
+      if (r.status !== 'cancelled') throw new Error('Neizdevās atcelt. Mēģiniet vēlreiz pēc brīža.');
+      setNotice(`${g.name} dāvanu karte atcelta${r.annulled ? `, rēķins ${r.annulled} anulēts` : ''}.`);
       await load(pin);
     } catch (e) {
       setError((e as Error).message);
@@ -589,6 +617,7 @@ const BirojsPage = () => {
                       {b.locale === 'en' && <Badge tone="blue">EN</Badge>}
                       {b.payment === 'cash' && <Badge tone="green">💶 Skaidrā naudā</Badge>}
                       <CardBadge payment={b.payment} paid={b.card_paid} />
+                      {b.gift_card_code && <Badge tone="amber">🎁 Dāvanu karte {b.gift_card_code}</Badge>}
                       {b.advance?.status === 'annulled' && <Badge tone="red">Rēķins anulēts</Badge>}
                     </div>
                     <Contact email={b.email} phone={b.phone} />
@@ -666,56 +695,76 @@ const BirojsPage = () => {
           </h2>
           {list.gift_cards.length === 0 && <p className="text-gray-400">Pēdējās 90 dienās pasūtījumu nav.</p>}
           {list.gift_cards.map((g) => (
-            <article key={g.id} className="rounded-xl border border-gray-800 bg-[#0d0d0d] p-4 space-y-2">
+            <article key={g.id} className={`rounded-xl border border-gray-800 bg-[#0d0d0d] p-4 space-y-2${g.cancelled ? ' opacity-60' : ''}`}>
               <div className="flex flex-wrap items-center gap-2">
                 <span className="text-sm text-gray-400">{shortDate(g.created_at)}</span>
                 <span className="font-semibold">{g.name}</span>
                 {g.locale === 'en' && <Badge tone="blue">EN</Badge>}
-                <CardBadge payment={g.payment} paid={g.card_paid} />
-                {g.final && <Badge tone="green">Apmaksāta · karte nosūtīta</Badge>}
+                {g.cancelled ? <Badge tone="red">Atcelta</Badge> : <CardBadge payment={g.payment} paid={g.card_paid} />}
+                {!g.cancelled && g.final && <Badge tone="green">Apmaksāta · karte nosūtīta</Badge>}
+                {g.used_for && <Badge tone="amber">Izmantota: {longDate(g.used_for.date)} {g.used_for.time}</Badge>}
+                {g.gift_card?.locked && <Badge tone="red">Bloķēta: par daudz nepareizu kodu</Badge>}
               </div>
               <Contact email={g.email} phone={g.phone} />
               <p className="text-sm text-gray-300">{g.items[0]?.name ?? g.service}</p>
               <InvoiceLine info={g} />
-              <InvoiceActions
-                settled={!!g.final || g.card_paid || !!g.advance?.paid}
-                cardPayments={!!list.card_payments}
-                busy={busyId !== null}
-                onSend={(withLink) => sendInvoice('gift_card', g, withLink)}
-                onPayLink={() => showPayLink('gift_card', g)}
-                onDiscount={() => openDiscount('gift_card', g)}
-              />
+              {!g.cancelled && (
+                <InvoiceActions
+                  settled={!!g.final || g.card_paid || !!g.advance?.paid}
+                  cardPayments={!!list.card_payments}
+                  busy={busyId !== null}
+                  onSend={(withLink) => sendInvoice('gift_card', g, withLink)}
+                  onPayLink={() => showPayLink('gift_card', g)}
+                  onDiscount={() => openDiscount('gift_card', g)}
+                />
+              )}
               <div className="flex flex-wrap items-center gap-3 text-sm">
                 {g.gift_card && (
                   <span className="text-amber-300">
-                    Nr. {g.gift_card.code} · derīga līdz {g.gift_card.valid_until.split('-').reverse().join('.')}
+                    Nr. {g.gift_card.code} · kods {g.gift_card.pin} · derīga līdz {g.gift_card.valid_until.split('-').reverse().join('.')}
                   </span>
                 )}
-                <button
-                  onClick={() => downloadGiftCard(g)}
-                  disabled={busyId !== null}
-                  className="inline-flex items-center gap-1 rounded-lg bg-gray-800 hover:bg-gray-700 disabled:opacity-50 px-3 py-1.5"
-                >
-                  <Download className="w-4 h-4" />
-                  {busyId === g.id ? 'Sagatavo…' : g.kind === 'value' ? 'Dāvanu karte ar summu (PDF)' : 'Dāvanu karte (PDF)'}
-                </button>
-                <button
-                  onClick={() => downloadGiftCard(g, true)}
-                  disabled={busyId !== null}
-                  className="inline-flex items-center gap-1 rounded-lg bg-gray-800 hover:bg-gray-700 disabled:opacity-50 px-3 py-1.5"
-                >
-                  <Download className="w-4 h-4" />
-                  {busyId === `${g.id}:second` ? 'Sagatavo…' : g.kind === 'value' ? 'Bez summas (PDF)' : 'A4 (PDF)'}
-                </button>
+                {!g.cancelled && (
+                  <>
+                    <button
+                      onClick={() => downloadGiftCard(g)}
+                      disabled={busyId !== null}
+                      className="inline-flex items-center gap-1 rounded-lg bg-gray-800 hover:bg-gray-700 disabled:opacity-50 px-3 py-1.5"
+                    >
+                      <Download className="w-4 h-4" />
+                      {busyId === g.id ? 'Sagatavo…' : 'Dāvanu karte (PDF)'}
+                    </button>
+                    {g.kind === 'ritual' && (
+                      <button
+                        onClick={() => downloadGiftCard(g, true)}
+                        disabled={busyId !== null}
+                        className="inline-flex items-center gap-1 rounded-lg bg-gray-800 hover:bg-gray-700 disabled:opacity-50 px-3 py-1.5"
+                      >
+                        <Download className="w-4 h-4" />
+                        {busyId === `${g.id}:second` ? 'Sagatavo…' : 'A4 (PDF)'}
+                      </button>
+                    )}
+                    {!g.used_for && (
+                      <button
+                        onClick={() => cancelGiftCard(g)}
+                        disabled={busyId !== null}
+                        className="rounded-lg border border-red-600/60 text-red-300 hover:bg-red-900/40 disabled:opacity-50 px-3 py-1.5"
+                      >
+                        {busyId === `${g.id}:cancel` ? 'Atceļ…' : 'Atcelt'}
+                      </button>
+                    )}
+                  </>
+                )}
               </div>
             </article>
           ))}
           <p className="text-xs text-gray-500">
             Ar karti apmaksātām dāvanu kartēm rēķins un dāvanu karte klientam aiziet automātiski. Ar pārskaitījumu:
             kad nauda saņemta, atveriet avansa rēķina saiti un nospiediet “Apmaksāts – izrakstīt gala rēķinu tagad” –
-            klientam aizies rēķins kopā ar dāvanu karti (PDF). Karte vienmēr ir divos variantos (ar summu un bez summas;
-            rituālam – karte un A4), un tās numurs ir avansa rēķina numurs. Biroja e-pastā ar avansa rēķinu pielikumā ir
-            arī dāvanu kartes – to var pārsūtīt klientam. Atlaide pēc rēķina izsūtīšanas to aizstāj ar jaunu rēķinu.
+            klientam aizies rēķins kopā ar dāvanu karti (PDF). Rituāla kartei ir arī A4 variants. Kartes numurs ir avansa
+            rēķina numurs; ar numuru un kodu klients var rezervēt online, un karte tiek ieskaitīta automātiski. Biroja
+            e-pastā ar avansa rēķinu pielikumā ir arī dāvanu karte – to var pārsūtīt klientam. Atlaide pēc rēķina
+            izsūtīšanas to aizstāj ar jaunu rēķinu.
           </p>
         </section>
       </div>

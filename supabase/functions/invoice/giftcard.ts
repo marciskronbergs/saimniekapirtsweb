@@ -1,14 +1,9 @@
 // Draws a gift card as a two-page PDF, 225 × 98 mm: a front and a back, in
-// the language the order was placed in, with the owner's own photos.
-//
-//   * a value card: the herbal hot tub on the left, a linen panel with the
-//     amount on the right; on the back, how to use the card beside the pond;
-//   * the same value card without the amount ("Pirts priekiem · pēc Jūsu
-//     izvēles"), for a gift that does not say what it cost; a value card
-//     order gets both, and the buyer gives whichever they like;
-//   * a ritual card, with no price: a forest-green panel naming the ritual
-//     beside the whisk steaming; on the back, the ritual step by step beside
-//     the herbal scrub.
+// the language the order was placed in, with the owner's own photos. The
+// herbal hot tub on the left and a linen panel on the right; on the back, how
+// to use the card beside the pond. A value card shows its amount ("pirts
+// priekiem"); a ritual card names the ritual in its place, and comes with an
+// A4 version as well (giftcardA4.ts).
 //
 // The layout was designed as HTML (the "SaimniekaPirts dāvanu kartes" design
 // canvas) and measured from it: every position below is in the design's CSS
@@ -18,17 +13,17 @@
 import { PDFDocument, rgb, setCharacterSpacing, type PDFFont, type PDFImage, type PDFPage, type RGB } from 'npm:pdf-lib@1.17.1';
 import fontkit from 'npm:@pdf-lib/fontkit@1.1.1';
 import type { GiftCardRitual } from './pricing.ts';
-import { formatCardDate, giftCardWords, ritualLine, ritualName, ritualSteps, type GiftCardWords } from './giftCardText.ts';
+import { formatCardDate, giftCardWords, ritualLine, ritualName, type GiftCardWords } from './giftCardText.ts';
 
 export interface GiftCardData {
   code: string;
+  // Asked for with the number when the card is used to book online.
+  pin: string;
   validUntil: string; // ISO date
   locale: 'lv' | 'en';
-  // A ritual card names the ritual and shows no price; a value card shows its
-  // value, unless `plain` asks for the version without it.
+  // A ritual card names the ritual and shows no price; a value card shows its value.
   ritual: GiftCardRitual | null;
   value: number;
-  plain?: boolean;
 }
 
 // The fonts (public/fonts/giftcard, with their licence) and pictures
@@ -42,10 +37,7 @@ const FILES = {
   sansBold: 'fonts/giftcard/Montserrat_600SemiBold.ttf',
   valueFront: 'giftcard/value_front.jpg',
   valueBack: 'giftcard/value_back.jpg',
-  ritualFront: 'giftcard/ritual_front.jpg',
-  ritualBack: 'giftcard/ritual_back.jpg',
   logoOnLight: 'giftcard/logo_on_light.png',
-  logoOnDark: 'giftcard/logo_on_dark.png',
   a4Whisk: 'giftcard/a4_whisk.jpg',
   a4Pond: 'giftcard/a4_pond.jpg',
   a4Rest: 'giftcard/a4_rest.jpg',
@@ -82,12 +74,6 @@ const RULE = hex('#C9BDA5');
 const LINEN = hex('#F4EFE6');
 const PAPER = hex('#F7F3EC');
 const TAGLINE = hex('#3B5443');
-const FOREST = hex('#16221B');
-const CREAM = hex('#F3EBDC');
-const CREAM2 = hex('#E6DBC4');
-const CREAM_SOFT = hex('#D9CDB4');
-const HONEY_ON_DARK = hex('#C9A96E');
-const RULE_ON_DARK = hex('#4A4636');
 
 interface Fonts {
   serifItalic: PDFFont;
@@ -172,9 +158,8 @@ function frontCommon(page: PDFPage, f: Fonts, w: GiftCardWords, card: GiftCardDa
   line(page, w.contact, axis, 342.2, { font: f.sans, size: 11.5, color: colors.footer, spacing: 0.69 }, 'center');
 }
 
-// A title, a line in italics and a line of facts, as on the ritual card and
-// the value card without its amount. They shrink to fit the panel rather
-// than wrap.
+// A title, a line in italics and a line of facts, as on the ritual card.
+// They shrink to fit the panel rather than wrap.
 function titleBlock(page: PDFPage, f: Fonts, axis: number, max: number, lines: [string, string, string],
   colors: { title: RGB; line: RGB; facts: RGB }) {
   const [title, second, facts] = lines;
@@ -199,19 +184,16 @@ function backCommon(page: PDFPage, f: Fonts, w: GiftCardWords, card: GiftCardDat
 export async function renderGiftCardPdf(card: GiftCardData): Promise<Uint8Array> {
   const ritual = card.ritual;
   const w = giftCardWords[card.locale];
-  const plain = !ritual && !!card.plain;
   const doc = await PDFDocument.create();
   doc.registerFontkit(fontkit);
-  // The two versions of a value card are told apart by their title too.
-  doc.setTitle(`${w.giftCard} ${card.code}${plain ? ` · ${w.withoutAmount}` : ''}`);
-  doc.setSubject(ritual ? ritualName(ritual, card.locale) : plain ? w.plainTitle : `${card.value} EUR · ${w.tagline}`);
+  doc.setTitle(`${w.giftCard} ${card.code}`);
+  doc.setSubject(ritual ? ritualName(ritual, card.locale) : `${card.value} EUR · ${w.tagline}`);
   doc.setAuthor('SaimniekaPirts');
   doc.setLanguage(card.locale === 'lv' ? 'lv-LV' : 'en-GB');
 
   const [serifItalic, serifBold, sans, sansBold, front, back, logo] = await Promise.all([
     load('serifItalic'), load('serifBold'), load('sans'), load('sansBold'),
-    load(ritual ? 'ritualFront' : 'valueFront'), load(ritual ? 'ritualBack' : 'valueBack'),
-    load(ritual ? 'logoOnDark' : 'logoOnLight'),
+    load('valueFront'), load('valueBack'), load('logoOnLight'),
   ]);
   const f: Fonts = {
     serifItalic: await doc.embedFont(serifItalic, { subset: true }),
@@ -226,83 +208,47 @@ export async function renderGiftCardPdf(card: GiftCardData): Promise<Uint8Array>
   const pageFront = doc.addPage([W * PX, H * PX]);
   const pageBack = doc.addPage([W * PX, H * PX]);
 
-  if (!ritual) {
-    // ---- Value card, front: photo left, linen panel right.
-    rect(pageFront, 0, 0, W, H, LINEN);
-    image(pageFront, frontImage, 0, 0, 490, H);
-    const axis = 670;
-    frontCommon(pageFront, f, w, card, logoImage, axis, [524, 816],
-      { eyebrow: HONEY, rule: RULE, label: LABEL, value: INK, footer: LABEL });
-    if (plain) {
-      titleBlock(pageFront, f, axis, 292, [w.plainTitle, w.plainLine, w.plainFacts], { title: INK, line: TAGLINE, facts: LABEL });
-    } else {
-      // The numeral sits on the panel's axis (nudged 4 px left for the eye),
-      // "EUR" beside it on the same baseline.
-      const amount = String(card.value);
-      const numeral = { font: f.serifBold, size: 86, color: INK };
-      const nw = width(amount, numeral);
-      const nx = axis - 4 - nw / 2;
-      line(pageFront, amount, nx, 195.19, numeral);
-      line(pageFront, 'EUR', nx + nw + 9, 195.19, { font: f.sansBold, size: 15, color: HONEY, spacing: 2.4 });
-      line(pageFront, w.tagline, axis, 230.88, { font: f.serifItalic, size: 25, color: TAGLINE }, 'center');
-    }
-
-    // ---- Value card, back: how to use it, photo right.
-    rect(pageBack, 0, 0, W, H, PAPER);
-    image(pageBack, backImage, 594, 0, 256, H);
-    const left = 44;
-    const right = 554;
-    backCommon(pageBack, f, w, card, left, right, plain ? `${w.no} ${card.code}` : `${w.no} ${card.code} · ${card.value} EUR`);
-    line(pageBack, w.howTo, left, 85.39, { font: f.serifItalic, size: 32, color: INK });
-    const stepText = { font: f.sans, size: 13, color: INK };
-    let y = 126.98;
-    w.steps.forEach((step, i) => {
-      line(pageBack, String(i + 1), left + 6, y, { font: f.serifBold, size: 21, color: HONEY }, 'center');
-      const lines = wrap(step, stepText, 486);
-      lines.forEach((l, n) => line(pageBack, l, left + 24, y + n * 18.85, stepText));
-      y += (i < w.steps.length - 1) ? 3 + lines.length * 18.85 + 11 : (lines.length - 1) * 18.85;
-    });
-    const note = { font: f.sans, size: 12.5, color: SOFT };
-    wrap(plain ? w.anyServicePlain : w.anyService, note, 510)
-      .forEach((l, n) => line(pageBack, l, left, y + 35.84 + n * 18.125, note));
+  // ---- Front: photo left, linen panel right.
+  rect(pageFront, 0, 0, W, H, LINEN);
+  image(pageFront, frontImage, 0, 0, 490, H);
+  const axis = 670;
+  frontCommon(pageFront, f, w, card, logoImage, axis, [524, 816],
+    { eyebrow: HONEY, rule: RULE, label: LABEL, value: INK, footer: LABEL });
+  if (ritual) {
+    titleBlock(pageFront, f, axis, 292, [w.ritual, ritualLine(ritual, card.locale), w.facts(ritual)],
+      { title: INK, line: TAGLINE, facts: LABEL });
   } else {
-    // ---- Ritual card, front: forest panel left, photo right.
-    rect(pageFront, 0, 0, W, H, FOREST);
-    image(pageFront, frontImage, 360, 0, 490, H);
-    const axis = 180;
-    frontCommon(pageFront, f, w, card, logoImage, axis, [32, 328],
-      { eyebrow: HONEY_ON_DARK, rule: RULE_ON_DARK, label: CREAM_SOFT, value: CREAM, footer: CREAM_SOFT });
-    titleBlock(pageFront, f, axis, 296, [w.ritual, ritualLine(ritual, card.locale), w.facts(ritual)],
-      { title: CREAM, line: CREAM2, facts: CREAM_SOFT });
-
-    // ---- Ritual card, back: photo left, the ritual step by step.
-    rect(pageBack, 0, 0, W, H, PAPER);
-    image(pageBack, backImage, 0, 0, 256, H);
-    const left = 296;
-    const right = 806;
-    backCommon(pageBack, f, w, card, left, right, `${w.no} ${card.code}`);
-    line(pageBack, w.course, left, 85.39, { font: f.serifItalic, size: 32, color: INK });
-    const sub = `${ritualName(ritual, card.locale)} · ${w.led}`;
-    line(pageBack, sub, left, 107.98, fitted(sub, { font: f.sans, size: 12, color: SOFT }, 510, 10));
-    const steps = ritualSteps(ritual, card.locale);
-    const rows = Math.ceil(steps.length / 2);
-    // Six steps (no hot tub) sit a little looser, so the back is as full as with seven.
-    const loose = rows < 4;
-    const first = loose ? 149.78 : 143.78;
-    const pitch = loose ? 31 : 28.125;
-    const name = { font: f.sansBold, size: 12.5, color: INK };
-    steps.forEach((step, i) => {
-      const col = i < rows ? 0 : 1;
-      const row = col === 0 ? i : i - rows;
-      const x = left + col * 267;
-      const y = first + row * pitch;
-      line(pageBack, String(i + 1), x + 6, y, { font: f.serifBold, size: 21, color: HONEY }, 'center');
-      line(pageBack, step, x + 24, y, fitted(step, name, 219, 10.5));
-    });
-    const para = { font: f.sans, size: 12, color: SOFT };
-    const top = first + (rows - 1) * pitch + (loose ? 36.12 : 32.12);
-    wrap(w.book, para, 510).forEach((l, n) => line(pageBack, l, left, top + n * 17.4, para));
+    // The numeral sits on the panel's axis (nudged 4 px left for the eye),
+    // "EUR" beside it on the same baseline.
+    const amount = String(card.value);
+    const numeral = { font: f.serifBold, size: 86, color: INK };
+    const nw = width(amount, numeral);
+    const nx = axis - 4 - nw / 2;
+    line(pageFront, amount, nx, 195.19, numeral);
+    line(pageFront, 'EUR', nx + nw + 9, 195.19, { font: f.sansBold, size: 15, color: HONEY, spacing: 2.4 });
+    line(pageFront, w.tagline, axis, 230.88, { font: f.serifItalic, size: 25, color: TAGLINE }, 'center');
   }
+
+  // ---- Back: how to use it, photo right. The header carries the code the
+  // card is booked online with.
+  rect(pageBack, 0, 0, W, H, PAPER);
+  image(pageBack, backImage, 594, 0, 256, H);
+  const left = 44;
+  const right = 554;
+  const header = `${w.no} ${card.code} · ${w.code} ${card.pin}${ritual ? '' : ` · ${card.value} EUR`}`;
+  backCommon(pageBack, f, w, card, left, right, header);
+  line(pageBack, w.howTo, left, 85.39, { font: f.serifItalic, size: 32, color: INK });
+  const stepText = { font: f.sans, size: 13, color: INK };
+  let y = 126.98;
+  w.steps.forEach((step, i) => {
+    line(pageBack, String(i + 1), left + 6, y, { font: f.serifBold, size: 21, color: HONEY }, 'center');
+    const lines = wrap(step, stepText, 486);
+    lines.forEach((l, n) => line(pageBack, l, left + 24, y + n * 18.85, stepText));
+    y += (i < w.steps.length - 1) ? 3 + lines.length * 18.85 + 11 : (lines.length - 1) * 18.85;
+  });
+  const note = { font: f.sans, size: 12.5, color: SOFT };
+  wrap(ritual ? w.ritualService(ritual) : w.anyService, note, 510)
+    .forEach((l, n) => line(pageBack, l, left, y + 35.84 + n * 18.125, note));
 
   return await doc.save();
 }

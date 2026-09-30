@@ -36,9 +36,13 @@ export interface InvoiceDetails {
   sauna?: string;
   // On a final invoice, the advance invoice it settles.
   advance_number?: string;
-  // Paid by card through Stripe, on this day (both invoices say so).
-  payment?: 'card';
+  // Paid by card through Stripe, on this day (both invoices say so), or
+  // wholly by a gift card the guest gave when booking.
+  payment?: 'card' | 'gift_card';
   paid_on?: string;
+  // The gift card taken off the booking, or one the guest gave that did not hold.
+  gift_card?: string;
+  gift_card_problem?: { code: string; reason: string };
   // An advance invoice issued in place of an annulled one (a discount given later).
   replaces?: string;
 }
@@ -235,7 +239,7 @@ export async function renderInvoicePdf(invoice: InvoiceRow): Promise<Uint8Array>
   text(`${seller.web} · ${seller.email} · ${seller.phone}`, left, { size: 8.5, color: grey });
   text(`${L('Datums', 'Date')}: ${formatDate(invoice.issued_on)}`, right, { align: 'right' });
   y -= 14;
-  if (final || invoice.details?.payment === 'card') {
+  if (final || invoice.details?.payment === 'card' || invoice.details?.payment === 'gift_card') {
     text(L('Apmaksāts', 'Paid'), right, { font: bold, color: brandGreen, align: 'right' });
   } else {
     text(`${L('Apmaksāt līdz', 'Due by')}: ${formatDate(invoice.due_on)}`, right, { font: bold, align: 'right' });
@@ -358,8 +362,12 @@ export async function renderInvoicePdf(invoice: InvoiceRow): Promise<Uint8Array>
   y -= 15;
   const card = invoice.details?.payment === 'card';
   const paidOn = invoice.details?.paid_on ? formatDate(invoice.details.paid_on) : '';
+  const byGiftCard = invoice.details?.payment === 'gift_card';
   const payment = card ? [
     L(`Apmaksāts ar maksājumu karti ${paidOn}. Paldies!`, `Paid by card on ${paidOn}. Thank you!`),
+  ] : byGiftCard ? [
+    L(`Apmaksāts ar dāvanu karti Nr. ${invoice.details?.gift_card ?? ''}. Paldies!`,
+      `Paid with gift card no. ${invoice.details?.gift_card ?? ''}. Thank you!`),
   ] : final ? [
     L('Rēķins ir apmaksāts. Paldies!', 'This invoice has been paid in full. Thank you!'),
   ] : [

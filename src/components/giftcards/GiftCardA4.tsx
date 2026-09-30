@@ -74,6 +74,7 @@ interface A4Props {
   locale: Locale;
   ritual: GiftCardRitual;
   code: string;
+  pin: string;
   validUntil: string;
 }
 
@@ -153,7 +154,7 @@ const Row: React.FC<{ top: number; icon: string; label: string; lines: string[];
   </div>
 );
 
-const GiftCardA4Page: React.FC<A4Props> = ({ page, locale, ritual, code, validUntil }) => {
+const GiftCardA4Page: React.FC<A4Props> = ({ page, locale, ritual, code, pin, validUntil }) => {
   const w = giftCardA4Words[locale];
   const root: React.CSSProperties = {
     position: 'relative', width: A4_W, height: A4_H, overflow: 'hidden',
@@ -199,8 +200,8 @@ const GiftCardA4Page: React.FC<A4Props> = ({ page, locale, ritual, code, validUn
     { icon: 'phone', label: w.book, lines: [...w.bookLines] },
     { icon: 'users', label: w.people, lines: [ritual.people[locale]] },
     { icon: 'clock', label: w.duration, lines: [w.hours(ritual.hours)] },
-    { icon: 'ticket', label: w.cardNo, lines: [code] },
-    { icon: 'calendar', label: w.valid, lines: [formatCardDate(validUntil), w.validNote], strong: true },
+    { icon: 'ticket', label: w.cardNo, lines: [code, w.codeLine(pin)], strong: true },
+    { icon: 'calendar', label: w.valid, lines: [formatCardDate(validUntil)] },
   ];
   return (
     <div style={root}>

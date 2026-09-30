@@ -19,6 +19,8 @@ import { load } from './giftcard.ts';
 
 export interface GiftCardA4Data {
   code: string;
+  // Asked for with the number when the card is used to book online.
+  pin: string;
   validUntil: string; // ISO date
   locale: 'lv' | 'en';
   ritual: GiftCardRitual;
@@ -238,8 +240,8 @@ function detailsPage(page: PDFPage, f: Fonts, card: GiftCardA4Data) {
     { icon: 'phone', label: w.book, small: [...w.bookLines] },
     { icon: 'users', label: w.people, big: card.ritual.people[card.locale], small: [] },
     { icon: 'clock', label: w.duration, big: w.hours(card.ritual.hours), small: [] },
-    { icon: 'ticket', label: w.cardNo, big: card.code, small: [] },
-    { icon: 'calendar', label: w.valid, big: formatCardDate(card.validUntil), small: [w.validNote] },
+    { icon: 'ticket', label: w.cardNo, big: card.code, small: [w.codeLine(card.pin)] },
+    { icon: 'calendar', label: w.valid, big: formatCardDate(card.validUntil), small: [] },
   ];
   rows.forEach((row, i) => {
     const top = 486 + i * 100;
