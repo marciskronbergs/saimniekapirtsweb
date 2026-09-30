@@ -541,6 +541,8 @@ async function archive(invoice: Invoice, rekey?: string) {
     if (invoice.source_type === 'reservation') {
       const { data: booking } = await db.from('reservations').select('id').eq('id', invoice.source_id).maybeSingle();
       if (!booking) bookingStatus = 'Atcelta';
+    } else if (await giftCardCancelled(invoice.source_id)) {
+      bookingStatus = 'Atcelta';
     }
     await post(url, 'Archive', {
       route: 'update',
@@ -570,7 +572,8 @@ async function archive(invoice: Invoice, rekey?: string) {
       payment: invoice.details?.payment === 'card' ? 'Karte (Stripe)'
         : invoice.details?.payment === 'gift_card' ? `Dāvanu karte ${invoice.details.gift_card ?? ''}`
         : invoice.details?.gift_card ? `Dāvanu karte ${invoice.details.gift_card} + pārskaitījums` : 'Pārskaitījums',
-      booking_status: invoice.kind === 'advance' && invoice.source_type === 'reservation' ? 'Aktīva' : '',
+      // A booking, or a gift card, stays active until it is cancelled.
+      booking_status: invoice.kind === 'advance' ? 'Aktīva' : '',
     });
   }
   await db.from('invoices')
@@ -609,6 +612,20 @@ async function logCashBooking(source: Source) {
 }
 
 // A cancelled booking's row in the list, when there is no invoice to annul.
+const giftCardCancelled = async (orderId: string) => {
+  const { data } = await db.from('gift_card_cancellations').select('order_id').eq('order_id', orderId).maybeSingle();
+  return !!data;
+};
+
+// A gift card cancelled after it was paid: its invoice stays in force, and
+// only its row's status says the card was cancelled.
+async function markGiftCardCancelledInList(invoice: Invoice) {
+  const url = await guestUrl();
+  if (!url) return { status: 'archive_off' };
+  await post(url, 'List', { route: 'update', key: cancelLink(invoice), status: '', booking_status: 'Atcelta' });
+  return { status: 'marked' };
+}
+
 async function markCancelledInList(id: string) {
   const url = await guestUrl();
   if (!url) return { status: 'archive_off' };
@@ -1536,10 +1553,13 @@ async function officeCancelGiftCard(body: { order?: string }) {
   const current = (invoices ?? []).find((i) => i.kind === 'advance' && i.status === 'issued') ?? null;
   const paid = (invoices ?? []).some((i) => i.kind === 'final') || !!current?.paid ||
     (await cardPayments('gift_card', id)).some((p) => p.status === 'paid');
+  // The list shows the card cancelled: an unpaid invoice is annulled (its row
+  // says so), a paid one stays and its row is marked.
   if (current && !paid) {
     await annul(current);
     return json({ status: 'cancelled', annulled: current.number });
   }
+  if (current) await attempt(() => markGiftCardCancelledInList(current));
   return json({ status: 'cancelled', paid });
 }
 
