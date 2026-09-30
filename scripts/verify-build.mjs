@@ -152,6 +152,9 @@ for (const file of [
   'giftcard/ritual_back.jpg',
   'giftcard/logo_on_light.png',
   'giftcard/logo_on_dark.png',
+  'giftcard/a4_whisk.jpg',
+  'giftcard/a4_pond.jpg',
+  'giftcard/a4_rest.jpg',
 ]) {
   try {
     readFileSync(join(DIST, file))

@@ -3,7 +3,7 @@ import { CalendarDays, Download, ExternalLink, LogOut, Mail, Phone, RefreshCw, S
 import { PopupContext } from '../App';
 import { OfficeError, callInvoiceFunction, eur, useOfficePage } from '../lib/officeApi';
 import MastersSection, { type Master, type MasterDraft } from './birojs/MastersSection';
-import { InvoiceActions, PayLinkDialog, type PayLink } from './birojs/InvoiceActions';
+import { DiscountDialog, InvoiceActions, PayLinkDialog, type DiscountTarget, type PayLink } from './birojs/InvoiceActions';
 
 // The office's CRM: the booking calendar, new bookings through the website's
 // own forms, and the upcoming bookings with their invoices, each of which can
@@ -21,6 +21,8 @@ interface InvoiceInfo {
   total: number | null;
   advance: { number: string; status: 'issued' | 'annulled'; paid?: boolean; link: string } | null;
   final: { number: string } | null;
+  // A discount the office gave, already in the invoice.
+  discount?: { percent: number; reason: string } | null;
 }
 
 interface Booking extends InvoiceInfo {
@@ -115,12 +117,13 @@ const dayHeading = (iso: string, today: string) => {
 const shortDate = (iso: string) =>
   new Date(iso).toLocaleDateString('lv-LV', { day: 'numeric', month: 'short', timeZone: 'Europe/Riga' });
 
-const Badge = ({ children, tone = 'gray' }: { children: ReactNode; tone?: 'green' | 'gray' | 'red' | 'blue' }) => {
+const Badge = ({ children, tone = 'gray' }: { children: ReactNode; tone?: 'green' | 'gray' | 'red' | 'blue' | 'amber' }) => {
   const tones = {
     green: 'bg-green-500/15 text-green-300 border-green-500/30',
     gray: 'bg-gray-700/40 text-gray-300 border-gray-600/50',
     red: 'bg-red-500/15 text-red-300 border-red-500/30',
     blue: 'bg-sky-500/15 text-sky-300 border-sky-500/30',
+    amber: 'bg-amber-500/15 text-amber-300 border-amber-500/30',
   };
   return <span className={`inline-block rounded-full border px-2 py-0.5 text-xs ${tones[tone]}`}>{children}</span>;
 };
@@ -149,6 +152,7 @@ const InvoiceLine = ({ info, cash = false }: { info: InvoiceInfo; cash?: boolean
     ) : (
       <span className="text-gray-500">{cash ? 'Skaidrā naudā uz vietas – bez rēķina' : 'Avansa rēķina vēl nav'}</span>
     )}
+    {info.discount && <Badge tone="amber">Atlaide {info.discount.percent}%{info.discount.reason ? ` · ${info.discount.reason}` : ''}</Badge>}
     {info.advance?.paid && !info.final && <Badge tone="green">Apmaksāts</Badge>}
     {info.final && <Badge tone="green">Gala rēķins {info.final.number}</Badge>}
   </div>
@@ -181,6 +185,7 @@ const BirojsPage = () => {
   const [notice, setNotice] = useState<string | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [payLink, setPayLink] = useState<PayLink | null>(null);
+  const [discountFor, setDiscountFor] = useState<DiscountTarget | null>(null);
   const [mode, setMode] = useState<string>('MONTH');
   const [query, setQuery] = useState('');
 
@@ -230,12 +235,14 @@ const BirojsPage = () => {
     setError(null);
   };
 
-  const downloadGiftCard = async (g: GiftCard, plain = false) => {
-    setBusyId(plain ? `${g.id}:plain` : g.id);
+  // The card itself, or its second version: without the amount (plain) for
+  // a value card, the A4 card for a ritual.
+  const downloadGiftCard = async (g: GiftCard, second = false) => {
+    setBusyId(second ? `${g.id}:second` : g.id);
     setError(null);
     try {
       const r = await callInvoiceFunction<{ code: string; filename: string; pdf_base64: string }>({
-        office: { pin, action: 'gift_card_pdf', order: g.id, plain },
+        office: { pin, action: 'gift_card_pdf', order: g.id, plain: second && g.kind === 'value', a4: second && g.kind !== 'value' },
       });
       const bytes = Uint8Array.from(atob(r.pdf_base64), (c) => c.charCodeAt(0));
       const url = URL.createObjectURL(new Blob([bytes], { type: 'application/pdf' }));
@@ -272,6 +279,38 @@ const BirojsPage = () => {
         office: { pin, action: 'send_invoice', type, id: item.id, pay_link: withLink },
       });
       setNotice(`Rēķins ${r.number} nosūtīts uz ${r.to}${r.link ? ' ar maksājuma saiti' : ''}.`);
+      await load(pin);
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setBusyId(null);
+    }
+  };
+
+  const openDiscount = (type: 'reservation' | 'gift_card', item: { id: string; name: string } & InvoiceInfo) =>
+    setDiscountFor({
+      type, id: item.id, name: item.name,
+      invoice: item.advance && item.advance.status === 'issued' ? item.advance.number : null,
+      // The price before any discount, which the new one replaces.
+      total: item.total === null ? null
+        : item.discount ? Math.round((item.total * 100) / (100 - item.discount.percent || 100) * 100) / 100 : item.total,
+      discount: item.discount ?? null,
+    });
+
+  const applyDiscount = async (percent: number, reason: string) => {
+    if (!discountFor) return;
+    const target = discountFor;
+    setBusyId(target.id);
+    setError(null);
+    setNotice(null);
+    try {
+      const r = await callInvoiceFunction<{ status: string; number?: string; replaced?: string; total?: number }>({
+        office: { pin, action: 'discount', type: target.type, id: target.id, percent, reason },
+      });
+      setNotice(r.status === 'reissued'
+        ? `Atlaide ${percent}% piemērota: rēķins ${r.replaced} anulēts, jaunais ${r.number} (${eur(r.total ?? 0)}) nosūtīts klientam un birojam.`
+        : `Atlaide ${percent}% saglabāta – tā būs rēķinā, kad to izrakstīs.`);
+      setDiscountFor(null);
       await load(pin);
     } catch (e) {
       setError((e as Error).message);
@@ -448,6 +487,9 @@ const BirojsPage = () => {
 
         {notice && <p className="rounded-lg bg-green-900/40 border border-green-600 p-3 text-green-300">{notice}</p>}
         {payLink && <PayLinkDialog pay={payLink} onClose={() => setPayLink(null)} />}
+        {discountFor && (
+          <DiscountDialog target={discountFor} busy={busyId !== null} onApply={applyDiscount} onClose={() => setDiscountFor(null)} />
+        )}
         {error && <p className="rounded-lg bg-red-900/40 border border-red-600 p-3 text-red-300">{error}</p>}
 
         <section className="space-y-3">
@@ -573,6 +615,7 @@ const BirojsPage = () => {
                       busy={busyId !== null}
                       onSend={(withLink) => sendInvoice('reservation', b, withLink)}
                       onPayLink={() => showPayLink('reservation', b)}
+                      onDiscount={() => openDiscount('reservation', b)}
                     />
                     {b.type === 'ritual' && (
                       <label className="flex flex-wrap items-center gap-2 text-sm text-gray-300">
@@ -637,6 +680,7 @@ const BirojsPage = () => {
                 busy={busyId !== null}
                 onSend={(withLink) => sendInvoice('gift_card', g, withLink)}
                 onPayLink={() => showPayLink('gift_card', g)}
+                onDiscount={() => openDiscount('gift_card', g)}
               />
               <div className="flex flex-wrap items-center gap-3 text-sm">
                 {g.gift_card && (
@@ -652,24 +696,23 @@ const BirojsPage = () => {
                   <Download className="w-4 h-4" />
                   {busyId === g.id ? 'Sagatavo…' : g.kind === 'value' ? 'Dāvanu karte ar summu (PDF)' : 'Dāvanu karte (PDF)'}
                 </button>
-                {g.kind === 'value' && (
-                  <button
-                    onClick={() => downloadGiftCard(g, true)}
-                    disabled={busyId !== null}
-                    className="inline-flex items-center gap-1 rounded-lg bg-gray-800 hover:bg-gray-700 disabled:opacity-50 px-3 py-1.5"
-                  >
-                    <Download className="w-4 h-4" />
-                    {busyId === `${g.id}:plain` ? 'Sagatavo…' : 'Bez summas (PDF)'}
-                  </button>
-                )}
+                <button
+                  onClick={() => downloadGiftCard(g, true)}
+                  disabled={busyId !== null}
+                  className="inline-flex items-center gap-1 rounded-lg bg-gray-800 hover:bg-gray-700 disabled:opacity-50 px-3 py-1.5"
+                >
+                  <Download className="w-4 h-4" />
+                  {busyId === `${g.id}:second` ? 'Sagatavo…' : g.kind === 'value' ? 'Bez summas (PDF)' : 'A4 (PDF)'}
+                </button>
               </div>
             </article>
           ))}
           <p className="text-xs text-gray-500">
             Ar karti apmaksātām dāvanu kartēm rēķins un dāvanu karte klientam aiziet automātiski. Ar pārskaitījumu:
             kad nauda saņemta, atveriet avansa rēķina saiti un nospiediet “Apmaksāts – izrakstīt gala rēķinu tagad” –
-            klientam aizies rēķins kopā ar dāvanu karti (PDF). Karte ar summu klientam aiziet divos variantos – ar summu
-            un bez summas –, lai viņš var uzdāvināt to, kurš patīk.
+            klientam aizies rēķins kopā ar dāvanu karti (PDF). Karte vienmēr ir divos variantos (ar summu un bez summas;
+            rituālam – karte un A4), un tās numurs ir avansa rēķina numurs. Biroja e-pastā ar avansa rēķinu pielikumā ir
+            arī dāvanu kartes – to var pārsūtīt klientam. Atlaide pēc rēķina izsūtīšanas to aizstāj ar jaunu rēķinu.
           </p>
         </section>
       </div>

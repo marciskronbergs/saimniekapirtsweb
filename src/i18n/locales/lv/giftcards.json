@@ -34,11 +34,16 @@
     "withAmount": "Ar summu",
     "withoutAmount": "Bez summas",
     "bothVersions": "Pēc apmaksas saņemsiet abus variantus – ar summu un bez summas – un varēsiet uzdāvināt to, kurš Jums labāk patīk.",
-    "sample": "Paraugs: kartes numuru piešķirsim pēc apmaksas. Karte ir derīga vienu gadu.",
+    "sample": "Paraugs: kartes numurs būs Jūsu avansa rēķina numurs. Karte ir derīga vienu gadu.",
     "front": "Priekšpuse",
     "back": "Aizmugure",
     "close": "Aizvērt",
     "enlarge": "Palielināt",
-    "fit": "Samazināt"
+    "fit": "Samazināt",
+    "card": "Karte",
+    "a4": "A4",
+    "bothVersionsRitual": "Pēc apmaksas saņemsiet abus variantus – karti un A4 formātu – un varēsiet uzdāvināt to, kurš Jums labāk patīk.",
+    "page1": "1. lapa",
+    "page2": "2. lapa"
   }
 }

@@ -13,12 +13,13 @@ import {
   type GiftCardWords,
 } from '../../lib/giftCardText';
 import { fontFaces } from './giftCardAssets';
+import GiftCardA4Page, { A4_H, A4_W } from './GiftCardA4';
 
 // A preview of the gift card a buyer will get, for the gift card page: the
 // same design as the PDF the invoice function draws (giftcard.ts), with the
 // same fonts, photos and words, drawn here in HTML at the design's own size
-// (850 × 370 px) and scaled to fit. The number and date are a sample until the
-// card is paid for.
+// (850 × 370 px) and scaled to fit; a ritual card also as its A4 pages
+// (GiftCardA4). The number and date are a sample until the card is paid for.
 
 const W = 850;
 const H = 370;
@@ -264,28 +265,28 @@ const CardSide: React.FC<CardProps> = ({ kind, side, locale, value, ritual, samp
   );
 };
 
-// The card at the width of its container.
-const ScaledCard: React.FC<CardProps & { label: string; width?: number }> = ({ label, width, ...card }) => {
+// A design at the width of its container: drawn at its own size and scaled.
+const Scaled: React.FC<{ w: number; h: number; label: string; width?: number; children: React.ReactNode }> = ({ w, h, label, width, children }) => {
   const box = useRef<HTMLDivElement>(null);
   const [scale, setScale] = useState(0);
   useLayoutEffect(() => {
     const el = box.current;
     if (!el) return;
-    const measure = () => setScale(el.clientWidth / W);
+    const measure = () => setScale(el.clientWidth / w);
     measure();
     const observer = new ResizeObserver(measure);
     observer.observe(el);
     return () => observer.disconnect();
-  }, []);
+  }, [w]);
   return (
     <figure className="space-y-2">
       <div
         ref={box}
         className="relative overflow-hidden rounded-md shadow-2xl shadow-black/60"
-        style={{ aspectRatio: `${W} / ${H}`, width: width ?? '100%' }}
+        style={{ aspectRatio: `${w} / ${h}`, width: width ?? '100%' }}
       >
-        <div style={{ position: 'absolute', left: 0, top: 0, width: W, height: H, transform: `scale(${scale})`, transformOrigin: 'top left' }}>
-          <CardSide {...card} />
+        <div style={{ position: 'absolute', left: 0, top: 0, width: w, height: h, transform: `scale(${scale})`, transformOrigin: 'top left' }}>
+          {children}
         </div>
       </div>
       <figcaption className="text-xs uppercase tracking-widest text-gray-400">{label}</figcaption>
@@ -293,20 +294,19 @@ const ScaledCard: React.FC<CardProps & { label: string; width?: number }> = ({ l
   );
 };
 
-// A sample number in the card's own form (M-DDMMYY-xNNN), and a year's validity.
+// A sample number in the card's own form, that of its advance invoice
+// (AR-YYYY-NNNN), and a year's validity.
 function sampleCard(): Sample {
   const now = new Date();
-  const dd = String(now.getDate()).padStart(2, '0');
-  const mm = String(now.getMonth() + 1).padStart(2, '0');
-  const yy = String(now.getFullYear()).slice(2);
   const until = new Date(now);
   until.setFullYear(now.getFullYear() + 1);
   const iso = `${until.getFullYear()}-${String(until.getMonth() + 1).padStart(2, '0')}-${String(until.getDate()).padStart(2, '0')}`;
-  return { code: `M-${dd}${mm}${yy}-x101`, validUntil: iso };
+  return { code: `AR-${now.getFullYear()}-0000`, validUntil: iso };
 }
 
 interface GiftCardPreviewProps {
-  // A value card (shown with and without its amount) or a ritual card.
+  // A value card (shown with and without its amount) or a ritual card (as a
+  // card and as an A4 page).
   value?: number;
   ritual?: GiftCardRitual | null;
   onClose: () => void;
@@ -315,14 +315,16 @@ interface GiftCardPreviewProps {
 const GiftCardPreview: React.FC<GiftCardPreviewProps> = ({ value = 0, ritual = null, onClose }) => {
   const { t, i18n } = useTranslation('giftcards');
   const locale: Locale = i18n.language === 'en' ? 'en' : 'lv';
-  const [plain, setPlain] = useState(false);
+  // The second version: the value card without its amount, the ritual card on A4.
+  const [second, setSecond] = useState(false);
   // On a phone the card is small; enlarged, it scrolls sideways at a readable size.
   const [enlarged, setEnlarged] = useState(false);
   const [sample] = useState(sampleCard);
   const closeRef = useRef<HTMLButtonElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
   const pressedOutside = useRef(false);
-  const kind: GiftCardKind = ritual ? 'ritual' : plain ? 'plain' : 'value';
+  const kind: GiftCardKind = ritual ? 'ritual' : second ? 'plain' : 'value';
+  const a4 = !!ritual && second;
 
   useEffect(() => {
     const opener = document.activeElement as HTMLElement | null;
@@ -352,13 +354,13 @@ const GiftCardPreview: React.FC<GiftCardPreviewProps> = ({ value = 0, ritual = n
     };
   }, [onClose]);
 
-  const tab = (isPlain: boolean, label: string) => (
+  const tab = (isSecond: boolean, label: string) => (
     <button
       type="button"
-      aria-pressed={plain === isPlain}
-      onClick={() => setPlain(isPlain)}
+      aria-pressed={second === isSecond}
+      onClick={() => setSecond(isSecond)}
       className={`rounded-full px-4 py-2 text-sm font-semibold transition-colors ${
-        plain === isPlain ? 'bg-amber-600 text-white' : 'bg-white/10 text-gray-200 hover:bg-white/20'
+        second === isSecond ? 'bg-amber-600 text-white' : 'bg-white/10 text-gray-200 hover:bg-white/20'
       }`}
     >
       {label}
@@ -390,18 +392,16 @@ const GiftCardPreview: React.FC<GiftCardPreviewProps> = ({ value = 0, ritual = n
         <div className="flex items-start justify-between gap-4">
           <div>
             <h2 id="gift-card-preview-title" className="text-xl sm:text-2xl font-bold">{t('preview.title')}</h2>
-            {!ritual && <p className="mt-1 text-sm sm:text-base text-gray-300">{t('preview.bothVersions')}</p>}
+            <p className="mt-1 text-sm sm:text-base text-gray-300">{t(ritual ? 'preview.bothVersionsRitual' : 'preview.bothVersions')}</p>
           </div>
           <button ref={closeRef} type="button" onClick={onClose} aria-label={t('preview.close')} className="rounded-lg p-2 hover:bg-white/10 shrink-0">
             <X className="w-6 h-6" />
           </button>
         </div>
-        {!ritual && (
-          <div className="flex flex-wrap gap-2" role="group" aria-label={t('preview.title')}>
-            {tab(false, t('preview.withAmount'))}
-            {tab(true, t('preview.withoutAmount'))}
-          </div>
-        )}
+        <div className="flex flex-wrap gap-2" role="group" aria-label={t('preview.title')}>
+          {tab(false, t(ritual ? 'preview.card' : 'preview.withAmount'))}
+          {tab(true, t(ritual ? 'preview.a4' : 'preview.withoutAmount'))}
+        </div>
         <button
           type="button"
           aria-pressed={enlarged}
@@ -410,20 +410,19 @@ const GiftCardPreview: React.FC<GiftCardPreviewProps> = ({ value = 0, ritual = n
         >
           {enlarged ? t('preview.fit') : t('preview.enlarge')}
         </button>
-        <div className={enlarged ? 'space-y-5 overflow-x-auto -mx-4 px-4 pb-2' : 'space-y-5'}>
-          {(['front', 'back'] as const).map((side) => (
-            <ScaledCard
-              key={side}
-              kind={kind}
-              side={side}
-              locale={locale}
-              value={value}
-              ritual={ritual}
-              sample={sample}
-              label={t(side === 'front' ? 'preview.front' : 'preview.back')}
-              width={enlarged ? 760 : undefined}
-            />
-          ))}
+        {/* The A4 pages side by side where there is room. */}
+        <div className={`${a4 ? 'grid gap-5 sm:grid-cols-2' : 'space-y-5'}${enlarged ? ' overflow-x-auto -mx-4 px-4 pb-2' : ''}`}>
+          {a4 && ritual
+            ? ([1, 2] as const).map((page) => (
+              <Scaled key={page} w={A4_W} h={A4_H} label={t(page === 1 ? 'preview.page1' : 'preview.page2')} width={enlarged ? 700 : undefined}>
+                <GiftCardA4Page page={page} locale={locale} ritual={ritual} code={sample.code} validUntil={sample.validUntil} />
+              </Scaled>
+            ))
+            : (['front', 'back'] as const).map((side) => (
+              <Scaled key={side} w={W} h={H} label={t(side === 'front' ? 'preview.front' : 'preview.back')} width={enlarged ? 760 : undefined}>
+                <CardSide kind={kind} side={side} locale={locale} value={value} ritual={ritual} sample={sample} />
+              </Scaled>
+            ))}
         </div>
         <p className="text-xs sm:text-sm text-gray-400">{t('preview.sample')}</p>
       </div>

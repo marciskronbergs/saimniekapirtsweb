@@ -63,6 +63,7 @@ import {
   type ConfirmationInput,
 } from './email.ts';
 import { renderGiftCardPdf } from './giftcard.ts';
+import { renderGiftCardA4Pdf } from './giftcardA4.ts';
 import type { GiftCardKind } from './giftCardText.ts';
 import {
   stripeConfigured, createCheckoutSession, getCheckoutSession, expireCheckoutSession, type CheckoutSession,
@@ -142,9 +143,51 @@ interface Source {
   row: any;
   // Set once a card payment for it is known to have gone through.
   cardPaid?: boolean;
+  // A discount the office gave; already a line in `priced`.
+  discount?: Discount | null;
 }
 
+interface Discount {
+  percent: number;
+  reason: string;
+}
+
+// An office discount, as a line of its own at the end of the invoice.
+function withDiscount(priced: Source['priced'], discount: Discount): Source['priced'] {
+  if (!priced.items.length || priced.problems.length) return priced;
+  const amount = Math.round(priced.total * discount.percent) / 100;
+  const why = discount.reason.trim();
+  const pct = `${String(discount.percent).replace('.', ',')}%`;
+  return {
+    ...priced,
+    items: [...priced.items, {
+      name: { lv: `Atlaide ${pct}${why ? ` – ${why}` : ''}`, en: `Discount ${discount.percent}%${why ? ` – ${why}` : ''}` },
+      quantity: 1,
+      unit: 'service',
+      unitPrice: -amount,
+      amount: -amount,
+    }],
+    total: Math.round((priced.total - amount) * 100) / 100,
+  };
+}
+
+async function discountOf(type: SourceType, id: string): Promise<Discount | null> {
+  const { data, error } = await db.from('discounts').select('percent, reason').eq('source_type', type).eq('source_id', id).maybeSingle();
+  if (error) throw error;
+  return data ? { percent: Number(data.percent), reason: data.reason ?? '' } : null;
+}
+
+// A booking or order as the invoices see it: priced from the list, less any
+// discount the office gave.
 async function loadSource(type: SourceType, id: string): Promise<Source | null> {
+  const source = await loadSourceRow(type, id);
+  if (!source) return null;
+  source.discount = await discountOf(type, id);
+  if (source.discount) source.priced = withDiscount(source.priced, source.discount);
+  return source;
+}
+
+async function loadSourceRow(type: SourceType, id: string): Promise<Source | null> {
   const today = rigaToday();
   if (type === 'reservation') {
     const { data: r, error } = await db.from('reservations').select('*').eq('id', id).maybeSingle();
@@ -232,15 +275,17 @@ async function post(url: string | null, what: string, payload: Record<string, un
 }
 
 // To the office only: the recipient is fixed in that scenario.
-async function sendToOffice(
-  message: { subject: string; html: string; text: string },
-  attachment?: { filename: string; content: string }
-) {
+// To the office, through the first scenario, with up to three attachments
+// (filename / pdf_base64, filename2 / pdf2_base64, filename3 / pdf3_base64).
+async function sendToOffice(message: { subject: string; html: string; text: string }, attachments: Attachment[] = []) {
+  const [first, second, third] = attachments;
   await post(await officeUrl(), 'Office mail', {
     subject: message.subject,
     html: message.html,
     text: message.text,
-    ...(attachment ? { filename: attachment.filename, pdf_base64: attachment.content } : {}),
+    ...(first ? { filename: first.filename, pdf_base64: first.content } : {}),
+    ...(first && second ? { filename2: second.filename, pdf2_base64: second.content } : {}),
+    ...(first && second && third ? { filename3: third.filename, pdf3_base64: third.content } : {}),
   });
 }
 
@@ -272,8 +317,19 @@ async function deliverAdvance(invoice: Invoice) {
   if (!claimed) return { status: 'in_progress', number: invoice.number };
 
   const pdf = await renderInvoicePdf(invoice);
-  const message = invoiceEmail(invoice);
-  await sendToOffice(message, { filename: message.filename, content: toBase64(pdf) });
+  // For a gift card, the cards themselves come along, so the office can
+  // forward one email with the invoice and the cards to the buyer.
+  let cards: Attachment[] = [];
+  if (invoice.source_type === 'gift_card') {
+    try {
+      const card = await giftCard(invoice.source_id);
+      cards = (card?.files ?? []).map((file) => ({ filename: file.filename, content: toBase64(file.pdf) }));
+    } catch (e) {
+      console.error(e);
+    }
+  }
+  const message = invoiceEmail(invoice, cards.length);
+  await sendToOffice(message, [{ filename: message.filename, content: toBase64(pdf) }, ...cards]);
   await db.from('invoices').update({ emailed_at: new Date().toISOString() }).eq('id', invoice.id);
   return { status: 'sent', number: invoice.number };
 }
@@ -320,7 +376,9 @@ const cancelLink = (invoice: Invoice) =>
 const visitText = (d: InvoiceDetails | null | undefined) =>
   d?.kind === 'reservation' && d.date ? `${formatDate(d.date)} ${d.time ?? ''} ${d.sauna ?? ''}`.trim() : 'Dāvanu karte';
 
-async function archive(invoice: Invoice) {
+// `rekey` moves a replaced invoice's row out of the way: a booking's rows
+// are found by the booking's link, which the new invoice's row now carries.
+async function archive(invoice: Invoice, rekey?: string) {
   const annulled = invoice.status === 'annulled';
   if (annulled ? invoice.annul_logged_at : invoice.logged_at) return { status: 'already_filed' };
   const url = await guestUrl();
@@ -343,6 +401,7 @@ async function archive(invoice: Invoice) {
       pdf_base64: toBase64(pdf),
       status: 'Anulēts',
       booking_status: bookingStatus,
+      ...(rekey ? { new_key: rekey } : {}),
     });
   } else {
     await post(url, 'Archive', {
@@ -541,12 +600,16 @@ async function issueAdvance(source: Source, paidOn?: string) {
 
 // The booking's or order's advance invoice: the one already issued, or a new
 // one. One that cannot be priced is held for the office instead.
-async function createAdvance(source: Source, paidOn?: string): Promise<{ invoice?: Invoice; reason?: string }> {
+// `replaces` issues a new invoice for one the office annulled to give a
+// discount; otherwise an annulled invoice (a cancelled booking) stays the last.
+async function createAdvance(source: Source, paidOn?: string, replaces?: Invoice): Promise<{ invoice?: Invoice; reason?: string }> {
   const { type, id } = source;
-  const { data: existing, error: existingError } = await db
-    .from('invoices').select('*').eq('source_type', type).eq('source_id', id).eq('kind', 'advance').maybeSingle();
+  const { data: advances, error: existingError } = await db.from('invoices').select('*')
+    .eq('source_type', type).eq('source_id', id).eq('kind', 'advance').order('created_at', { ascending: false });
   if (existingError) throw existingError;
-  if (existing) return { invoice: existing };
+  const inForce = (advances ?? []).find((i) => i.status !== 'annulled');
+  if (inForce) return { invoice: inForce };
+  if (advances?.length && !replaces) return { invoice: advances[0] };
 
   const { data: hold } = await db
     .from('invoice_holds').select('reason').eq('source_type', type).eq('source_id', id).maybeSingle();
@@ -582,7 +645,11 @@ async function createAdvance(source: Source, paidOn?: string): Promise<{ invoice
     p_total: source.priced.total,
     p_seller: seller,
     p_vat_note: VAT_NOTE,
-    p_details: paidOn ? { ...source.details, payment: 'card', paid_on: paidOn } : source.details,
+    p_details: {
+      ...source.details,
+      ...(paidOn ? { payment: 'card', paid_on: paidOn } : {}),
+      ...(replaces ? { replaces: replaces.number } : {}),
+    },
     p_paid: !!paidOn,
   });
   if (error) throw error;
@@ -625,7 +692,7 @@ async function sendFinalToGuest(invoice: Invoice) {
   const card = invoice.source_type === 'gift_card' ? await giftCard(invoice.source_id) : null;
   const message = finalInvoiceGuestEmail(
     invoice,
-    card ? { code: card.code, validUntil: card.valid_until, bothVersions: card.kind === 'value' } : undefined,
+    card ? { code: card.code, validUntil: card.valid_until, kind: card.kind } : undefined,
   );
   await sendToGuest(invoice.customer_email, message, [
     { filename: message.filename, content: toBase64(pdf) },
@@ -650,7 +717,7 @@ async function deliverFinal(invoice: Invoice) {
   return { number: invoice.number, ...sent, filed };
 }
 
-async function annul(invoice: Invoice) {
+async function annul(invoice: Invoice, replaced = false) {
   if (invoice.kind !== 'advance') throw new Error('Only an advance invoice can be annulled');
   if (invoice.status === 'annulled') return { status: 'already_annulled' };
   const { data: final } = await db.from('invoices').select('id').eq('advance_id', invoice.id).maybeSingle();
@@ -660,7 +727,7 @@ async function annul(invoice: Invoice) {
     .eq('id', invoice.id).eq('status', 'issued').select('*').maybeSingle();
   if (error) throw error;
   if (!updated) return { status: 'already_annulled' };
-  const filed = await attempt(() => archive(updated));
+  const filed = await attempt(() => archive(updated, replaced ? `${cancelLink(updated)}#${updated.number}` : undefined));
   return { status: 'annulled', number: invoice.number, filed };
 }
 
@@ -848,34 +915,42 @@ async function sweep() {
 
 // ---------------------------------------------------------------------------
 // Gift cards: the card itself, drawn from the order and numbered the first
-// time it is needed. A ritual card is one PDF. A value card is two, with its
-// amount and without it, so the buyer can give whichever they like; `only`
-// draws just one of them, for a download.
+// time it is needed. Every order gets two PDFs, so the buyer can give
+// whichever they like: a ritual as the card and as the A4 card (the owner's
+// own layout), a value card with its amount and without it. `only` draws just
+// one of them, for a download.
 
 // The ritual an order is for, as its card describes it; null for a value card.
 const ritualOf = (order: { ritual_type?: string | null }) =>
   prices.giftCard.rituals.find((r) => r.label.lv === order.ritual_type || r.label.en === order.ritual_type)?.card ?? null;
 
-async function giftCard(orderId: string, only?: 'value' | 'plain') {
+async function giftCard(orderId: string, only?: GiftCardKind) {
   const { data: order, error } = await db.from('davanu_kartes_pasutijumi').select('*').eq('id', orderId).maybeSingle();
   if (error) throw error;
   if (!order) return null;
   const priced = priceGiftCard(prices, order);
   if (priced.problems.length) throw new Error(`Gift card cannot be priced: ${priced.problems.join('; ')}`);
+  // The card carries its advance invoice's number, so it can be matched with
+  // the payment; until that invoice exists there is no card yet.
   const { data: card, error: cardError } = await db.rpc('gift_card_for', { p_order: orderId });
   if (cardError) throw cardError;
+  if (!card?.code) throw new Error('The gift card waits for its advance invoice');
   const ritual = ritualOf(order);
   const locale: 'lv' | 'en' = order.locale === 'en' ? 'en' : 'lv';
-  const kinds: GiftCardKind[] = ritual ? ['ritual'] : only ? [only] : ['value', 'plain'];
+  const all: GiftCardKind[] = ritual ? ['ritual', 'a4'] : ['value', 'plain'];
+  const kinds = only && all.includes(only) ? [only] : only ? [all[0]] : all;
   const name = locale === 'en' ? 'Gift-card' : 'Davanu-karte';
   const suffix: Record<GiftCardKind, string> = {
     ritual: '',
+    a4: '-A4',
     value: locale === 'en' ? '-with-amount' : '-ar-summu',
     plain: locale === 'en' ? '-without-amount' : '-bez-summas',
   };
   const files: { kind: GiftCardKind; filename: string; pdf: Uint8Array }[] = [];
   for (const kind of kinds) {
-    const pdf = await renderGiftCardPdf({
+    const pdf = kind === 'a4' && ritual
+      ? await renderGiftCardA4Pdf({ code: card.code, validUntil: card.valid_until, locale, ritual })
+      : await renderGiftCardPdf({
       code: card.code,
       validUntil: card.valid_until,
       locale,
@@ -1018,7 +1093,7 @@ async function paidByCard(source: Source) {
   // to the guest together.
   const final = await attempt(async () => {
     const { data: issued } = await db.from('invoices').select('*')
-      .eq('source_type', 'gift_card').eq('source_id', source.id).eq('kind', 'advance').maybeSingle();
+      .eq('source_type', 'gift_card').eq('source_id', source.id).eq('kind', 'advance').eq('status', 'issued').maybeSingle();
     if (!issued) return { status: 'no_advance' };
     const { data: existing } = await db.from('invoices').select('*').eq('advance_id', issued.id).maybeSingle();
     return existing ? await deliverFinal(existing) : await issueFinal(issued);
@@ -1111,7 +1186,7 @@ async function paymentStatus(body: { p?: string }) {
   let gift: { code: string; valid_until: string; kind: 'ritual' | 'value' } | null = null;
   if (now.status === 'paid' && now.source_type === 'gift_card') {
     const { data } = await db.rpc('gift_card_for', { p_order: now.source_id });
-    if (data) gift = { code: data.code, valid_until: data.valid_until, kind: ritualOf(source.row) ? 'ritual' : 'value' };
+    if (data?.code) gift = { code: data.code, valid_until: data.valid_until, kind: ritualOf(source.row) ? 'ritual' : 'value' };
   }
   return json({
     status: now.status,
@@ -1152,12 +1227,16 @@ async function paymentSwitch(body: { p?: string }) {
   return json({ status: 'switched' });
 }
 
-// A value card downloads with its amount, or without it when `plain` asks.
-async function giftCardDownload(body: { p?: string; plain?: boolean }) {
+// One of the order's two PDFs: a value card without its amount when `plain`
+// asks, a ritual's A4 card when `a4` does; otherwise the card itself.
+const variantOf = (body: { plain?: boolean; a4?: boolean }): GiftCardKind | undefined =>
+  body.plain ? 'plain' : body.a4 ? 'a4' : undefined;
+
+async function giftCardDownload(body: { p?: string; plain?: boolean; a4?: boolean }) {
   const payment = await paymentOf(body.p);
   if (!payment || payment.source_type !== 'gift_card') return json({ error: 'not_found' }, 404);
   if (payment.status !== 'paid') return json({ error: 'not_paid' }, 409);
-  const card = await giftCard(payment.source_id, body.plain ? 'plain' : 'value');
+  const card = await giftCard(payment.source_id, variantOf(body) ?? 'value');
   if (!card) return json({ error: 'not_found' }, 404);
   const [file] = card.files;
   return json({ filename: file.filename, pdf_base64: toBase64(file.pdf) });
@@ -1214,6 +1293,44 @@ async function leaveCash(source: Source) {
 // pay_link: the link (for a QR code) to pay the advance invoice by card. The
 //   invoice is issued now if there is none; the 15-minute run then emails it
 //   to the guest: as paid, if they have paid by then.
+// A discount from the office (e.g. 50 % for a collaboration). It is kept for
+// the booking or order and priced into every invoice made for it from now on.
+// An advance invoice already issued and not yet paid is annulled and replaced
+// by one with the discount, which goes to the guest (saying which invoice it
+// replaces), to the office and to the list.
+async function officeDiscount(body: { type?: string; id?: string; percent?: number; reason?: string }) {
+  const type: SourceType | null = body.type === 'reservation' || body.type === 'gift_card' ? body.type : null;
+  if (!type || !body.id || !uuidPattern.test(body.id)) return json({ error: 'not_found' }, 404);
+  const percent = Math.round(Number(body.percent) * 100) / 100;
+  if (!Number.isFinite(percent) || percent <= 0 || percent > 100) return json({ error: 'bad_percent' }, 400);
+  const reason = String(body.reason ?? '').trim().slice(0, 60);
+  if (!(await loadSource(type, body.id))) return json({ error: 'not_found' }, 404);
+
+  const { data: invoices, error } = await db.from('invoices').select('*')
+    .eq('source_type', type).eq('source_id', body.id).order('created_at', { ascending: false });
+  if (error) throw error;
+  const current = (invoices ?? []).find((i) => i.kind === 'advance' && i.status === 'issued') ?? null;
+  const settled = (invoices ?? []).some((i) => i.kind === 'final') || !!current?.paid ||
+    (await cardPayments(type, body.id)).some((p) => p.status === 'paid');
+  if (settled) return json({ error: 'already_paid' }, 409);
+
+  const { error: saveError } = await db.from('discounts')
+    .upsert({ source_type: type, source_id: body.id, percent, reason }, { onConflict: 'source_type,source_id' });
+  if (saveError) throw saveError;
+  // No invoice yet (a cash booking, or one on hold): the discount waits for it.
+  if (!current) return json({ status: 'saved', percent });
+
+  await annul(current, true);
+  const source = await loadSource(type, body.id);
+  const made = await createAdvance(source!, undefined, current);
+  if (!made.invoice) return json({ error: 'cannot_invoice', reason: made.reason ?? '' }, 409);
+  const invoice = made.invoice;
+  await attempt(() => deliverAdvance(invoice));
+  await attempt(() => archive(invoice));
+  const guest = await attempt(() => deliverAdvanceToGuest(invoice));
+  return json({ status: 'reissued', percent, number: invoice.number, replaced: current.number, total: Number(invoice.total), guest });
+}
+
 async function officeInvoice(body: { action?: string; type?: string; id?: string; pay_link?: boolean }) {
   const type: SourceType | null = body.type === 'reservation' || body.type === 'gift_card' ? body.type : null;
   if (!type || !body.id || !uuidPattern.test(body.id)) return json({ error: 'not_found' }, 404);
@@ -1437,7 +1554,8 @@ async function manageReservation(body: { reservation?: string; pin?: string; act
   const row = booking ?? cancelled!.reservation;
   const { data: invoices } = await db.from('invoices').select('*')
     .eq('source_type', 'reservation').eq('source_id', id);
-  const advance = (invoices ?? []).find((i) => i.kind === 'advance') ?? null;
+  const advance = (invoices ?? []).find((i) => i.kind === 'advance' && i.status !== 'annulled')
+    ?? (invoices ?? []).find((i) => i.kind === 'advance') ?? null;
   const final = (invoices ?? []).find((i) => i.kind === 'final') ?? null;
 
   const view = (isCancelled = !booking, advanceStatus = advance?.status ?? null) => ({
@@ -1502,13 +1620,21 @@ async function removeFromCalendar(r: any) {
 // the PIN, since the list holds guests' names, emails and phone numbers.
 // deno-lint-ignore no-explicit-any
 async function office(body: {
-  pin?: string; action?: string; reservation?: string; order?: string; plain?: boolean; master_id?: string | null; master?: any;
-  type?: string; id?: string; pay_link?: boolean;
+  pin?: string; action?: string; reservation?: string; order?: string; plain?: boolean; a4?: boolean; master_id?: string | null; master?: any;
+  type?: string; id?: string; pay_link?: boolean; percent?: number; reason?: string;
 }) {
   const pinResult = await pinCheck(body.pin);
   if (pinResult !== 'ok') return pinRefusal(pinResult);
   if (body.action === 'assign') return await assignMaster(body.reservation, body.master_id ?? null);
   if (body.action === 'save_master') return await saveMaster(body.master);
+  if (body.action === 'discount') {
+    try {
+      return await officeDiscount(body);
+    } catch (e) {
+      console.error(e);
+      return json({ error: describe(e) }, 500);
+    }
+  }
   if (body.action === 'send_invoice' || body.action === 'pay_link') {
     try {
       return await officeInvoice(body);
@@ -1520,7 +1646,7 @@ async function office(body: {
   if (body.action === 'gift_card_pdf') {
     if (!body.order || !uuidPattern.test(body.order)) return json({ error: 'not_found' }, 404);
     try {
-      const card = await giftCard(body.order, body.plain ? 'plain' : 'value');
+      const card = await giftCard(body.order, variantOf(body) ?? 'value');
       if (!card) return json({ error: 'not_found' }, 404);
       const [file] = card.files;
       return json({ code: card.code, kind: card.kind, filename: file.filename, pdf_base64: toBase64(file.pdf) });
@@ -1543,13 +1669,15 @@ async function office(body: {
 
   const ids = [...(bookings.data ?? []), ...(cards.data ?? [])].map((r) => r.id as string);
   const cardIds = (cards.data ?? []).map((g) => g.id as string);
-  const [{ data: invoices, error }, { data: paidByCard }, { data: codes }] = ids.length
+  const [{ data: invoices, error }, { data: paidByCard }, { data: codes }, { data: discounts }] = ids.length
     ? await Promise.all([
-      db.from('invoices').select('id, number, kind, status, paid, source_id, manage_token, total').in('source_id', ids),
+      db.from('invoices').select('id, number, kind, status, paid, source_id, manage_token, total, created_at')
+        .in('source_id', ids).order('created_at', { ascending: false }),
       db.from('card_payments').select('source_id').eq('status', 'paid').in('source_id', ids),
       db.from('gift_cards').select('order_id, code, valid_until').in('order_id', cardIds.length ? cardIds : [crypto.randomUUID()]),
+      db.from('discounts').select('source_id, percent, reason').in('source_id', ids),
     ])
-    : [{ data: [], error: null }, { data: [] }, { data: [] }];
+    : [{ data: [], error: null }, { data: [] }, { data: [] }, { data: [] }];
   if (error) return json({ error: describe(error) }, 500);
   const cardPaid = new Set((paidByCard ?? []).map((p) => p.source_id));
   // deno-lint-ignore no-explicit-any
@@ -1560,7 +1688,7 @@ async function office(body: {
   // deno-lint-ignore no-explicit-any
   const invoiceView = (sourceId: string, priced: any) => {
     const mine = invoiceOf(sourceId);
-    const advance = mine.find((i) => i.kind === 'advance');
+    const advance = mine.find((i) => i.kind === 'advance' && i.status !== 'annulled') ?? mine.find((i) => i.kind === 'advance');
     const final = mine.find((i) => i.kind === 'final');
     return {
       items: priced.items.map((i: { name: { lv: string }; quantity: number; amount: number }) =>
@@ -1570,6 +1698,8 @@ async function office(body: {
         ? { number: advance.number, status: advance.status, paid: !!advance.paid, link: `/rekins?id=${advance.id}&t=${advance.manage_token}` }
         : null,
       final: final ? { number: final.number } : null,
+      discount: (discounts ?? []).filter((d: { source_id: string }) => d.source_id === sourceId)
+        .map((d) => ({ percent: Number(d.percent), reason: d.reason ?? '' }))[0] ?? null,
     };
   };
 
@@ -1763,17 +1893,17 @@ async function previewToOffice(type: SourceType, id: string) {
   const guestAdvance = advanceInvoiceGuestEmail(advance.invoice);
   await sendToOffice(
     { subject: `PARAUGS · avansa rēķins klientam · ${guestAdvance.subject}`, html: guestAdvance.html, text: '' },
-    { filename: guestAdvance.filename, content: advance.pdf },
+    [{ filename: guestAdvance.filename, content: advance.pdf }],
   );
   const office = invoiceEmail(advance.invoice);
   await sendToOffice(
     { subject: `PARAUGS · ${office.subject}`, html: office.html, text: office.text },
-    { filename: office.filename, content: advance.pdf },
+    [{ filename: office.filename, content: advance.pdf }],
   );
   const guest = finalInvoiceGuestEmail(final.invoice);
   await sendToOffice(
     { subject: `PARAUGS · gala rēķins klientam · ${guest.subject}`, html: guest.html, text: '' },
-    { filename: guest.filename, content: final.pdf },
+    [{ filename: guest.filename, content: final.pdf }],
   );
   return { status: 'previews_sent' };
 }

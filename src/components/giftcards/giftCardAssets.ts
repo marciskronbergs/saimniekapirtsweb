@@ -16,7 +16,11 @@ export const fontFaces = FONTS
 
 const PHOTOS = {
   value: ['/giftcard/value_front.jpg', '/giftcard/value_back.jpg', '/giftcard/logo_on_light.png'],
-  ritual: ['/giftcard/ritual_front.jpg', '/giftcard/ritual_back.jpg', '/giftcard/logo_on_dark.png'],
+  ritual: [
+    '/giftcard/ritual_front.jpg', '/giftcard/ritual_back.jpg', '/giftcard/logo_on_dark.png',
+    // The A4 version.
+    '/giftcard/logo_on_light.png', '/giftcard/a4_whisk.jpg', '/giftcard/a4_pond.jpg', '/giftcard/a4_rest.jpg',
+  ],
 };
 const preloaded = new Set<string>();
 

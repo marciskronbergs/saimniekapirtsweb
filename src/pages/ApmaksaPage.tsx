@@ -24,7 +24,8 @@ interface PaymentView {
   time: string | null;
   items: { name: string; quantity: number; amount: number }[];
   total: number;
-  // A value card comes in two versions: with its amount and without it.
+  // A value card comes in two versions, with its amount and without it; a
+  // ritual card as a card and as an A4 page.
   gift_card: { code: string; valid_until: string; kind?: 'ritual' | 'value' } | null;
 }
 
@@ -44,6 +45,10 @@ const texts = {
     downloadValue: 'Ar summu (PDF)',
     downloadPlain: 'Bez summas (PDF)',
     twoVersions: 'Dāvanu karte ir divos variantos – ar summu un bez summas. Dāviniet to, kurš Jums labāk patīk.',
+    downloadCard: 'Karte (PDF)',
+    downloadA4: 'A4 (PDF)',
+    twoVersionsRitual: 'Dāvanu karte ir divos variantos – kā karte un A4 formātā. Dāviniet to, kurš Jums labāk patīk.',
+    preparing: 'Dāvanu karti vēl gatavojam – tā parādīsies šeit pēc brīža un pienāks arī uz e-pastu.',
     downloading: 'Sagatavojam…',
     total: 'Kopā',
     unpaidTitle: 'Maksājums netika pabeigts',
@@ -73,6 +78,10 @@ const texts = {
     downloadValue: 'With the amount (PDF)',
     downloadPlain: 'Without the amount (PDF)',
     twoVersions: 'The gift card comes in two versions – with the amount and without it. Give whichever you like.',
+    downloadCard: 'Card (PDF)',
+    downloadA4: 'A4 (PDF)',
+    twoVersionsRitual: 'The gift card comes in two versions – as a card and as an A4 page. Give whichever you like.',
+    preparing: 'We are still preparing the gift card – it will appear here in a moment and reach you by email too.',
     downloading: 'Preparing…',
     total: 'Total',
     unpaidTitle: 'The payment was not completed',
@@ -104,7 +113,7 @@ const ApmaksaPage = () => {
   const { i18n } = useTranslation();
   const [view, setView] = useState<PaymentView | null>(null);
   const [missing, setMissing] = useState(false);
-  const [busy, setBusy] = useState<'retry' | 'transfer' | 'download' | 'download-plain' | null>(null);
+  const [busy, setBusy] = useState<'retry' | 'transfer' | 'download' | 'download-second' | null>(null);
   const [failed, setFailed] = useState(false);
   const polls = useRef(0);
 
@@ -116,7 +125,9 @@ const ApmaksaPage = () => {
       const data = await callInvoiceFunction<PaymentView>({ payment_status: { p: payment } });
       setView(data);
       // Back from paying, the bank may take a moment to confirm.
-      if (data.status === 'open' && data.method === 'card' && !cancelled && polls.current < 15) {
+      // A paid gift card waits for its advance invoice, whose number it carries.
+      const cardPending = data.status === 'paid' && data.type === 'gift_card' && !data.gift_card;
+      if (((data.status === 'open' && data.method === 'card' && !cancelled) || cardPending) && polls.current < 15) {
         polls.current += 1;
         setTimeout(load, 2000);
       }
@@ -159,12 +170,14 @@ const ApmaksaPage = () => {
     setBusy(null);
   };
 
-  // A value card downloads with its amount, or without it (plain).
-  const download = async (plain = false) => {
-    setBusy(plain ? 'download-plain' : 'download');
+  // A value card downloads with its amount or without it (plain); a ritual
+  // card as a card or as an A4 page.
+  const download = async (second = false) => {
+    setBusy(second ? 'download-second' : 'download');
     setFailed(false);
+    const variant = !second ? {} : view?.gift_card?.kind === 'ritual' ? { a4: true } : { plain: true };
     try {
-      const r = await callInvoiceFunction<{ filename: string; pdf_base64: string }>({ gift_card_pdf: { p: payment, plain } });
+      const r = await callInvoiceFunction<{ filename: string; pdf_base64: string }>({ gift_card_pdf: { p: payment, ...variant } });
       const bytes = Uint8Array.from(atob(r.pdf_base64), (c) => c.charCodeAt(0));
       const url = URL.createObjectURL(new Blob([bytes], { type: 'application/pdf' }));
       const a = document.createElement('a');
@@ -216,21 +229,24 @@ const ApmaksaPage = () => {
                         <Gift className="w-5 h-5" /> {tx.giftNumber} <strong className="text-amber-200 whitespace-nowrap">{view.gift_card.code}</strong>
                       </p>
                       <p className="text-sm text-gray-400">{tx.validUntil} {formatDate(view.gift_card.valid_until)}</p>
-                      {view.gift_card.kind === 'value' ? (
+                      {view.gift_card.kind ? (
                         <>
-                          <p className="text-sm text-gray-300">{tx.twoVersions}</p>
+                          <p className="text-sm text-gray-300">{view.gift_card.kind === 'ritual' ? tx.twoVersionsRitual : tx.twoVersions}</p>
                           <div className="flex flex-wrap gap-3">
-                            {([false, true] as const).map((plain) => {
-                              const mine = busy === (plain ? 'download-plain' : 'download');
+                            {([false, true] as const).map((second) => {
+                              const mine = busy === (second ? 'download-second' : 'download');
+                              const label = view.gift_card?.kind === 'ritual'
+                                ? (second ? tx.downloadA4 : tx.downloadCard)
+                                : (second ? tx.downloadPlain : tx.downloadValue);
                               return (
                                 <button
-                                  key={String(plain)}
-                                  onClick={() => download(plain)}
+                                  key={String(second)}
+                                  onClick={() => download(second)}
                                   disabled={busy !== null}
                                   className="inline-flex items-center gap-2 rounded-xl bg-amber-600 hover:bg-amber-700 disabled:opacity-60 px-5 py-3 font-bold"
                                 >
                                   {mine ? <Loader2 className="w-5 h-5 animate-spin" /> : <Download className="w-5 h-5" />}
-                                  {mine ? tx.downloading : plain ? tx.downloadPlain : tx.downloadValue}
+                                  {mine ? tx.downloading : label}
                                 </button>
                               );
                             })}
@@ -247,6 +263,11 @@ const ApmaksaPage = () => {
                         </button>
                       )}
                     </div>
+                  )}
+                  {!view.gift_card && view.type === 'gift_card' && (
+                    <p className="flex items-center gap-3 text-sm text-gray-300">
+                      <Loader2 className="w-4 h-4 animate-spin text-amber-300" /> {tx.preparing}
+                    </p>
                   )}
                   <ul className="text-sm text-gray-300 space-y-1 border-t border-gray-800 pt-4">
                     {view.items.map((item) => (

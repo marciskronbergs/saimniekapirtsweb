@@ -39,6 +39,8 @@ export interface InvoiceDetails {
   // Paid by card through Stripe, on this day (both invoices say so).
   payment?: 'card';
   paid_on?: string;
+  // An advance invoice issued in place of an annulled one (a discount given later).
+  replaces?: string;
 }
 
 export interface InvoiceRow {

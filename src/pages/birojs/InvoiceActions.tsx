@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Copy, CreditCard, ExternalLink, QrCode, Send, X } from 'lucide-react';
+import { Copy, CreditCard, ExternalLink, Percent, QrCode, Send, X } from 'lucide-react';
 import { eur } from '../../lib/officeApi';
 
 // The office's buttons on a booking or gift card order: send the guest their
@@ -13,12 +13,13 @@ interface InvoiceActionsProps {
   busy: boolean;
   onSend: (withLink: boolean) => void;
   onPayLink: () => void;
+  onDiscount: () => void;
 }
 
 const buttonClass =
   'inline-flex items-center gap-1.5 rounded-lg border border-gray-600 bg-gray-800 hover:bg-gray-700 disabled:opacity-50 px-2.5 py-1.5 text-sm';
 
-export const InvoiceActions = ({ settled, cardPayments, busy, onSend, onPayLink }: InvoiceActionsProps) => (
+export const InvoiceActions = ({ settled, cardPayments, busy, onSend, onPayLink, onDiscount }: InvoiceActionsProps) => (
   <div className="flex flex-wrap gap-2">
     <button type="button" onClick={() => onSend(false)} disabled={busy} className={buttonClass}>
       <Send className="w-4 h-4 text-green-400" />
@@ -36,8 +37,98 @@ export const InvoiceActions = ({ settled, cardPayments, busy, onSend, onPayLink 
         </button>
       </>
     )}
+    {!settled && (
+      <button type="button" onClick={onDiscount} disabled={busy} className={buttonClass}>
+        <Percent className="w-4 h-4 text-amber-400" />
+        Atlaide
+      </button>
+    )}
   </div>
 );
+
+export interface DiscountTarget {
+  type: 'reservation' | 'gift_card';
+  id: string;
+  name: string;
+  // The advance invoice in force, which a discount replaces.
+  invoice: string | null;
+  total: number | null;
+  discount: { percent: number; reason: string } | null;
+}
+
+const PRESETS = [10, 20, 30, 50, 100];
+
+// A discount for one booking or gift card: its percentage and why (e.g. a
+// collaboration). An invoice already sent is annulled and replaced.
+export const DiscountDialog = ({
+  target, busy, onApply, onClose,
+}: { target: DiscountTarget; busy: boolean; onApply: (percent: number, reason: string) => void; onClose: () => void }) => {
+  const [percent, setPercent] = useState(target.discount?.percent ?? 50);
+  const [reason, setReason] = useState(target.discount?.reason ?? 'Sadarbība');
+  const valid = Number.isFinite(percent) && percent > 0 && percent <= 100;
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose();
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [onClose]);
+
+  const after = target.total !== null && valid ? Math.round(target.total * (100 - percent)) / 100 : null;
+  return (
+    <div role="dialog" aria-modal="true" aria-labelledby="discount-title"
+      className="fixed inset-0 z-[70] flex items-center justify-center bg-black/80 p-4" onClick={onClose}>
+      <form
+        className="w-full max-w-sm rounded-2xl border border-gray-700 bg-[#0d0d0d] p-5 text-white space-y-4"
+        onClick={(e) => e.stopPropagation()}
+        onSubmit={(e) => {
+          e.preventDefault();
+          if (valid) onApply(percent, reason.trim());
+        }}
+      >
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <h2 id="discount-title" className="text-lg font-bold">Atlaide</h2>
+            <p className="text-sm text-gray-400">{target.name}{target.total !== null ? ` · ${eur(target.total)}` : ''}</p>
+          </div>
+          <button type="button" onClick={onClose} aria-label="Aizvērt" className="rounded-lg p-1 hover:bg-gray-800">
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          {PRESETS.map((p) => (
+            <button key={p} type="button" aria-pressed={percent === p} onClick={() => setPercent(p)}
+              className={`rounded-lg px-3 py-1.5 text-sm font-semibold ${percent === p ? 'bg-amber-600 text-white' : 'bg-gray-800 hover:bg-gray-700'}`}>
+              {p}%
+            </button>
+          ))}
+        </div>
+        <label className="block text-sm text-gray-300">
+          Procenti
+          <input type="number" min={1} max={100} step={1} value={Number.isFinite(percent) ? percent : ''}
+            onChange={(e) => setPercent(Number(e.target.value))}
+            className="mt-1 w-full rounded-lg bg-gray-800 border border-gray-600 px-3 py-2 text-white" />
+        </label>
+        <label className="block text-sm text-gray-300">
+          Iemesls (redzams rēķinā)
+          <input type="text" maxLength={60} value={reason} onChange={(e) => setReason(e.target.value)} placeholder="Sadarbība"
+            className="mt-1 w-full rounded-lg bg-gray-800 border border-gray-600 px-3 py-2 text-white" />
+        </label>
+        <p className="text-sm text-gray-400">
+          {target.invoice
+            ? `Rēķins ${target.invoice} tiks anulēts, un klientam aizies jauns rēķins ar atlaidi${after !== null ? ` – ${eur(after)}` : ''}.`
+            : `Atlaide tiks iekļauta rēķinā, kad tas tiks izrakstīts${after !== null ? ` – ${eur(after)}` : ''}.`}
+        </p>
+        <div className="flex flex-wrap gap-2">
+          <button type="submit" disabled={!valid || busy}
+            className="inline-flex items-center gap-1.5 rounded-lg bg-amber-600 hover:bg-amber-700 disabled:opacity-50 px-4 py-2 font-semibold">
+            <Percent className="w-4 h-4" /> Piemērot atlaidi
+          </button>
+          <button type="button" onClick={onClose} className="rounded-lg bg-gray-800 hover:bg-gray-700 px-4 py-2">Atcelt</button>
+        </div>
+      </form>
+    </div>
+  );
+};
 
 export interface PayLink {
   name: string;

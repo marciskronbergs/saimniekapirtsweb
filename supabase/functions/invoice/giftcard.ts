@@ -46,11 +46,15 @@ const FILES = {
   ritualBack: 'giftcard/ritual_back.jpg',
   logoOnLight: 'giftcard/logo_on_light.png',
   logoOnDark: 'giftcard/logo_on_dark.png',
+  a4Whisk: 'giftcard/a4_whisk.jpg',
+  a4Pond: 'giftcard/a4_pond.jpg',
+  a4Rest: 'giftcard/a4_rest.jpg',
 } as const;
-type Asset = keyof typeof FILES;
+export type GiftCardAsset = keyof typeof FILES;
+type Asset = GiftCardAsset;
 const cache = new Map<Asset, Promise<ArrayBuffer>>();
 
-const load = (key: Asset) => {
+export const load = (key: Asset) => {
   let p = cache.get(key);
   if (!p) {
     p = fetch(`${ASSET_BASE}/${FILES[key]}`).then(async (res) => {

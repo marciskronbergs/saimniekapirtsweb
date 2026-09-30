@@ -292,6 +292,8 @@ export function advanceInvoiceGuestEmail(invoice: InvoiceRow, payUrl?: string) {
     p(t(`Sveiki, ${who}!`, `Hello ${who},`)),
     p(t(`Pielikumā ir avansa rēķins Nr. ${invoice.number} ${what}.`,
       `Attached is advance invoice ${invoice.number} ${what}.`)),
+    d?.replaces ? p(t(`Tas aizstāj iepriekš nosūtīto rēķinu Nr. ${escapeHtml(d.replaces)}, kas ir anulēts – lūdzu, maksājiet pēc šī rēķina.`,
+      `It replaces invoice ${escapeHtml(d.replaces)} sent earlier, which has been annulled – please pay this one instead.`)) : '',
     payUrl ? p(t(`Rēķinu var apmaksāt ar karti tiešsaistē – ${eur(invoice.total)}:`,
       `You can pay it by card online – ${eur(invoice.total, 'en')}:`)) : '',
     payUrl ? button(payUrl, t('Maksāt ar karti', 'Pay by card')) : '',
@@ -340,8 +342,9 @@ export function thanksEmail(c: ConfirmationInput) {
 export interface GiftCardNote {
   code: string;
   validUntil: string;
-  // A value card is attached twice: with its amount and without it.
-  bothVersions?: boolean;
+  // Both versions are attached: a value card with and without its amount, a
+  // ritual card as the card and as the A4 card.
+  kind?: 'value' | 'ritual';
 }
 
 // For a gift card, the final invoice travels with the gift card itself.
@@ -357,11 +360,11 @@ export function finalInvoiceGuestEmail(invoice: InvoiceRow, giftCard?: GiftCardN
       p(t(`Sveiki, ${who}!`, `Hello ${who},`)),
       p(t('Paldies par dāvanu kartes pirkumu! Pielikumā ir:', 'Thank you for buying a gift card! Attached are:')),
       list([
-        giftCard.bothVersions
+        giftCard.kind === 'value'
           ? t(`<strong>dāvanu karte Nr. ${card}</strong>, derīga līdz ${formatDate(giftCard.validUntil)}, divos variantos – ar summu un bez summas. Dāviniet to, kurš Jums labāk patīk: to var izdrukāt vai uzdāvināt elektroniski;`,
             `<strong>gift card no. ${card}</strong>, valid until ${formatDate(giftCard.validUntil)}, in two versions – with the amount and without it. Give whichever you like: print it or give it electronically;`)
-          : t(`<strong>dāvanu karte Nr. ${card}</strong>, derīga līdz ${formatDate(giftCard.validUntil)} – to var izdrukāt vai uzdāvināt elektroniski;`,
-            `<strong>gift card no. ${card}</strong>, valid until ${formatDate(giftCard.validUntil)} – print it or give it electronically;`),
+          : t(`<strong>dāvanu karte Nr. ${card}</strong>, derīga līdz ${formatDate(giftCard.validUntil)}, divos variantos – kā karte un A4 formātā. Dāviniet to, kurš Jums labāk patīk: to var izdrukāt vai uzdāvināt elektroniski;`,
+            `<strong>gift card no. ${card}</strong>, valid until ${formatDate(giftCard.validUntil)}, in two versions – as a card and as an A4 page. Give whichever you like: print it or give it electronically;`),
         t(`rēķins Nr. ${invoice.number} par ${eur(invoice.total)} – tas ir apmaksāts.`,
           `invoice ${invoice.number} for ${eur(invoice.total, 'en')} – it has been paid.`),
       ]),
@@ -403,7 +406,8 @@ export function finalInvoiceGuestEmail(invoice: InvoiceRow, giftCard?: GiftCardN
 export const manageLink = (invoice: { id: string; manage_token: string }) =>
   `${MANAGE_URL}?id=${invoice.id}&t=${invoice.manage_token}`;
 
-export function invoiceEmail(invoice: InvoiceRow & { manage_token?: string }) {
+// `cards`: how many gift card PDFs travel with it, to forward to the buyer.
+export function invoiceEmail(invoice: InvoiceRow & { manage_token?: string }, cards = 0) {
   const subject =
     `Avansa rēķins ${invoice.number} · ${invoice.customer_name} · ${visitLv(invoice.details)} · ${eur(invoice.total)}` +
     (invoice.details?.payment === 'card' ? ' · apmaksāts ar karti' : '');
@@ -440,6 +444,8 @@ ${headline}
 <tr><td style="padding:8px 12px 4px 0;border-top:1px solid #ccc"><strong>Kopā</strong></td>
 <td style="padding:8px 0 4px;border-top:1px solid #ccc;text-align:right"><strong>${eur(invoice.total)}</strong></td></tr></table>
 <p style="margin:14px 0 0;color:#555">${next}</p>
+${invoice.details?.replaces ? `<p style="margin:10px 0 0;color:#555">Aizstāj anulēto rēķinu ${escapeHtml(invoice.details.replaces)}.</p>` : ''}
+${cards ? `<p style="margin:10px 0 0;padding:10px 12px;background:#fff8e6;border:1px solid #e8c77a;border-radius:6px">Pielikumā arī dāvanu karte (${cards} PDF: abi varianti). Šo e-pastu var pārsūtīt klientam – rēķins un dāvanu kartes nonāks pie viņa vienā vēstulē.</p>` : ''}
 ${link ? `<p style="margin:26px 0 0;padding-top:12px;border-top:1px solid #ddd;color:#555;font-size:13px">Pārvaldība (vajadzīgs PIN): <a href="${link}">anulēt avansa rēķinu vai izrakstīt gala rēķinu</a>. Ja rezervācija tiek atcelta, anulē avansa rēķinu – tad gala rēķins netiks izrakstīts.</p>` : ''}
 </body></html>`;
 

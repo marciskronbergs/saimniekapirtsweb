@@ -16,6 +16,7 @@ const messages: Record<string, string> = {
   guest_mail_off: 'Klientu e-pasti vēl nav ieslēgti, tāpēc gala rēķinu vēl nevar nosūtīt.',
   no_email: 'Klientam nav derīgas e-pasta adreses.',
   already_paid: 'Tas jau ir apmaksāts.',
+  bad_percent: 'Atlaidei jābūt no 1 līdz 100 %.',
   annulled: 'Avansa rēķins ir anulēts, tāpēc to vairs nevar nosūtīt.',
   card_off: 'Maksājumi ar karti pašlaik nav ieslēgti.',
   cannot_invoice: 'Cenu nevarēja noteikt pēc cenrāža, tāpēc rēķins jāizraksta pašiem.',
