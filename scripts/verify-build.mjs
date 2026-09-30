@@ -30,7 +30,15 @@ try {
   if (scripts.length === 0) {
     fail(`No JavaScript bundle found in ${ASSETS}/. Did the build run?`)
   } else {
-    bundleName = scripts[0]
+    // The entry bundle is the one index.html loads; libraries loaded on demand
+    // (such as the office page's QR code generator) get chunks of their own.
+    let entry = ''
+    try {
+      entry = readFileSync(join(DIST, 'index.html'), 'utf8').match(/<script[^>]+src="\/?assets\/([^"]+\.js)"/)?.[1] ?? ''
+    } catch {
+      // Reported below, where index.html is read again.
+    }
+    bundleName = scripts.includes(entry) ? entry : scripts.find((f) => f.startsWith('index-')) ?? scripts[0]
     bundle = readFileSync(join(ASSETS, bundleName), 'utf8')
   }
 } catch {
