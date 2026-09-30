@@ -142,7 +142,6 @@ for (const font of ['SaimniekaInvoiceSans-Regular.ttf', 'SaimniekaInvoiceSans-Bo
 
 // And its gift cards with fonts and photos from the live site too.
 for (const file of [
-  'fonts/giftcard/CormorantGaramond_500Medium.ttf',
   'fonts/giftcard/CormorantGaramond_500Medium_Italic.ttf',
   'fonts/giftcard/CormorantGaramond_600SemiBold.ttf',
   'fonts/giftcard/Montserrat_400Regular.ttf',

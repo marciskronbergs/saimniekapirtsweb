@@ -37,6 +37,8 @@
     "sample": "Paraugs: kartes numuru piešķirsim pēc apmaksas. Karte ir derīga vienu gadu.",
     "front": "Priekšpuse",
     "back": "Aizmugure",
-    "close": "Aizvērt"
+    "close": "Aizvērt",
+    "enlarge": "Palielināt",
+    "fit": "Samazināt"
   }
 }

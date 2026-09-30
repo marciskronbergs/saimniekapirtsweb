@@ -37,6 +37,8 @@
     "sample": "Sample: the card number is assigned once it is paid. The card is valid for one year.",
     "front": "Front",
     "back": "Back",
-    "close": "Close"
+    "close": "Close",
+    "enlarge": "Enlarge",
+    "fit": "Fit to screen"
   }
 }

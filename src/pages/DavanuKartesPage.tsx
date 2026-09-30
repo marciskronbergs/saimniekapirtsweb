@@ -8,6 +8,7 @@ import priceCatalog from '../data/priceCatalog.json';
 import PaymentChoice from '../components/popup/PaymentChoice';
 import { goToCardPayment, useCardPayments } from '../lib/cardPayments';
 import GiftCardPreview from '../components/giftcards/GiftCardPreview';
+import { preloadGiftCard } from '../components/giftcards/giftCardAssets';
 
 const DavanuKartesPage = () => {
   const [isVisible, setIsVisible] = useState(false);
@@ -105,6 +106,11 @@ const DavanuKartesPage = () => {
   const { min: customMin, max: customMax, step: customStep } = priceCatalog.giftCard.custom;
 
   const closePreview = useCallback(() => setPreview(null), []);
+  // An open form is likely to be previewed: fetch its card's fonts and photos.
+  useEffect(() => {
+    if (activeSection === 'custom') preloadGiftCard('value');
+    if (activeSection === 'ritual') preloadGiftCard('ritual');
+  }, [activeSection]);
   const previewButtonClass =
     'mt-4 inline-flex items-center gap-2 rounded-xl border border-amber-500/60 bg-black/30 hover:bg-amber-600/20 px-4 py-2.5 text-amber-200 font-semibold transition-colors min-h-[44px]';
 

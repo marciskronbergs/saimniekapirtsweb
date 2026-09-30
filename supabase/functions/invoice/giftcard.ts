@@ -36,7 +36,6 @@ export interface GiftCardData {
 // fetched once per running instance.
 const ASSET_BASE = Deno.env.get('GIFT_CARD_ASSET_BASE') ?? 'https://saimniekapirts.lv';
 const FILES = {
-  serif: 'fonts/giftcard/CormorantGaramond_500Medium.ttf',
   serifItalic: 'fonts/giftcard/CormorantGaramond_500Medium_Italic.ttf',
   serifBold: 'fonts/giftcard/CormorantGaramond_600SemiBold.ttf',
   sans: 'fonts/giftcard/Montserrat_400Regular.ttf',
@@ -64,10 +63,11 @@ const load = (key: Asset) => {
   return p;
 };
 
-// Design pixels to PDF points: the card is 225 mm wide, 850 px in the design.
+// Design pixels to PDF points: the card is 225 mm wide, 850 px in the design,
+// and 98 mm tall, a hair over the design's 370 px (photos fill the full height).
 const PX = (225 / 25.4 * 72) / 850;
 const W = 850;
-const H = 370;
+const H = (98 / 25.4 * 72) / PX;
 
 const hex = (h: string) => rgb(parseInt(h.slice(1, 3), 16) / 255, parseInt(h.slice(3, 5), 16) / 255, parseInt(h.slice(5, 7), 16) / 255);
 const INK = hex('#1D2A22');
@@ -86,7 +86,6 @@ const HONEY_ON_DARK = hex('#C9A96E');
 const RULE_ON_DARK = hex('#4A4636');
 
 interface Fonts {
-  serif: PDFFont;
   serifItalic: PDFFont;
   serifBold: PDFFont;
   sans: PDFFont;
@@ -196,18 +195,21 @@ function backCommon(page: PDFPage, f: Fonts, w: GiftCardWords, card: GiftCardDat
 export async function renderGiftCardPdf(card: GiftCardData): Promise<Uint8Array> {
   const ritual = card.ritual;
   const w = giftCardWords[card.locale];
+  const plain = !ritual && !!card.plain;
   const doc = await PDFDocument.create();
   doc.registerFontkit(fontkit);
-  doc.setTitle(`${w.giftCard} ${card.code}`);
+  // The two versions of a value card are told apart by their title too.
+  doc.setTitle(`${w.giftCard} ${card.code}${plain ? ` · ${w.withoutAmount}` : ''}`);
+  doc.setSubject(ritual ? ritualName(ritual, card.locale) : plain ? w.plainTitle : `${card.value} EUR · ${w.tagline}`);
   doc.setAuthor('SaimniekaPirts');
+  doc.setLanguage(card.locale === 'lv' ? 'lv-LV' : 'en-GB');
 
-  const [serif, serifItalic, serifBold, sans, sansBold, front, back, logo] = await Promise.all([
-    load('serif'), load('serifItalic'), load('serifBold'), load('sans'), load('sansBold'),
+  const [serifItalic, serifBold, sans, sansBold, front, back, logo] = await Promise.all([
+    load('serifItalic'), load('serifBold'), load('sans'), load('sansBold'),
     load(ritual ? 'ritualFront' : 'valueFront'), load(ritual ? 'ritualBack' : 'valueBack'),
     load(ritual ? 'logoOnDark' : 'logoOnLight'),
   ]);
   const f: Fonts = {
-    serif: await doc.embedFont(serif, { subset: true }),
     serifItalic: await doc.embedFont(serifItalic, { subset: true }),
     serifBold: await doc.embedFont(serifBold, { subset: true }),
     sans: await doc.embedFont(sans, { subset: true }),
@@ -223,11 +225,11 @@ export async function renderGiftCardPdf(card: GiftCardData): Promise<Uint8Array>
   if (!ritual) {
     // ---- Value card, front: photo left, linen panel right.
     rect(pageFront, 0, 0, W, H, LINEN);
-    image(pageFront, frontImage, 0, 0, 490, 370);
+    image(pageFront, frontImage, 0, 0, 490, H);
     const axis = 670;
     frontCommon(pageFront, f, w, card, logoImage, axis, [524, 816],
       { eyebrow: HONEY, rule: RULE, label: LABEL, value: INK, footer: LABEL });
-    if (card.plain) {
+    if (plain) {
       titleBlock(pageFront, f, axis, 292, [w.plainTitle, w.plainLine, w.plainFacts], { title: INK, line: TAGLINE, facts: LABEL });
     } else {
       // The numeral sits on the panel's axis (nudged 4 px left for the eye),
@@ -243,10 +245,10 @@ export async function renderGiftCardPdf(card: GiftCardData): Promise<Uint8Array>
 
     // ---- Value card, back: how to use it, photo right.
     rect(pageBack, 0, 0, W, H, PAPER);
-    image(pageBack, backImage, 594, 0, 256, 370);
+    image(pageBack, backImage, 594, 0, 256, H);
     const left = 44;
     const right = 554;
-    backCommon(pageBack, f, w, card, left, right, card.plain ? `${w.no} ${card.code}` : `${w.no} ${card.code} · ${card.value} EUR`);
+    backCommon(pageBack, f, w, card, left, right, plain ? `${w.no} ${card.code}` : `${w.no} ${card.code} · ${card.value} EUR`);
     line(pageBack, w.howTo, left, 85.39, { font: f.serifItalic, size: 32, color: INK });
     const stepText = { font: f.sans, size: 13, color: INK };
     let y = 126.98;
@@ -257,12 +259,12 @@ export async function renderGiftCardPdf(card: GiftCardData): Promise<Uint8Array>
       y += (i < w.steps.length - 1) ? 3 + lines.length * 18.85 + 11 : (lines.length - 1) * 18.85;
     });
     const note = { font: f.sans, size: 12.5, color: SOFT };
-    wrap(card.plain ? w.anyServicePlain : w.anyService, note, 510)
+    wrap(plain ? w.anyServicePlain : w.anyService, note, 510)
       .forEach((l, n) => line(pageBack, l, left, y + 35.84 + n * 18.125, note));
   } else {
     // ---- Ritual card, front: forest panel left, photo right.
     rect(pageFront, 0, 0, W, H, FOREST);
-    image(pageFront, frontImage, 360, 0, 490, 370);
+    image(pageFront, frontImage, 360, 0, 490, H);
     const axis = 180;
     frontCommon(pageFront, f, w, card, logoImage, axis, [32, 328],
       { eyebrow: HONEY_ON_DARK, rule: RULE_ON_DARK, label: CREAM_SOFT, value: CREAM, footer: CREAM_SOFT });
@@ -271,7 +273,7 @@ export async function renderGiftCardPdf(card: GiftCardData): Promise<Uint8Array>
 
     // ---- Ritual card, back: photo left, the ritual step by step.
     rect(pageBack, 0, 0, W, H, PAPER);
-    image(pageBack, backImage, 0, 0, 256, 370);
+    image(pageBack, backImage, 0, 0, 256, H);
     const left = 296;
     const right = 806;
     backCommon(pageBack, f, w, card, left, right, `${w.no} ${card.code}`);
@@ -280,17 +282,21 @@ export async function renderGiftCardPdf(card: GiftCardData): Promise<Uint8Array>
     line(pageBack, sub, left, 107.98, fitted(sub, { font: f.sans, size: 12, color: SOFT }, 510, 10));
     const steps = ritualSteps(ritual, card.locale);
     const rows = Math.ceil(steps.length / 2);
+    // Six steps (no hot tub) sit a little looser, so the back is as full as with seven.
+    const loose = rows < 4;
+    const first = loose ? 149.78 : 143.78;
+    const pitch = loose ? 31 : 28.125;
     const name = { font: f.sansBold, size: 12.5, color: INK };
     steps.forEach((step, i) => {
       const col = i < rows ? 0 : 1;
       const row = col === 0 ? i : i - rows;
       const x = left + col * 267;
-      const y = 143.78 + row * 28.125;
+      const y = first + row * pitch;
       line(pageBack, String(i + 1), x + 6, y, { font: f.serifBold, size: 21, color: HONEY }, 'center');
       line(pageBack, step, x + 24, y, fitted(step, name, 219, 10.5));
     });
     const para = { font: f.sans, size: 12, color: SOFT };
-    const top = 143.78 + (rows - 1) * 28.125 + 32.12;
+    const top = first + (rows - 1) * pitch + (loose ? 36.12 : 32.12);
     wrap(w.book, para, 510).forEach((l, n) => line(pageBack, l, left, top + n * 17.4, para));
   }
 

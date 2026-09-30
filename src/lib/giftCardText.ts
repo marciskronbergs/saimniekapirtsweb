@@ -28,6 +28,8 @@ export interface GiftCardWords {
   plainTitle: string;
   plainLine: string;
   plainFacts: string;
+  // Tells the two value card PDFs apart: "Dāvanu karte M-… · bez summas".
+  withoutAmount: string;
   ritual: string;
   tub: (tub: boolean) => string;
   facts: (r: GiftCardRitual) => string;
@@ -56,6 +58,7 @@ export const giftCardWords: Record<Locale, GiftCardWords> = {
     plainTitle: 'Pirts priekiem',
     plainLine: 'pēc Jūsu izvēles',
     plainFacts: 'rituāls · pirts noma · nakšņošana',
+    withoutAmount: 'bez summas',
     // The ritual card.
     ritual: 'Pirts rituāls',
     tub: (tub: boolean) => (tub ? 'ar zāļu kublu' : 'bez zāļu kubla'),
@@ -68,7 +71,7 @@ export const giftCardWords: Record<Locale, GiftCardWords> = {
       `Ierodoties uzrādiet dāvanu karti${DASH}izdrukātu vai telefonā.`,
     ],
     anyService: `Kartes vērtību var izmantot jebkuram mūsu pakalpojumam${DASH}${nb('pirts rituālam')}, ${nb('pirts nomai')} vai nakšņošanai.`,
-    anyServicePlain: `Karti var izmantot jebkuram mūsu pakalpojumam${DASH}${nb('pirts rituālam')}, ${nb('pirts nomai')} vai nakšņošanai.`,
+    anyServicePlain: `Karti var izmantot jebkuram mūsu pakalpojumam${DASH}${nb('pirts rituālam')}, ${nb('pirts nomai vai nakšņošanai')}.`,
     course: 'Rituāla gaita',
     led: 'sertificēta pirtnieka vadībā',
     ritualSteps: [
@@ -100,12 +103,13 @@ export const giftCardWords: Record<Locale, GiftCardWords> = {
     plainTitle: 'A sauna treat',
     plainLine: 'of your choosing',
     plainFacts: 'ritual · sauna rental · overnight stay',
+    withoutAmount: 'without the amount',
     ritual: 'Sauna ritual',
     tub: (tub: boolean) => (tub ? 'with herbal hot tub' : 'without herbal hot tub'),
     facts: (r: GiftCardRitual) => `${r.people.en} · up to ${r.hours} hours`,
     howTo: 'How to use your gift card',
     steps: [
-      `Book your visit: call ${PHONE} or write to info@saimniekapirts.lv and quote the card number.`,
+      `Book your visit: call ${PHONE} or write to info@saimniekapirts.lv and quote the ${nb('card number')}.`,
       'We will agree on a day and time that suits you.',
       `When you arrive, show the gift card${DASH}printed or on your phone.`,
     ],
@@ -122,7 +126,7 @@ export const giftCardWords: Record<Locale, GiftCardWords> = {
       'Dip in the cool pond',
       'Resting in warm blankets',
     ],
-    book: `To book, call ${PHONE} or write to info@saimniekapirts.lv and quote the card number. On arrival, show the card${DASH}printed or on your phone.`,
+    book: `To book, call ${PHONE} or write to info@saimniekapirts.lv and quote the ${nb('card number')}. On arrival, show the card${DASH}printed or on your phone.`,
     validity: (date: string) => `Valid until ${date} · not exchangeable for cash`,
     address: '“Sarma Nr. 123”, Baldone parish, Ķekava municipality, LV-2125, Latvia',
     photos: {

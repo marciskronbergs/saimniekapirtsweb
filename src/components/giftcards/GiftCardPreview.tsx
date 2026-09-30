@@ -12,6 +12,7 @@ import {
   type GiftCardKind,
   type GiftCardWords,
 } from '../../lib/giftCardText';
+import { fontFaces } from './giftCardAssets';
 
 // A preview of the gift card a buyer will get, for the gift card page: the
 // same design as the PDF the invoice function draws (giftcard.ts), with the
@@ -40,16 +41,6 @@ const RULE_ON_DARK = '#4A4636';
 const serif = "'GC Serif', Georgia, serif";
 const sans = "'GC Sans', Helvetica, Arial, sans-serif";
 
-const fontFaces = [
-  ['GC Serif', 'CormorantGaramond_500Medium', 500, 'normal'],
-  ['GC Serif', 'CormorantGaramond_500Medium_Italic', 500, 'italic'],
-  ['GC Serif', 'CormorantGaramond_600SemiBold', 600, 'normal'],
-  ['GC Sans', 'Montserrat_400Regular', 400, 'normal'],
-  ['GC Sans', 'Montserrat_600SemiBold', 600, 'normal'],
-]
-  .map(([family, file, weight, style]) =>
-    `@font-face{font-family:'${family}';src:url('/fonts/giftcard/${file}.ttf') format('truetype');font-weight:${weight};font-style:${style};font-display:swap}`)
-  .join('');
 
 // A line that shrinks, from its size down to `min`, until it fits `max` px,
 // as the PDF's lines do.
@@ -200,6 +191,8 @@ const CardSide: React.FC<CardProps> = ({ kind, side, locale, value, ritual, samp
     }
     const steps = ritualSteps(ritual, locale);
     const rows = Math.ceil(steps.length / 2);
+    // Six steps (no hot tub) sit a little looser, so the back is as full as with seven.
+    const loose = rows < 4;
     return (
       <div style={{ ...root, background: PAPER, color: INK }}>
         <Photo src="/giftcard/ritual_back.jpg" alt={w.photos.ritualBack} width={256} />
@@ -211,15 +204,15 @@ const CardSide: React.FC<CardProps> = ({ kind, side, locale, value, ritual, samp
           </FitLine>
           <ol
             style={{
-              margin: '14px 0 0', padding: 0, listStyle: 'none', display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
-              gridTemplateRows: `repeat(${rows}, auto)`, gridAutoFlow: 'column', columnGap: 24, rowGap: 6,
+              margin: `${loose ? 20 : 14}px 0 0`, padding: 0, listStyle: 'none', display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
+              gridTemplateRows: `repeat(${rows}, auto)`, gridAutoFlow: 'column', columnGap: 24, rowGap: loose ? 9 : 6,
             }}
           >
             {steps.map((step, i) => (
               <Step key={step} n={i + 1} bold size={12.5} fit={219}>{step}</Step>
             ))}
           </ol>
-          <p style={{ margin: '14px 0 0', fontFamily: sans, fontSize: 12, lineHeight: 1.45, color: SOFT }}>{w.book}</p>
+          <p style={{ margin: `${loose ? 18 : 14}px 0 0`, fontFamily: sans, fontSize: 12, lineHeight: 1.45, color: SOFT }}>{w.book}</p>
           <BackFooter w={w} sample={sample} />
         </div>
       </div>
@@ -272,7 +265,7 @@ const CardSide: React.FC<CardProps> = ({ kind, side, locale, value, ritual, samp
 };
 
 // The card at the width of its container.
-const ScaledCard: React.FC<CardProps & { label: string }> = ({ label, ...card }) => {
+const ScaledCard: React.FC<CardProps & { label: string; width?: number }> = ({ label, width, ...card }) => {
   const box = useRef<HTMLDivElement>(null);
   const [scale, setScale] = useState(0);
   useLayoutEffect(() => {
@@ -286,7 +279,11 @@ const ScaledCard: React.FC<CardProps & { label: string }> = ({ label, ...card })
   }, []);
   return (
     <figure className="space-y-2">
-      <div ref={box} className="relative w-full overflow-hidden rounded-md shadow-2xl shadow-black/60" style={{ aspectRatio: `${W} / ${H}` }}>
+      <div
+        ref={box}
+        className="relative overflow-hidden rounded-md shadow-2xl shadow-black/60"
+        style={{ aspectRatio: `${W} / ${H}`, width: width ?? '100%' }}
+      >
         <div style={{ position: 'absolute', left: 0, top: 0, width: W, height: H, transform: `scale(${scale})`, transformOrigin: 'top left' }}>
           <CardSide {...card} />
         </div>
@@ -319,19 +316,39 @@ const GiftCardPreview: React.FC<GiftCardPreviewProps> = ({ value = 0, ritual = n
   const { t, i18n } = useTranslation('giftcards');
   const locale: Locale = i18n.language === 'en' ? 'en' : 'lv';
   const [plain, setPlain] = useState(false);
+  // On a phone the card is small; enlarged, it scrolls sideways at a readable size.
+  const [enlarged, setEnlarged] = useState(false);
   const [sample] = useState(sampleCard);
   const closeRef = useRef<HTMLButtonElement>(null);
+  const panelRef = useRef<HTMLDivElement>(null);
+  const pressedOutside = useRef(false);
   const kind: GiftCardKind = ritual ? 'ritual' : plain ? 'plain' : 'value';
 
   useEffect(() => {
+    const opener = document.activeElement as HTMLElement | null;
     closeRef.current?.focus();
-    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose();
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+      if (e.key !== 'Tab' || !panelRef.current) return;
+      // Keep the keyboard inside the dialog.
+      const focusable = panelRef.current.querySelectorAll<HTMLElement>('button, a[href]');
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      if (e.shiftKey && document.activeElement === first) {
+        e.preventDefault();
+        last.focus();
+      } else if (!e.shiftKey && document.activeElement === last) {
+        e.preventDefault();
+        first.focus();
+      }
+    };
     window.addEventListener('keydown', onKey);
     const overflow = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
     return () => {
       window.removeEventListener('keydown', onKey);
       document.body.style.overflow = overflow;
+      opener?.focus();
     };
   }, [onClose]);
 
@@ -356,12 +373,19 @@ const GiftCardPreview: React.FC<GiftCardPreviewProps> = ({ value = 0, ritual = n
       aria-modal="true"
       aria-labelledby="gift-card-preview-title"
       className="fixed inset-0 z-[80] flex items-start sm:items-center justify-center bg-black/85 p-3 sm:p-6 overflow-y-auto"
-      onClick={onClose}
+      // Closes on a click on the backdrop, but not at the end of a drag that
+      // started inside the dialog (selecting text).
+      onMouseDown={(e) => {
+        pressedOutside.current = e.target === e.currentTarget;
+      }}
+      onClick={(e) => {
+        if (pressedOutside.current && e.target === e.currentTarget) onClose();
+      }}
     >
       <style>{fontFaces}</style>
       <div
+        ref={panelRef}
         className="relative w-full max-w-4xl rounded-2xl sm:rounded-3xl border border-green-500/20 bg-[#0d0d0d] p-4 sm:p-8 text-white space-y-5 my-auto"
-        onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-start justify-between gap-4">
           <div>
@@ -378,9 +402,28 @@ const GiftCardPreview: React.FC<GiftCardPreviewProps> = ({ value = 0, ritual = n
             {tab(true, t('preview.withoutAmount'))}
           </div>
         )}
-        <div className="space-y-5">
-          <ScaledCard kind={kind} side="front" locale={locale} value={value} ritual={ritual} sample={sample} label={t('preview.front')} />
-          <ScaledCard kind={kind} side="back" locale={locale} value={value} ritual={ritual} sample={sample} label={t('preview.back')} />
+        <button
+          type="button"
+          aria-pressed={enlarged}
+          onClick={() => setEnlarged(!enlarged)}
+          className="sm:hidden rounded-full bg-white/10 hover:bg-white/20 px-4 py-2 text-sm font-semibold text-gray-200"
+        >
+          {enlarged ? t('preview.fit') : t('preview.enlarge')}
+        </button>
+        <div className={enlarged ? 'space-y-5 overflow-x-auto -mx-4 px-4 pb-2' : 'space-y-5'}>
+          {(['front', 'back'] as const).map((side) => (
+            <ScaledCard
+              key={side}
+              kind={kind}
+              side={side}
+              locale={locale}
+              value={value}
+              ritual={ritual}
+              sample={sample}
+              label={t(side === 'front' ? 'preview.front' : 'preview.back')}
+              width={enlarged ? 760 : undefined}
+            />
+          ))}
         </div>
         <p className="text-xs sm:text-sm text-gray-400">{t('preview.sample')}</p>
       </div>
