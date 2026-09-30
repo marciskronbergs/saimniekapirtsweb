@@ -169,7 +169,7 @@ const BirojsPage = () => {
     setError(null);
     try {
       const data = await callInvoiceFunction<OfficeList>({ office: { pin: withPin, action: 'list' } });
-      setList(data);
+      setList({ ...data, masters: data.masters ?? [] });
       setPin(withPin);
       storePin(withPin);
     } catch (e) {
