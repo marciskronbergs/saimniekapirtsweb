@@ -24,9 +24,9 @@ interface PaymentView {
   time: string | null;
   items: { name: string; quantity: number; amount: number }[];
   total: number;
-  // A value card comes in two versions, with its amount and without it; a
-  // ritual card as a card and as an A4 page.
-  gift_card: { code: string; valid_until: string; kind?: 'ritual' | 'value' } | null;
+  // A ritual card comes as a card and as an A4 page. The code goes with the
+  // number when the card is used to book online.
+  gift_card: { code: string; pin?: string; valid_until: string; kind?: 'ritual' | 'value' } | null;
 }
 
 const texts = {
@@ -42,9 +42,7 @@ const texts = {
     giftNumber: 'Dāvanu kartes Nr.',
     validUntil: 'derīga līdz',
     download: 'Lejupielādēt dāvanu karti (PDF)',
-    downloadValue: 'Ar summu (PDF)',
-    downloadPlain: 'Bez summas (PDF)',
-    twoVersions: 'Dāvanu karte ir divos variantos – ar summu un bez summas. Dāviniet to, kurš Jums labāk patīk.',
+    code: 'kods',
     downloadCard: 'Karte (PDF)',
     downloadA4: 'A4 (PDF)',
     twoVersionsRitual: 'Dāvanu karte ir divos variantos – kā karte un A4 formātā. Dāviniet to, kurš Jums labāk patīk.',
@@ -75,9 +73,7 @@ const texts = {
     giftNumber: 'Gift card no.',
     validUntil: 'valid until',
     download: 'Download the gift card (PDF)',
-    downloadValue: 'With the amount (PDF)',
-    downloadPlain: 'Without the amount (PDF)',
-    twoVersions: 'The gift card comes in two versions – with the amount and without it. Give whichever you like.',
+    code: 'code',
     downloadCard: 'Card (PDF)',
     downloadA4: 'A4 (PDF)',
     twoVersionsRitual: 'The gift card comes in two versions – as a card and as an A4 page. Give whichever you like.',
@@ -170,12 +166,11 @@ const ApmaksaPage = () => {
     setBusy(null);
   };
 
-  // A value card downloads with its amount or without it (plain); a ritual
-  // card as a card or as an A4 page.
+  // A ritual card downloads as a card or as an A4 page.
   const download = async (second = false) => {
     setBusy(second ? 'download-second' : 'download');
     setFailed(false);
-    const variant = !second ? {} : view?.gift_card?.kind === 'ritual' ? { a4: true } : { plain: true };
+    const variant = second ? { a4: true } : {};
     try {
       const r = await callInvoiceFunction<{ filename: string; pdf_base64: string }>({ gift_card_pdf: { p: payment, ...variant } });
       const bytes = Uint8Array.from(atob(r.pdf_base64), (c) => c.charCodeAt(0));
@@ -228,16 +223,17 @@ const ApmaksaPage = () => {
                       <p className="flex items-center gap-2 text-amber-300">
                         <Gift className="w-5 h-5" /> {tx.giftNumber} <strong className="text-amber-200 whitespace-nowrap">{view.gift_card.code}</strong>
                       </p>
-                      <p className="text-sm text-gray-400">{tx.validUntil} {formatDate(view.gift_card.valid_until)}</p>
-                      {view.gift_card.kind ? (
+                      <p className="text-sm text-gray-400">
+                        {view.gift_card.pin && <>{tx.code} <strong className="text-amber-200">{view.gift_card.pin}</strong> · </>}
+                        {tx.validUntil} {formatDate(view.gift_card.valid_until)}
+                      </p>
+                      {view.gift_card.kind === 'ritual' ? (
                         <>
-                          <p className="text-sm text-gray-300">{view.gift_card.kind === 'ritual' ? tx.twoVersionsRitual : tx.twoVersions}</p>
+                          <p className="text-sm text-gray-300">{tx.twoVersionsRitual}</p>
                           <div className="flex flex-wrap gap-3">
                             {([false, true] as const).map((second) => {
                               const mine = busy === (second ? 'download-second' : 'download');
-                              const label = view.gift_card?.kind === 'ritual'
-                                ? (second ? tx.downloadA4 : tx.downloadCard)
-                                : (second ? tx.downloadPlain : tx.downloadValue);
+                              const label = second ? tx.downloadA4 : tx.downloadCard;
                               return (
                                 <button
                                   key={String(second)}

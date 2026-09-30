@@ -263,6 +263,35 @@ export function reminderEmail(c: ConfirmationInput) {
 // Advance invoice to the guest, straight after the confirmation. When the
 // office sends it with a payment link, it offers paying by card as well.
 
+// Why a gift card given when booking did not hold, in the guest's words.
+export function giftCardReason(reason: string, locale: 'lv' | 'en') {
+  const lv = locale === 'lv';
+  switch (reason) {
+    case 'not_found': return lv ? 'šāds kartes numurs netika atrasts' : 'no card with this number was found';
+    case 'wrong_code': return lv ? 'kartes kods nesakrīt' : 'the card code does not match';
+    case 'locked': return lv ? 'karte ir bloķēta pēc vairākiem nepareiziem kodiem' : 'the card is locked after several wrong codes';
+    case 'not_paid': return lv ? 'karte vēl nav apmaksāta' : 'the card has not been paid for yet';
+    case 'cancelled': return lv ? 'karte ir atcelta' : 'the card has been cancelled';
+    case 'expired': return lv ? 'kartes derīgums beidzas pirms apmeklējuma' : 'the card expires before the visit';
+    case 'used': return lv ? 'karte jau izmantota citai rezervācijai' : 'the card has already been used for another booking';
+    default: return lv ? 'nezināms iemesls' : 'an unknown reason';
+  }
+}
+
+// For the office: the gift card taken off a booking, or one that did not hold.
+export function giftCardOfficeNote(invoice: InvoiceRow) {
+  const d = invoice.details;
+  if (d?.gift_card) {
+    return d.payment === 'gift_card'
+      ? `Klients rezervēja ar dāvanu karti Nr. ${d.gift_card} – tā sedz visu rezervāciju.`
+      : `Klients rezervēja ar dāvanu karti Nr. ${d.gift_card} – tā ieskaitīta, rēķinā atlikusī summa.`;
+  }
+  if (d?.gift_card_problem) {
+    return `Klients norādīja dāvanu karti Nr. ${d.gift_card_problem.code}, bet to neizdevās ieskaitīt: ${giftCardReason(d.gift_card_problem.reason, 'lv')}. Rēķins izrakstīts pilnā apmērā – sazinieties ar klientu (ja karte derīga, piemērojiet atlaidi vai izrakstiet rēķinu no jauna).`;
+  }
+  return '';
+}
+
 export function advanceInvoiceGuestEmail(invoice: InvoiceRow, payUrl?: string) {
   const lv = invoice.locale === 'lv';
   const t = (a: string, b: string) => (lv ? a : b);
@@ -275,6 +304,20 @@ export function advanceInvoiceGuestEmail(invoice: InvoiceRow, payUrl?: string) {
     : t('par dāvanu karti', 'for your gift card');
   const subject = t(`Avansa rēķins ${invoice.number} · SaimniekaPirts`, `Advance invoice ${invoice.number} · SaimniekaPirts`);
   const filename = `${lv ? 'Avansa-rekins' : 'Advance-invoice'}-${invoice.number}.pdf`;
+  if (d?.payment === 'gift_card') {
+    const covered = [
+      p(t(`Sveiki, ${who}!`, `Hello ${who},`)),
+      p(t(`Jūsu apmeklējums ${what} ir pilnībā apmaksāts ar dāvanu karti Nr. ${escapeHtml(d.gift_card ?? '')} – nekas nav jāmaksā. Pielikumā ir rēķins Nr. ${invoice.number}.`,
+        `Your visit ${what} is paid in full with gift card no. ${escapeHtml(d.gift_card ?? '')} – there is nothing to pay. Attached is invoice ${invoice.number}.`)),
+      p(t('Ierodoties paņemiet līdzi dāvanu karti – izdrukātu vai telefonā. Gaidīsim Jūs! 🌿',
+        'Please bring the gift card along – printed or on your phone. We look forward to seeing you! 🌿')),
+    ].join('');
+    return {
+      subject: t(`Apmaksāts ar dāvanu karti · rēķins ${invoice.number} · SaimniekaPirts`, `Paid with your gift card · invoice ${invoice.number} · SaimniekaPirts`),
+      html: guestLayout(t('Apmaksāts ar dāvanu karti', 'Paid with your gift card'), covered, invoice.locale, seller),
+      filename,
+    };
+  }
   if (d?.payment === 'card') {
     const paid = [
       p(t(`Sveiki, ${who}!`, `Hello ${who},`)),
@@ -292,6 +335,10 @@ export function advanceInvoiceGuestEmail(invoice: InvoiceRow, payUrl?: string) {
     p(t(`Sveiki, ${who}!`, `Hello ${who},`)),
     p(t(`Pielikumā ir avansa rēķins Nr. ${invoice.number} ${what}.`,
       `Attached is advance invoice ${invoice.number} ${what}.`)),
+    d?.gift_card ? p(t(`Dāvanu karte Nr. ${escapeHtml(d.gift_card)} ir ieskaitīta – rēķinā ir tikai atlikusī summa.`,
+      `Gift card no. ${escapeHtml(d.gift_card)} has been applied – the invoice is for the rest only.`)) : '',
+    d?.gift_card_problem ? p(t(`Dāvanu karti Nr. ${escapeHtml(d.gift_card_problem.code)} neizdevās ieskaitīt automātiski (${giftCardReason(d.gift_card_problem.reason, 'lv')}). Neuztraucieties – zvaniet +371 26 752 661 vai rakstiet uz info@saimniekapirts.lv, un mēs to nokārtosim; pagaidām šo rēķinu nemaksājiet.`,
+      `We could not apply gift card no. ${escapeHtml(d.gift_card_problem.code)} automatically (${giftCardReason(d.gift_card_problem.reason, 'en')}). Don't worry – call +371 26 752 661 or write to info@saimniekapirts.lv and we will sort it out; please hold off paying this invoice for now.`)) : '',
     d?.replaces ? p(t(`Tas aizstāj iepriekš nosūtīto rēķinu Nr. ${escapeHtml(d.replaces)}, kas ir anulēts – lūdzu, maksājiet pēc šī rēķina.`,
       `It replaces invoice ${escapeHtml(d.replaces)} sent earlier, which has been annulled – please pay this one instead.`)) : '',
     payUrl ? p(t(`Rēķinu var apmaksāt ar karti tiešsaistē – ${eur(invoice.total)}:`,
@@ -341,9 +388,10 @@ export function thanksEmail(c: ConfirmationInput) {
 
 export interface GiftCardNote {
   code: string;
+  // Asked for with the number when booking online.
+  pin?: string;
   validUntil: string;
-  // Both versions are attached: a value card with and without its amount, a
-  // ritual card as the card and as the A4 card.
+  // A ritual card is attached as the card and as the A4 card.
   kind?: 'value' | 'ritual';
 }
 
@@ -361,16 +409,16 @@ export function finalInvoiceGuestEmail(invoice: InvoiceRow, giftCard?: GiftCardN
       p(t('Paldies par dāvanu kartes pirkumu! Pielikumā ir:', 'Thank you for buying a gift card! Attached are:')),
       list([
         giftCard.kind === 'value'
-          ? t(`<strong>dāvanu karte Nr. ${card}</strong>, derīga līdz ${formatDate(giftCard.validUntil)}, divos variantos – ar summu un bez summas. Dāviniet to, kurš Jums labāk patīk: to var izdrukāt vai uzdāvināt elektroniski;`,
-            `<strong>gift card no. ${card}</strong>, valid until ${formatDate(giftCard.validUntil)}, in two versions – with the amount and without it. Give whichever you like: print it or give it electronically;`)
+          ? t(`<strong>dāvanu karte Nr. ${card}</strong>, derīga līdz ${formatDate(giftCard.validUntil)} – to var izdrukāt vai uzdāvināt elektroniski;`,
+            `<strong>gift card no. ${card}</strong>, valid until ${formatDate(giftCard.validUntil)} – print it or give it electronically;`)
           : t(`<strong>dāvanu karte Nr. ${card}</strong>, derīga līdz ${formatDate(giftCard.validUntil)}, divos variantos – kā karte un A4 formātā. Dāviniet to, kurš Jums labāk patīk: to var izdrukāt vai uzdāvināt elektroniski;`,
             `<strong>gift card no. ${card}</strong>, valid until ${formatDate(giftCard.validUntil)}, in two versions – as a card and as an A4 page. Give whichever you like: print it or give it electronically;`),
         t(`rēķins Nr. ${invoice.number} par ${eur(invoice.total)} – tas ir apmaksāts.`,
           `invoice ${invoice.number} for ${eur(invoice.total, 'en')} – it has been paid.`),
       ]),
       h2(t('Kā izmantot dāvanu karti', 'How to use the gift card')),
-      p(t(`Lai pieteiktu apmeklējumu, zvaniet ${callUs} vai rakstiet uz <a href="mailto:${invoice.seller.email}" style="color:#2e7d32">${invoice.seller.email}</a> un nosauciet dāvanu kartes numuru.`,
-        `To book a visit, call ${callUs} or write to <a href="mailto:${invoice.seller.email}" style="color:#2e7d32">${invoice.seller.email}</a>, quoting the gift card number.`)),
+      p(t(`Rezervējiet laiku <a href="https://saimniekapirts.lv/rezervet" style="color:#2e7d32">saimniekapirts.lv/rezervet</a> un ievadiet kartes numuru${giftCard.pin ? ` un kodu <strong>${escapeHtml(giftCard.pin)}</strong>` : ' un kodu'} – karte tiks ieskaitīta automātiski. Vai zvaniet ${callUs}, rakstiet uz <a href="mailto:${invoice.seller.email}" style="color:#2e7d32">${invoice.seller.email}</a> un nosauciet dāvanu kartes numuru.`,
+        `Book online at <a href="https://saimniekapirts.lv/en/rezervet" style="color:#2e7d32">saimniekapirts.lv/rezervet</a> with the card number${giftCard.pin ? ` and code <strong>${escapeHtml(giftCard.pin)}</strong>` : ' and code'} – the card is applied automatically. Or call ${callUs} or write to <a href="mailto:${invoice.seller.email}" style="color:#2e7d32">${invoice.seller.email}</a>, quoting the gift card number.`)),
       p(t('Lai dāvana sagādā prieku! 🌿', 'We hope the gift brings a lot of joy! 🌿')),
     ].join('');
     return {
@@ -421,6 +469,7 @@ export function invoiceEmail(invoice: InvoiceRow & { manage_token?: string }, ca
   const phone = invoice.customer_phone ? `, tālr. ${escapeHtml(invoice.customer_phone)}` : '';
   const link = invoice.manage_token ? manageLink({ id: invoice.id, manage_token: invoice.manage_token }) : '';
   const card = invoice.details?.payment === 'card';
+  const coveredByGiftCard = invoice.details?.payment === 'gift_card';
   const paidNote = card ? `Apmaksāts ar karti (Stripe) ${invoice.details?.paid_on ? formatDate(invoice.details.paid_on) : ''}.`.replace(' .', '.') : '';
   const next = invoice.source_type === 'reservation'
     ? `${paidNote ? `${paidNote} ` : ''}Gala rēķins klientam aizies automātiski nākamajā rītā pēc apmeklējuma un tiks saglabāts Google Drive.`
@@ -431,6 +480,8 @@ export function invoiceEmail(invoice: InvoiceRow & { manage_token?: string }, ca
     ? 'Dāvanu karte apmaksāta ar karti; klientam nosūtīts rēķins un dāvanu karte uz'
     : card
     ? 'Apmaksāts ar karti. Rēķins nosūtīts klientam uz'
+    : coveredByGiftCard
+    ? 'Pilnībā apmaksāts ar dāvanu karti. Rēķins nosūtīts klientam uz'
     : 'Avansa rēķins nosūtīts klientam uz';
 
   const html = `<!doctype html><html><body style="font-family:Arial,sans-serif;font-size:14px;color:#1a1a1a;line-height:1.5">
@@ -439,13 +490,14 @@ ${headline}
 <a href="mailto:${escapeHtml(invoice.customer_email)}">${escapeHtml(invoice.customer_email)}</a>${phone}. Šī ir biroja kopija.
 </div>
 <p style="margin:0 0 4px"><strong>${escapeHtml(invoice.customer_name)}</strong></p>
-<p style="margin:0 0 14px;color:#555">${escapeHtml(visitLv(invoice.details))} · avansa rēķins ${escapeHtml(invoice.number)} · ${card ? 'apmaksāts ar karti' : `apmaksāt līdz ${formatDate(invoice.due_on)}`}</p>
+<p style="margin:0 0 14px;color:#555">${escapeHtml(visitLv(invoice.details))} · avansa rēķins ${escapeHtml(invoice.number)} · ${card ? 'apmaksāts ar karti' : coveredByGiftCard ? 'apmaksāts ar dāvanu karti' : `apmaksāt līdz ${formatDate(invoice.due_on)}`}</p>
 <table style="border-collapse:collapse;margin-bottom:6px">${lines}
 <tr><td style="padding:8px 12px 4px 0;border-top:1px solid #ccc"><strong>Kopā</strong></td>
 <td style="padding:8px 0 4px;border-top:1px solid #ccc;text-align:right"><strong>${eur(invoice.total)}</strong></td></tr></table>
 <p style="margin:14px 0 0;color:#555">${next}</p>
 ${invoice.details?.replaces ? `<p style="margin:10px 0 0;color:#555">Aizstāj anulēto rēķinu ${escapeHtml(invoice.details.replaces)}.</p>` : ''}
-${cards ? `<p style="margin:10px 0 0;padding:10px 12px;background:#fff8e6;border:1px solid #e8c77a;border-radius:6px">Pielikumā arī dāvanu karte (${cards} PDF: abi varianti). Šo e-pastu var pārsūtīt klientam – rēķins un dāvanu kartes nonāks pie viņa vienā vēstulē.</p>` : ''}
+${giftCardOfficeNote(invoice) ? `<p style="margin:10px 0 0;padding:10px 12px;background:${invoice.details?.gift_card_problem ? '#fdecea;border:1px solid #e0a39c' : '#eef6ee;border:1px solid #9cc79c'};border-radius:6px">${escapeHtml(giftCardOfficeNote(invoice))}</p>` : ''}
+${cards ? `<p style="margin:10px 0 0;padding:10px 12px;background:#fff8e6;border:1px solid #e8c77a;border-radius:6px">Pielikumā arī dāvanu karte (${cards > 1 ? `${cards} PDF: karte un A4` : 'PDF'}). Šo e-pastu var pārsūtīt klientam – rēķins un dāvanu karte nonāks pie viņa vienā vēstulē.</p>` : ''}
 ${link ? `<p style="margin:26px 0 0;padding-top:12px;border-top:1px solid #ddd;color:#555;font-size:13px">Pārvaldība (vajadzīgs PIN): <a href="${link}">anulēt avansa rēķinu vai izrakstīt gala rēķinu</a>. Ja rezervācija tiek atcelta, anulē avansa rēķinu – tad gala rēķins netiks izrakstīts.</p>` : ''}
 </body></html>`;
 
@@ -454,7 +506,7 @@ ${link ? `<p style="margin:26px 0 0;padding-top:12px;border-top:1px solid #ddd;c
       `${invoice.customer_email}${invoice.customer_phone ? `, tālr. ${invoice.customer_phone}` : ''}. Šī ir biroja kopija.`,
     '',
     invoice.customer_name,
-    `${visitLv(invoice.details)} · avansa rēķins ${invoice.number} · ${card ? 'apmaksāts ar karti' : `apmaksāt līdz ${formatDate(invoice.due_on)}`}`,
+    `${visitLv(invoice.details)} · avansa rēķins ${invoice.number} · ${card ? 'apmaksāts ar karti' : coveredByGiftCard ? 'apmaksāts ar dāvanu karti' : `apmaksāt līdz ${formatDate(invoice.due_on)}`}`,
     '',
     ...invoice.items.map((i) => `${i.name.lv}${i.quantity > 1 ? ` × ${i.quantity}` : ''}: ${eur(i.amount)}`),
     `Kopā: ${eur(invoice.total)}`,

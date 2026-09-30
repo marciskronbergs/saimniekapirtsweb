@@ -126,5 +126,26 @@
     "card": "Ar karti tagad – droši caur Stripe (arī Apple Pay un Google Pay)",
     "transfer": "Ar pārskaitījumu – avansa rēķinu nosūtīsim uz e-pastu",
     "cash": "Skaidrā naudā uz vietas pēc apmeklējuma"
+  },
+  "giftCard": {
+    "have": "Man ir dāvanu karte",
+    "number": "Kartes Nr.",
+    "code": "Kods",
+    "where": "Numurs un kods ir uzrakstīti uz dāvanu kartes (piemēram, „Nr. AR-2026-0012 · Kods ABCD“).",
+    "checking": "Pārbaudām karti…",
+    "okRitual": "Dāvanu karte derīga: {{name}}. Tā tiks ieskaitīta rēķinā automātiski; ja izvēlaties ko vairāk, starpību varēs piemaksāt.",
+    "okValue": "Dāvanu karte derīga – {{value}} € tiks ieskaitīti rēķinā automātiski. Ja rezervācija maksā vairāk, starpību varēs piemaksāt.",
+    "paymentNote": "Ar dāvanu karti atlikušo summu (ja tāda būs) varēs samaksāt ar pārskaitījumu vai uz vietas – avansa rēķinu nosūtīsim uz e-pastu.",
+    "contact": "Rezervāciju varat pabeigt arī tāpat – mēs sazināsimies. Vai zvaniet +371 26 752 661 / rakstiet info@saimniekapirts.lv, un mēs palīdzēsim.",
+    "problem": {
+      "not_found": "Šādu kartes numuru neatradām. Pārbaudiet, vai numurs ierakstīts tieši tā, kā uz kartes.",
+      "wrong_code": "Kods nesakrīt ar kartes numuru. Pārbaudiet kodu uz kartes.",
+      "locked": "Karte ir īslaicīgi bloķēta pēc vairākiem nepareiziem kodiem.",
+      "not_paid": "Šī dāvanu karte vēl nav apmaksāta.",
+      "cancelled": "Šī dāvanu karte ir atcelta.",
+      "expired": "Kartes derīguma termiņš beidzas pirms izvēlētā datuma.",
+      "used": "Šī karte jau ir izmantota citai rezervācijai.",
+      "error": "Karti šobrīd neizdevās pārbaudīt."
+    }
   }
 }

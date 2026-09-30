@@ -125,5 +125,26 @@
     "card": "By card now – securely through Stripe (Apple Pay and Google Pay too)",
     "transfer": "By bank transfer – we will email you an advance invoice",
     "cash": "In cash on site after your visit"
+  },
+  "giftCard": {
+    "have": "I have a gift card",
+    "number": "Card no.",
+    "code": "Code",
+    "where": "The number and code are printed on the gift card (e.g. “No. AR-2026-0012 · Code ABCD”).",
+    "checking": "Checking the card…",
+    "okRitual": "The gift card is valid: {{name}}. It will be applied to the invoice automatically; if you add anything, you can pay the difference.",
+    "okValue": "The gift card is valid – €{{value}} will be applied to the invoice automatically. If the booking costs more, you can pay the difference.",
+    "paymentNote": "With a gift card, anything left to pay can be paid by bank transfer or on site – we will email you the advance invoice.",
+    "contact": "You can still complete the booking – we will get in touch. Or call +371 26 752 661 / write to info@saimniekapirts.lv and we will help.",
+    "problem": {
+      "not_found": "We could not find this card number. Please check it is typed exactly as on the card.",
+      "wrong_code": "The code does not match the card number. Please check the code on the card.",
+      "locked": "The card is temporarily locked after several wrong codes.",
+      "not_paid": "This gift card has not been paid for yet.",
+      "cancelled": "This gift card has been cancelled.",
+      "expired": "The card expires before the date you chose.",
+      "used": "This card has already been used for another booking.",
+      "error": "We could not check the card just now."
+    }
   }
 }

@@ -31,10 +31,7 @@
   "preview": {
     "open": "See the gift card",
     "title": "Your gift card",
-    "withAmount": "With the amount",
-    "withoutAmount": "Without the amount",
-    "bothVersions": "Once it is paid, you receive both versions – with the amount and without it – and give whichever you like.",
-    "sample": "Sample: the card number will be the number of your advance invoice. The card is valid for one year.",
+    "sample": "Sample: the card number will be the number of your advance invoice, with a code beside it for booking online. The card is valid for one year.",
     "front": "Front",
     "back": "Back",
     "close": "Close",

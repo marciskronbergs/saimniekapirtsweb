@@ -45,8 +45,8 @@
 //   { payment_status | payment_retry | payment_switch | gift_card_pdf: { p } }
 //                                           one Checkout payment: how it went, a
 //                                           new page, bank transfer instead, and
-//                                           the paid gift card as a PDF (a value
-//                                           card without its amount with plain: true)
+//                                           the paid gift card as a PDF (a ritual
+//                                           card's A4 version with a4: true)
 //   { invoice_payment | pay_invoice: { i, t } }
 //                                           an invoice's payment link: what it is
 //                                           for, and a Checkout page to pay it
@@ -64,7 +64,7 @@ import {
 } from './email.ts';
 import { renderGiftCardPdf } from './giftcard.ts';
 import { renderGiftCardA4Pdf } from './giftcardA4.ts';
-import type { GiftCardKind } from './giftCardText.ts';
+import { ritualName, type GiftCardKind } from './giftCardText.ts';
 import {
   stripeConfigured, createCheckoutSession, getCheckoutSession, expireCheckoutSession, type CheckoutSession,
 } from './stripe.ts';
@@ -145,6 +145,10 @@ interface Source {
   cardPaid?: boolean;
   // A discount the office gave; already a line in `priced`.
   discount?: Discount | null;
+  // The gift card the guest gave when booking, if it holds; already a line
+  // in `priced`. Otherwise why it did not.
+  giftCard?: GiftCardFound | null;
+  giftCardProblem?: GiftCardProblem | null;
 }
 
 interface Discount {
@@ -178,13 +182,155 @@ async function discountOf(type: SourceType, id: string): Promise<Discount | null
 }
 
 // A booking or order as the invoices see it: priced from the list, less any
-// discount the office gave.
+// discount the office gave and any gift card the guest gave.
 async function loadSource(type: SourceType, id: string): Promise<Source | null> {
   const source = await loadSourceRow(type, id);
   if (!source) return null;
   source.discount = await discountOf(type, id);
   if (source.discount) source.priced = withDiscount(source.priced, source.discount);
+  if (type === 'reservation' && source.row.gift_card_code) {
+    const check = await checkGiftCard(source.row.gift_card_code, source.row.gift_card_pin, {
+      date: source.row.reservation_date, reservation: id,
+    });
+    if (check.ok) {
+      source.giftCard = check;
+      source.priced = withGiftCard(source.priced, check);
+    } else {
+      source.giftCardProblem = check.reason;
+    }
+  }
   return source;
+}
+
+// ---------------------------------------------------------------------------
+// Gift cards given when booking online: the card's number and its code. A card
+// holds if it is paid for, not cancelled, still valid on the day of the visit
+// and not used for another booking; it then comes off the booking's invoice
+// up to its value (a ritual card: the ritual's price when it was bought).
+
+type GiftCardProblem = 'not_found' | 'wrong_code' | 'locked' | 'not_paid' | 'cancelled' | 'expired' | 'used';
+interface GiftCardFound {
+  ok: true;
+  code: string;
+  orderId: string;
+  value: number;
+  validUntil: string;
+  kind: 'ritual' | 'value';
+  name: { lv: string; en: string };
+  // How much of it the booking took.
+  applied?: number;
+}
+
+// Wrong codes a card takes before it is locked.
+const GIFT_CARD_TRIES = 10;
+
+// "ar-2026-5", "AR 2026 0005", "2026-0005" → "AR-2026-0005".
+function normalizeCardCode(raw: unknown): string | null {
+  if (typeof raw !== 'string') return null;
+  const m = raw.toUpperCase().replace(/\s+/g, '').match(/^(?:AR-?)?(\d{4})-?(\d{1,4})$/);
+  return m ? `AR-${m[1]}-${m[2].padStart(4, '0')}` : null;
+}
+
+async function checkGiftCard(rawCode: unknown, rawPin: unknown, opts: { date?: string; reservation?: string; countFailure?: boolean } = {}):
+  Promise<GiftCardFound | { ok: false; reason: GiftCardProblem }> {
+  const no = (reason: GiftCardProblem) => ({ ok: false as const, reason });
+  const code = normalizeCardCode(rawCode);
+  if (!code) return no('not_found');
+  const found = await db.from('gift_cards').select('*').eq('code', code).maybeSingle();
+  if (found.error) throw found.error;
+  let card = found.data;
+  if (!card) {
+    // A card is made when it is first drawn; one that was not yet is made now
+    // from its advance invoice.
+    const { data: advance } = await db.from('invoices').select('source_id')
+      .eq('source_type', 'gift_card').eq('kind', 'advance').eq('status', 'issued').eq('number', code).maybeSingle();
+    if (!advance) return no('not_found');
+    const made = await db.rpc('gift_card_for', { p_order: advance.source_id });
+    if (made.error) throw made.error;
+    card = made.data?.code === code ? made.data : null;
+    if (!card) return no('not_found');
+  }
+  if (card.failed_checks >= GIFT_CARD_TRIES) return no('locked');
+  const pin = typeof rawPin === 'string' ? rawPin.toUpperCase().replace(/[\s-]/g, '') : '';
+  if (pin !== card.pin) {
+    if (opts.countFailure) await db.from('gift_cards').update({ failed_checks: card.failed_checks + 1 }).eq('code', code);
+    return no(card.failed_checks + 1 >= GIFT_CARD_TRIES && opts.countFailure ? 'locked' : 'wrong_code');
+  }
+
+  const orderId: string = card.order_id;
+  const [{ data: order }, { data: cancelled }, { data: invoices }, { data: payments }] = await Promise.all([
+    db.from('davanu_kartes_pasutijumi').select('*').eq('id', orderId).maybeSingle(),
+    db.from('gift_card_cancellations').select('order_id').eq('order_id', orderId).maybeSingle(),
+    db.from('invoices').select('id, kind, status, paid, advance_id').eq('source_type', 'gift_card').eq('source_id', orderId),
+    db.from('card_payments').select('status').eq('source_type', 'gift_card').eq('source_id', orderId).eq('status', 'paid'),
+  ]);
+  if (!order || cancelled) return no('cancelled');
+  const paid = (payments ?? []).length > 0 ||
+    (invoices ?? []).some((i) => i.status === 'issued' && (i.paid || i.kind === 'final'));
+  if (!paid) return no('not_paid');
+  const visit = opts.date ?? rigaToday();
+  if (card.valid_until < visit) return no('expired');
+
+  const { data: use } = await db.from('gift_card_uses').select('reservation_id').eq('code', code).maybeSingle();
+  if (use && use.reservation_id !== opts.reservation) {
+    // A use left by a booking that no longer exists does not count.
+    const { data: still } = await db.from('reservations').select('id').eq('id', use.reservation_id).maybeSingle();
+    if (still) return no('used');
+    await db.from('gift_card_uses').delete().eq('code', code).eq('reservation_id', use.reservation_id);
+  }
+
+  const ritual = ritualOf(order);
+  const value = priceGiftCard(prices, order).total;
+  return {
+    ok: true,
+    code,
+    orderId,
+    value,
+    validUntil: card.valid_until,
+    kind: ritual ? 'ritual' : 'value',
+    name: ritual
+      ? { lv: ritualName(ritual, 'lv'), en: ritualName(ritual, 'en') }
+      : { lv: `Dāvanu karte ${value} €`, en: `Gift card €${value}` },
+  };
+}
+
+// The card as a line of its own at the end of the invoice, never more than
+// the booking comes to.
+function withGiftCard(priced: Source['priced'], card: GiftCardFound): Source['priced'] {
+  if (!priced.items.length || priced.problems.length) return priced;
+  const amount = Math.min(card.value, priced.total);
+  card.applied = amount;
+  return {
+    ...priced,
+    items: [...priced.items, {
+      name: { lv: `Dāvanu karte Nr. ${card.code}`, en: `Gift card no. ${card.code}` },
+      quantity: 1,
+      unit: 'service',
+      unitPrice: -amount,
+      amount: -amount,
+    }],
+    total: Math.round((priced.total - amount) * 100) / 100,
+  };
+}
+
+// Takes the card for the booking, unless another booking took it a moment ago.
+async function claimGiftCard(source: Source): Promise<boolean> {
+  const card = source.giftCard;
+  if (!card) return true;
+  const { error } = await db.from('gift_card_uses')
+    .upsert({ code: card.code, reservation_id: source.id, amount: card.applied ?? 0 },
+      { onConflict: 'code', ignoreDuplicates: true });
+  if (error && error.code !== '23505') throw error;
+  const { data: use } = await db.from('gift_card_uses').select('reservation_id').eq('code', card.code).maybeSingle();
+  return use?.reservation_id === source.id;
+}
+
+// The booking form checks a card as the guest types it in.
+async function giftCardCheck(body: { code?: string; pin?: string; date?: string }) {
+  const date = typeof body.date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(body.date) ? body.date : undefined;
+  const check = await checkGiftCard(body.code, body.pin, { date, countFailure: true });
+  if (!check.ok) return json({ status: check.reason });
+  return json({ status: 'ok', code: check.code, kind: check.kind, value: check.value, name: check.name, valid_until: check.validUntil });
 }
 
 async function loadSourceRow(type: SourceType, id: string): Promise<Source | null> {
@@ -411,7 +557,7 @@ async function archive(invoice: Invoice, rekey?: string) {
       date: formatDate(invoice.issued_on),
       number: invoice.number,
       kind: invoice.kind === 'final' ? 'Rēķins' : 'Avansa rēķins',
-      status: invoice.kind === 'final' || invoice.details?.payment === 'card' ? 'Apmaksāts' : 'Izrakstīts',
+      status: invoice.kind === 'final' || invoice.details?.payment ? 'Apmaksāts' : 'Izrakstīts',
       customer: invoice.customer_name,
       email: invoice.customer_email,
       visit: visitText(invoice.details),
@@ -419,7 +565,9 @@ async function archive(invoice: Invoice, rekey?: string) {
       // Cancels the booking (and annuls this invoice), or for a gift card
       // annuls the invoice. Only the advance invoice's row carries it.
       cancel_url: invoice.kind === 'advance' ? cancelLink(invoice) : '',
-      payment: invoice.details?.payment === 'card' ? 'Karte (Stripe)' : 'Pārskaitījums',
+      payment: invoice.details?.payment === 'card' ? 'Karte (Stripe)'
+        : invoice.details?.payment === 'gift_card' ? `Dāvanu karte ${invoice.details.gift_card ?? ''}`
+        : invoice.details?.gift_card ? `Dāvanu karte ${invoice.details.gift_card} + pārskaitījums` : 'Pārskaitījums',
       booking_status: invoice.kind === 'advance' && invoice.source_type === 'reservation' ? 'Aktīva' : '',
     });
   }
@@ -572,6 +720,10 @@ async function confirmGuest(source: Source) {
 async function processSource(type: SourceType, id: string) {
   const source = await loadSource(type, id);
   if (!source) return { status: 'not_found' };
+  if (type === 'gift_card') {
+    const { data: cancelled } = await db.from('gift_card_cancellations').select('order_id').eq('order_id', id).maybeSingle();
+    if (cancelled) return { status: 'cancelled' };
+  }
   return await processLoaded(source);
 }
 
@@ -632,6 +784,16 @@ async function createAdvance(source: Source, paidOn?: string, replaces?: Invoice
     return { reason };
   }
 
+  // The gift card the guest gave is theirs once the invoice takes it; if
+  // another booking took it first, this one is invoiced in full.
+  if (source.giftCard && !(await claimGiftCard(source))) {
+    const again = await loadSource(type, id);
+    if (again) Object.assign(source, { priced: again.priced, giftCard: again.giftCard, giftCardProblem: again.giftCardProblem ?? 'used' });
+  }
+  // A card that covers the whole booking leaves nothing to pay.
+  const covered = !!source.giftCard && source.priced.total <= 0;
+  const card = source.giftCard?.code ?? (source.giftCardProblem ? String(source.row.gift_card_code ?? '') : '');
+
   const { data: invoice, error } = await db.rpc('create_invoice', {
     p_kind: 'advance',
     p_source_type: type,
@@ -647,10 +809,12 @@ async function createAdvance(source: Source, paidOn?: string, replaces?: Invoice
     p_vat_note: VAT_NOTE,
     p_details: {
       ...source.details,
-      ...(paidOn ? { payment: 'card', paid_on: paidOn } : {}),
+      ...(paidOn ? { payment: 'card', paid_on: paidOn } : covered ? { payment: 'gift_card' } : {}),
       ...(replaces ? { replaces: replaces.number } : {}),
+      ...(source.giftCard ? { gift_card: card } : {}),
+      ...(source.giftCardProblem && card ? { gift_card_problem: { code: card, reason: source.giftCardProblem } } : {}),
     },
-    p_paid: !!paidOn,
+    p_paid: !!paidOn || covered,
   });
   if (error) throw error;
   return { invoice };
@@ -686,13 +850,13 @@ async function issueFinal(advance: Invoice) {
 }
 
 // The final invoice to the guest; for a gift card, with the card itself
-// (a value card in both its versions).
+// (a ritual card in its A4 version too).
 async function sendFinalToGuest(invoice: Invoice) {
   const pdf = await renderInvoicePdf(invoice);
   const card = invoice.source_type === 'gift_card' ? await giftCard(invoice.source_id) : null;
   const message = finalInvoiceGuestEmail(
     invoice,
-    card ? { code: card.code, validUntil: card.valid_until, kind: card.kind } : undefined,
+    card ? { code: card.code, pin: card.pin, validUntil: card.valid_until, kind: card.kind } : undefined,
   );
   await sendToGuest(invoice.customer_email, message, [
     { filename: message.filename, content: toBase64(pdf) },
@@ -915,10 +1079,9 @@ async function sweep() {
 
 // ---------------------------------------------------------------------------
 // Gift cards: the card itself, drawn from the order and numbered the first
-// time it is needed. Every order gets two PDFs, so the buyer can give
-// whichever they like: a ritual as the card and as the A4 card (the owner's
-// own layout), a value card with its amount and without it. `only` draws just
-// one of them, for a download.
+// time it is needed. A value card is one PDF; a ritual comes as the card and
+// as the A4 card (the owner's own layout), so the buyer can give whichever
+// they like. `only` draws just one of them, for a download.
 
 // The ritual an order is for, as its card describes it; null for a value card.
 const ritualOf = (order: { ritual_type?: string | null }) =>
@@ -937,31 +1100,32 @@ async function giftCard(orderId: string, only?: GiftCardKind) {
   if (!card?.code) throw new Error('The gift card waits for its advance invoice');
   const ritual = ritualOf(order);
   const locale: 'lv' | 'en' = order.locale === 'en' ? 'en' : 'lv';
-  const all: GiftCardKind[] = ritual ? ['ritual', 'a4'] : ['value', 'plain'];
+  // A value card is one PDF; a ritual card comes as a card and as an A4 page.
+  const all: GiftCardKind[] = ritual ? ['ritual', 'a4'] : ['value'];
   const kinds = only && all.includes(only) ? [only] : only ? [all[0]] : all;
   const name = locale === 'en' ? 'Gift-card' : 'Davanu-karte';
   const suffix: Record<GiftCardKind, string> = {
     ritual: '',
     a4: '-A4',
-    value: locale === 'en' ? '-with-amount' : '-ar-summu',
-    plain: locale === 'en' ? '-without-amount' : '-bez-summas',
+    value: '',
   };
   const files: { kind: GiftCardKind; filename: string; pdf: Uint8Array }[] = [];
   for (const kind of kinds) {
     const pdf = kind === 'a4' && ritual
-      ? await renderGiftCardA4Pdf({ code: card.code, validUntil: card.valid_until, locale, ritual })
+      ? await renderGiftCardA4Pdf({ code: card.code, pin: card.pin, validUntil: card.valid_until, locale, ritual })
       : await renderGiftCardPdf({
       code: card.code,
+      pin: card.pin,
       validUntil: card.valid_until,
       locale,
       ritual,
       value: priced.total,
-      plain: kind === 'plain',
     });
     files.push({ kind, filename: `${name}-${card.code}${suffix[kind]}.pdf`, pdf });
   }
   return {
     code: card.code as string,
+    pin: card.pin as string,
     valid_until: card.valid_until as string,
     kind: ritual ? 'ritual' as const : 'value' as const,
     files,
@@ -1183,10 +1347,10 @@ async function paymentStatus(body: { p?: string }) {
   if (now.status === 'paid' && payment.status !== 'paid') await inBackground(afterPayment(now));
   const source = await loadSource(now.source_type, now.source_id);
   if (!source) return json({ error: 'not_found' }, 404);
-  let gift: { code: string; valid_until: string; kind: 'ritual' | 'value' } | null = null;
+  let gift: { code: string; pin: string; valid_until: string; kind: 'ritual' | 'value' } | null = null;
   if (now.status === 'paid' && now.source_type === 'gift_card') {
     const { data } = await db.rpc('gift_card_for', { p_order: now.source_id });
-    if (data?.code) gift = { code: data.code, valid_until: data.valid_until, kind: ritualOf(source.row) ? 'ritual' : 'value' };
+    if (data?.code) gift = { code: data.code, pin: data.pin, valid_until: data.valid_until, kind: ritualOf(source.row) ? 'ritual' : 'value' };
   }
   return json({
     status: now.status,
@@ -1227,10 +1391,8 @@ async function paymentSwitch(body: { p?: string }) {
   return json({ status: 'switched' });
 }
 
-// One of the order's two PDFs: a value card without its amount when `plain`
-// asks, a ritual's A4 card when `a4` does; otherwise the card itself.
-const variantOf = (body: { plain?: boolean; a4?: boolean }): GiftCardKind | undefined =>
-  body.plain ? 'plain' : body.a4 ? 'a4' : undefined;
+// One of the order's PDFs: a ritual's A4 card when `a4` asks; otherwise the card itself.
+const variantOf = (body: { a4?: boolean }): GiftCardKind | undefined => (body.a4 ? 'a4' : undefined);
 
 async function giftCardDownload(body: { p?: string; plain?: boolean; a4?: boolean }) {
   const payment = await paymentOf(body.p);
@@ -1329,6 +1491,37 @@ async function officeDiscount(body: { type?: string; id?: string; percent?: numb
   await attempt(() => archive(invoice));
   const guest = await attempt(() => deliverAdvanceToGuest(invoice));
   return json({ status: 'reissued', percent, number: invoice.number, replaced: current.number, total: Number(invoice.total), guest });
+}
+
+// The office cancels a gift card order. The card no longer holds for booking.
+// An unpaid advance invoice is annulled; a paid one stays (any refund is the
+// office's to make), and a card already used for a booking cannot be cancelled.
+async function officeCancelGiftCard(body: { order?: string }) {
+  const id = body.order;
+  if (!id || !uuidPattern.test(id)) return json({ error: 'not_found' }, 404);
+  const { data: order } = await db.from('davanu_kartes_pasutijumi').select('id').eq('id', id).maybeSingle();
+  if (!order) return json({ error: 'not_found' }, 404);
+  const { data: card } = await db.from('gift_cards').select('code').eq('order_id', id).maybeSingle();
+  if (card) {
+    const { data: use } = await db.from('gift_card_uses').select('reservation_id').eq('code', card.code).maybeSingle();
+    const { data: booking } = use
+      ? await db.from('reservations').select('reservation_date').eq('id', use.reservation_id).maybeSingle()
+      : { data: null };
+    if (booking) return json({ error: 'card_used', date: booking.reservation_date }, 409);
+  }
+  const { error } = await db.from('gift_card_cancellations').upsert({ order_id: id }, { onConflict: 'order_id', ignoreDuplicates: true });
+  if (error) throw error;
+
+  const { data: invoices } = await db.from('invoices').select('*')
+    .eq('source_type', 'gift_card').eq('source_id', id).order('created_at', { ascending: false });
+  const current = (invoices ?? []).find((i) => i.kind === 'advance' && i.status === 'issued') ?? null;
+  const paid = (invoices ?? []).some((i) => i.kind === 'final') || !!current?.paid ||
+    (await cardPayments('gift_card', id)).some((p) => p.status === 'paid');
+  if (current && !paid) {
+    await annul(current);
+    return json({ status: 'cancelled', annulled: current.number });
+  }
+  return json({ status: 'cancelled', paid });
 }
 
 async function officeInvoice(body: { action?: string; type?: string; id?: string; pay_link?: boolean }) {
@@ -1627,6 +1820,14 @@ async function office(body: {
   if (pinResult !== 'ok') return pinRefusal(pinResult);
   if (body.action === 'assign') return await assignMaster(body.reservation, body.master_id ?? null);
   if (body.action === 'save_master') return await saveMaster(body.master);
+  if (body.action === 'cancel_gift_card') {
+    try {
+      return await officeCancelGiftCard(body);
+    } catch (e) {
+      console.error(e);
+      return json({ error: describe(e) }, 500);
+    }
+  }
   if (body.action === 'discount') {
     try {
       return await officeDiscount(body);
@@ -1674,14 +1875,35 @@ async function office(body: {
       db.from('invoices').select('id, number, kind, status, paid, source_id, manage_token, total, created_at')
         .in('source_id', ids).order('created_at', { ascending: false }),
       db.from('card_payments').select('source_id').eq('status', 'paid').in('source_id', ids),
-      db.from('gift_cards').select('order_id, code, valid_until').in('order_id', cardIds.length ? cardIds : [crypto.randomUUID()]),
+      db.from('gift_cards').select('order_id, code, valid_until, pin, failed_checks').in('order_id', cardIds.length ? cardIds : [crypto.randomUUID()]),
       db.from('discounts').select('source_id, percent, reason').in('source_id', ids),
     ])
     : [{ data: [], error: null }, { data: [] }, { data: [] }, { data: [] }];
   if (error) return json({ error: describe(error) }, 500);
   const cardPaid = new Set((paidByCard ?? []).map((p) => p.source_id));
   // deno-lint-ignore no-explicit-any
-  const codeOf = (id: string) => (codes ?? []).find((c: any) => c.order_id === id) ?? null;
+  const cardOf = (id: string) => (codes ?? []).find((c: any) => c.order_id === id) ?? null;
+  const codeOf = (id: string) => {
+    const c = cardOf(id);
+    return c ? { code: c.code, valid_until: c.valid_until, pin: c.pin, locked: c.failed_checks >= GIFT_CARD_TRIES } : null;
+  };
+  // Which cards were cancelled, and which were used for a booking (and when).
+  const allCodes = (codes ?? []).map((c: { code: string }) => c.code);
+  const [{ data: cancellations }, { data: uses }] = await Promise.all([
+    db.from('gift_card_cancellations').select('order_id').in('order_id', cardIds.length ? cardIds : [crypto.randomUUID()]),
+    db.from('gift_card_uses').select('code, reservation_id').in('code', allCodes.length ? allCodes : ['-']),
+  ]);
+  const cancelledCards = new Set((cancellations ?? []).map((c) => c.order_id));
+  const useIds = (uses ?? []).map((u) => u.reservation_id);
+  const { data: usedBy } = useIds.length
+    ? await db.from('reservations').select('id, reservation_date, reservation_time').in('id', useIds)
+    : { data: [] };
+  const usedFor = (orderId: string) => {
+    const code = cardOf(orderId)?.code;
+    const use = code ? (uses ?? []).find((u) => u.code === code) : null;
+    const r = use ? (usedBy ?? []).find((b) => b.id === use.reservation_id) : null;
+    return r ? { date: r.reservation_date, time: r.reservation_time } : null;
+  };
 
   // deno-lint-ignore no-explicit-any
   const invoiceOf = (sourceId: string) => (invoices ?? []).filter((i: any) => i.source_id === sourceId);
@@ -1718,6 +1940,7 @@ async function office(body: {
       payment: ['cash', 'card'].includes(r.payment_method) ? r.payment_method : 'transfer',
       card_paid: cardPaid.has(r.id),
       master_id: r.master_id ?? null,
+      gift_card_code: r.gift_card_code ?? null,
       message: (r.form_type === 'noma' ? r.rental_message : r.ritual_message) || null,
       name: r.name,
       email: r.email,
@@ -1739,8 +1962,10 @@ async function office(body: {
       payment: g.payment_method === 'card' ? 'card' : 'transfer',
       card_paid: cardPaid.has(g.id),
       gift_card: codeOf(g.id),
-      // A value card has two versions: with its amount and without it.
+      // A ritual card comes as a card and as an A4 page too.
       kind: ritualOf(g) ? 'ritual' : 'value',
+      cancelled: cancelledCards.has(g.id),
+      used_for: usedFor(g.id),
       ...invoiceView(g.id, priceGiftCard(prices, g)),
     })),
     masters: await mastersList(),
@@ -1929,6 +2154,7 @@ Deno.serve(async (req) => {
     if (body.payment_retry) return await paymentRetry(body.payment_retry);
     if (body.payment_switch) return await paymentSwitch(body.payment_switch);
     if (body.gift_card_pdf) return await giftCardDownload(body.gift_card_pdf);
+    if (body.gift_card_check) return await giftCardCheck(body.gift_card_check);
     if (body.invoice_payment) return await invoicePayment(body.invoice_payment);
     if (body.pay_invoice) return await payInvoice(body.pay_invoice);
   } catch (e) {

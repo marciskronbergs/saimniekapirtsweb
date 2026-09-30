@@ -31,10 +31,7 @@
   "preview": {
     "open": "Apskatīt dāvanu karti",
     "title": "Jūsu dāvanu karte",
-    "withAmount": "Ar summu",
-    "withoutAmount": "Bez summas",
-    "bothVersions": "Pēc apmaksas saņemsiet abus variantus – ar summu un bez summas – un varēsiet uzdāvināt to, kurš Jums labāk patīk.",
-    "sample": "Paraugs: kartes numurs būs Jūsu avansa rēķina numurs. Karte ir derīga vienu gadu.",
+    "sample": "Paraugs: kartes numurs būs Jūsu avansa rēķina numurs, un blakus tam būs kods online rezervācijai. Karte ir derīga vienu gadu.",
     "front": "Priekšpuse",
     "back": "Aizmugure",
     "close": "Aizvērt",

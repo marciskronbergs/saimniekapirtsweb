@@ -6,6 +6,8 @@ import priceCatalog from '../../data/priceCatalog.json';
 import BookingConfirmation, { type ConfirmedBooking } from './BookingConfirmation';
 import TransportChoice from './TransportChoice';
 import PaymentChoice, { type PaymentMethod } from './PaymentChoice';
+import GiftCardChoice from './GiftCardChoice';
+import { emptyGiftCard, type GiftCardEntry } from './giftCardEntry';
 import { goToCardPayment, paymentLabel, useCardPayments } from '../../lib/cardPayments';
 import { scrollIntoPopup } from './scrollIntoPopup';
 import { cancelUrl } from './cancelUrl';
@@ -45,6 +47,10 @@ const FormNoma: React.FC<FormNomaProps> = ({ selectedDate, selectedTime, onClose
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [confirmed, setConfirmed] = useState<ConfirmedBooking | null>(null);
   const cardPayments = useCardPayments();
+  // A gift card given with the booking: its remainder, if any, is invoiced.
+  const [giftCard, setGiftCard] = useState<GiftCardEntry>(emptyGiftCard);
+  const withGiftCard = !!giftCard.code.trim();
+  const paymentMethod: PaymentMethod = withGiftCard ? 'transfer' : formData.paymentMethod;
   // The button is disabled through state, which only takes effect on the next
   // render; a quick double click lands before that and used to book twice.
   const submittingRef = useRef(false);
@@ -164,7 +170,9 @@ const FormNoma: React.FC<FormNomaProps> = ({ selectedDate, selectedTime, onClose
         locale: i18n.language === 'en' ? 'en' : 'lv',
         rental_message: formData.message || '',
         transport: formData.transport || null,
-        payment_method: formData.paymentMethod
+        payment_method: paymentMethod,
+        gift_card_code: withGiftCard ? giftCard.code.trim() : null,
+        gift_card_pin: withGiftCard ? giftCard.pin.trim() : null,
       };
 
       const { error } = await supabase.from('reservations').insert([reservationData]);
@@ -186,8 +194,10 @@ const FormNoma: React.FC<FormNomaProps> = ({ selectedDate, selectedTime, onClose
           // booking, which frees the slot and annuls its advance invoice.
           body: JSON.stringify({
             ...reservationData,
+            gift_card_pin: undefined,
+            gift_card: withGiftCard ? giftCard.code.trim() : '',
             cancel_url: cancelUrl(id),
-            payment_label: paymentLabel(formData.paymentMethod),
+            payment_label: paymentLabel(paymentMethod),
           })
         });
       } catch (webhookError) {
@@ -196,7 +206,7 @@ const FormNoma: React.FC<FormNomaProps> = ({ selectedDate, selectedTime, onClose
 
       // Paying by card: on to Stripe's page. If that cannot be opened, the
       // booking stands and is paid by bank transfer instead.
-      if (formData.paymentMethod === 'card') {
+      if (paymentMethod === 'card') {
         await goToCardPayment('reservation', id);
         setConfirmed({ ...reservationData, payment_method: 'transfer' });
         return;
@@ -370,11 +380,17 @@ const FormNoma: React.FC<FormNomaProps> = ({ selectedDate, selectedTime, onClose
 
         <TransportChoice value={formData.transport} onChange={(label) => setFormData((prev) => ({ ...prev, transport: label }))} />
 
-        <PaymentChoice
-          card={cardPayments}
-          value={formData.paymentMethod}
-          onChange={(method) => setFormData((prev) => ({ ...prev, paymentMethod: method }))}
-        />
+        <GiftCardChoice value={giftCard} onChange={setGiftCard} date={selectedDate ? selectedDate.toLocaleDateString('en-CA') : null} />
+
+        {withGiftCard ? (
+          <p className="text-sm text-gray-400">{t('forms:giftCard.paymentNote')}</p>
+        ) : (
+          <PaymentChoice
+            card={cardPayments}
+            value={formData.paymentMethod}
+            onChange={(method) => setFormData((prev) => ({ ...prev, paymentMethod: method }))}
+          />
+        )}
 
         {/* Message */}
         <div>
