@@ -3,9 +3,10 @@ import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
 import { X } from 'lucide-react';
 import type { GiftCardRitual, Locale } from '../../lib/pricing';
-import { formatCardDate, giftCardWords, ritualLine } from '../../lib/giftCardText';
+import { formatCardDate, giftCardWords } from '../../lib/giftCardText';
 import { fontFaces } from './giftCardAssets';
 import GiftCardA4Page, { A4_H, A4_W } from './GiftCardA4';
+import { LIGHT_H, LIGHT_W, LightCardSide, type Sample } from './LightCard';
 
 // A preview of the gift card a buyer will get, for the gift card page: the
 // owner's "Dāvanu karte – PIRTS PRIEKIEM" as the PDF the invoice function
@@ -62,11 +63,6 @@ const Line: React.FC<{
   );
 };
 
-interface Sample {
-  code: string;
-  pin: string;
-  validUntil: string;
-}
 
 interface CardProps {
   side: 'front' | 'back';
@@ -76,39 +72,33 @@ interface CardProps {
   sample: Sample;
 }
 
-// One side of the card: a value card shows its amount, a ritual card names
-// the ritual in its place.
+// One side of the ribbon card. It always shows the amount (a ritual card: the
+// ritual's price); a ritual card names the ritual in the line under it.
 const CardSide: React.FC<CardProps> = ({ side, locale, value, ritual, sample }) => {
   const w = giftCardWords[locale];
   const root: React.CSSProperties = { position: 'relative', width: W, height: H, overflow: 'hidden' };
   if (side === 'back') {
     return (
       <div style={root}>
-        <img src="/giftcard/card_back.jpg" alt={w.photos.back} style={{ width: W, height: H, display: 'block' }} />
+        <img src="/giftcard/card_back.jpg" alt={w.photos.ribbonBack} style={{ width: W, height: H, display: 'block' }} />
       </div>
     );
   }
   const usage = ritual ? w.ritualUsage(ritual) : w.usage;
   return (
     <div style={root}>
-      <img src="/giftcard/card_front.jpg" alt={w.photos.front} style={{ width: W, height: H, display: 'block' }} />
+      <img src="/giftcard/card_front.jpg" alt={w.photos.ribbonFront} style={{ width: W, height: H, display: 'block' }} />
       <Line x={1524} y={243} size={50} min={34} max={336} bold>{sample.code}</Line>
       <span style={{ position: 'absolute', top: 322 - 0.8585 * 22, left: 1524, fontFamily: sans, fontSize: 22, lineHeight: 1, color: GOLD, whiteSpace: 'nowrap' }}>
         {w.codeLine}{' '}
         <strong style={{ fontWeight: 600, fontSize: 28, letterSpacing: 2, marginLeft: 6 }}>{sample.pin}</strong>
       </span>
-      {ritual ? (
-        <Line x={1045} y={506} size={48} min={28} max={780} bold align="center">{`${w.ritual} ${ritualLine(ritual, locale)}`}</Line>
-      ) : (
-        <>
-          <Line x={955} y={510} size={68} bold align="center">{`${value} EUR`}</Line>
-          <Line x={1280} y={516} size={36} bold>{w.valueWord}</Line>
-        </>
-      )}
+      <Line x={955} y={510} size={68} bold align="center">{`${value} EUR`}</Line>
+      <Line x={1280} y={516} size={36} bold>{w.valueWord}</Line>
       <Line x={1418} y={607} size={50} bold>{formatCardDate(sample.validUntil)}</Line>
       <Line x={1040} y={680} size={26} min={18} max={960} spacing={0.5} align="center">{usage}</Line>
       <Line x={1040} y={714} size={20} min={15} max={960} spacing={0.5} color={GOLD_SOFT} align="center">{w.payMore}</Line>
-      <Line x={1040} y={766} size={20} min={14} max={1120} spacing={5} color={GOLD_SOFT} align="center">{w.address}</Line>
+      <Line x={1040} y={766} size={20} min={14} max={1120} spacing={5} color={GOLD_SOFT} align="center">{w.ribbonAddress}</Line>
       <Line x={1040} y={798} size={20} min={14} max={1120} spacing={5} color={GOLD_SOFT} align="center">{w.book}</Line>
     </div>
   );
@@ -154,6 +144,7 @@ function sampleCard(): Sample {
 }
 
 interface GiftCardPreviewProps {
+  // The card's value (a ritual: its price), shown on both cards.
   // A value card, or a ritual card (as a card and as an A4 page).
   value?: number;
   ritual?: GiftCardRitual | null;
@@ -163,15 +154,15 @@ interface GiftCardPreviewProps {
 const GiftCardPreview: React.FC<GiftCardPreviewProps> = ({ value = 0, ritual = null, onClose }) => {
   const { t, i18n } = useTranslation('giftcards');
   const locale: Locale = i18n.language === 'en' ? 'en' : 'lv';
-  // A ritual card's A4 version.
-  const [second, setSecond] = useState(false);
+  // Which card is shown: the ribbon card, the light card, or a ritual's A4.
+  const [view, setView] = useState<'ribbon' | 'light' | 'a4'>('ribbon');
   // On a phone the card is small; enlarged, it scrolls sideways at a readable size.
   const [enlarged, setEnlarged] = useState(false);
   const [sample] = useState(sampleCard);
   const closeRef = useRef<HTMLButtonElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
   const pressedOutside = useRef(false);
-  const a4 = !!ritual && second;
+  const a4 = !!ritual && view === 'a4';
 
   useEffect(() => {
     const opener = document.activeElement as HTMLElement | null;
@@ -201,13 +192,13 @@ const GiftCardPreview: React.FC<GiftCardPreviewProps> = ({ value = 0, ritual = n
     };
   }, [onClose]);
 
-  const tab = (isSecond: boolean, label: string) => (
+  const tab = (which: typeof view, label: string) => (
     <button
       type="button"
-      aria-pressed={second === isSecond}
-      onClick={() => setSecond(isSecond)}
+      aria-pressed={view === which}
+      onClick={() => setView(which)}
       className={`rounded-full px-4 py-2 text-sm font-semibold transition-colors ${
-        second === isSecond ? 'bg-amber-600 text-white' : 'bg-white/10 text-gray-200 hover:bg-white/20'
+        view === which ? 'bg-amber-600 text-white' : 'bg-white/10 text-gray-200 hover:bg-white/20'
       }`}
     >
       {label}
@@ -239,18 +230,17 @@ const GiftCardPreview: React.FC<GiftCardPreviewProps> = ({ value = 0, ritual = n
         <div className="flex items-start justify-between gap-4">
           <div>
             <h2 id="gift-card-preview-title" className="text-xl sm:text-2xl font-bold">{t('preview.title')}</h2>
-            {ritual && <p className="mt-1 text-sm sm:text-base text-gray-300">{t('preview.bothVersionsRitual')}</p>}
+            <p className="mt-1 text-sm sm:text-base text-gray-300">{t(ritual ? 'preview.versionsRitual' : 'preview.versions')}</p>
           </div>
           <button ref={closeRef} type="button" onClick={onClose} aria-label={t('preview.close')} className="rounded-lg p-2 hover:bg-white/10 shrink-0">
             <X className="w-6 h-6" />
           </button>
         </div>
-        {ritual && (
-          <div className="flex flex-wrap gap-2" role="group" aria-label={t('preview.title')}>
-            {tab(false, t('preview.card'))}
-            {tab(true, t('preview.a4'))}
-          </div>
-        )}
+        <div className="flex flex-wrap gap-2" role="group" aria-label={t('preview.title')}>
+          {tab('ribbon', t('preview.ribbon'))}
+          {tab('light', t('preview.light'))}
+          {ritual && tab('a4', t('preview.a4'))}
+        </div>
         <button
           type="button"
           aria-pressed={enlarged}
@@ -267,7 +257,11 @@ const GiftCardPreview: React.FC<GiftCardPreviewProps> = ({ value = 0, ritual = n
                 <GiftCardA4Page page={page} locale={locale} ritual={ritual} code={sample.code} pin={sample.pin} validUntil={sample.validUntil} />
               </Scaled>
             ))
-            : (['front', 'back'] as const).map((side) => (
+            : (['front', 'back'] as const).map((side) => view === 'light' ? (
+              <Scaled key={`light-${side}`} w={LIGHT_W} h={LIGHT_H} label={t(side === 'front' ? 'preview.front' : 'preview.back')} width={enlarged ? 760 : undefined}>
+                <LightCardSide side={side} locale={locale} value={value} ritual={ritual} sample={sample} />
+              </Scaled>
+            ) : (
               <Scaled key={side} w={W} h={H} label={t(side === 'front' ? 'preview.front' : 'preview.back')} width={enlarged ? 900 : undefined}>
                 <CardSide side={side} locale={locale} value={value} ritual={ritual} sample={sample} />
               </Scaled>

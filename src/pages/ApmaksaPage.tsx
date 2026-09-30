@@ -41,11 +41,12 @@ const texts = {
     sentGift: (e: string) => `Dāvanu karti un rēķinu nosūtījām arī uz ${e}.`,
     giftNumber: 'Dāvanu kartes Nr.',
     validUntil: 'derīga līdz',
-    download: 'Lejupielādēt dāvanu karti (PDF)',
     code: 'kods',
-    downloadCard: 'Karte (PDF)',
+    downloadRibbon: 'Pirts priekiem (PDF)',
+    downloadLight: 'Gaišā karte (PDF)',
     downloadA4: 'A4 (PDF)',
-    twoVersionsRitual: 'Dāvanu karte ir divos variantos – kā karte un A4 formātā. Dāviniet to, kurš Jums labāk patīk.',
+    versions: 'Dāvanu karte ir divos variantos. Dāviniet to, kurš Jums labāk patīk.',
+    versionsRitual: 'Dāvanu karte ir trīs variantos – divas kartes un A4 formātā. Dāviniet to, kurš Jums labāk patīk.',
     preparing: 'Dāvanu karti vēl gatavojam – tā parādīsies šeit pēc brīža un pienāks arī uz e-pastu.',
     downloading: 'Sagatavojam…',
     total: 'Kopā',
@@ -72,11 +73,12 @@ const texts = {
     sentGift: (e: string) => `We have also emailed the gift card and the invoice to ${e}.`,
     giftNumber: 'Gift card no.',
     validUntil: 'valid until',
-    download: 'Download the gift card (PDF)',
     code: 'code',
-    downloadCard: 'Card (PDF)',
+    downloadRibbon: 'Pirts priekiem (PDF)',
+    downloadLight: 'Light card (PDF)',
     downloadA4: 'A4 (PDF)',
-    twoVersionsRitual: 'The gift card comes in two versions – as a card and as an A4 page. Give whichever you like.',
+    versions: 'The gift card comes in two versions. Give whichever you like.',
+    versionsRitual: 'The gift card comes in three versions – two cards and an A4 page. Give whichever you like.',
     preparing: 'We are still preparing the gift card – it will appear here in a moment and reach you by email too.',
     downloading: 'Preparing…',
     total: 'Total',
@@ -109,7 +111,7 @@ const ApmaksaPage = () => {
   const { i18n } = useTranslation();
   const [view, setView] = useState<PaymentView | null>(null);
   const [missing, setMissing] = useState(false);
-  const [busy, setBusy] = useState<'retry' | 'transfer' | 'download' | 'download-second' | null>(null);
+  const [busy, setBusy] = useState<'retry' | 'transfer' | 'ribbon' | 'light' | 'a4' | null>(null);
   const [failed, setFailed] = useState(false);
   const polls = useRef(0);
 
@@ -166,11 +168,12 @@ const ApmaksaPage = () => {
     setBusy(null);
   };
 
-  // A ritual card downloads as a card or as an A4 page.
-  const download = async (second = false) => {
-    setBusy(second ? 'download-second' : 'download');
+  // Each version downloads on its own: the ribbon card, the light card, and a
+  // ritual's A4 card.
+  const download = async (kind: 'ribbon' | 'light' | 'a4') => {
+    setBusy(kind);
     setFailed(false);
-    const variant = second ? { a4: true } : {};
+    const variant = kind === 'a4' ? { a4: true } : kind === 'light' ? { light: true } : {};
     try {
       const r = await callInvoiceFunction<{ filename: string; pdf_base64: string }>({ gift_card_pdf: { p: payment, ...variant } });
       const bytes = Uint8Array.from(atob(r.pdf_base64), (c) => c.charCodeAt(0));
@@ -227,37 +230,24 @@ const ApmaksaPage = () => {
                         {view.gift_card.pin && <>{tx.code} <strong className="text-amber-200">{view.gift_card.pin}</strong> · </>}
                         {tx.validUntil} {formatDate(view.gift_card.valid_until)}
                       </p>
-                      {view.gift_card.kind === 'ritual' ? (
-                        <>
-                          <p className="text-sm text-gray-300">{tx.twoVersionsRitual}</p>
-                          <div className="flex flex-wrap gap-3">
-                            {([false, true] as const).map((second) => {
-                              const mine = busy === (second ? 'download-second' : 'download');
-                              const label = second ? tx.downloadA4 : tx.downloadCard;
-                              return (
-                                <button
-                                  key={String(second)}
-                                  onClick={() => download(second)}
-                                  disabled={busy !== null}
-                                  className="inline-flex items-center gap-2 rounded-xl bg-amber-600 hover:bg-amber-700 disabled:opacity-60 px-5 py-3 font-bold"
-                                >
-                                  {mine ? <Loader2 className="w-5 h-5 animate-spin" /> : <Download className="w-5 h-5" />}
-                                  {mine ? tx.downloading : label}
-                                </button>
-                              );
-                            })}
-                          </div>
-                        </>
-                      ) : (
-                        <button
-                          onClick={() => download()}
-                          disabled={busy !== null}
-                          className="inline-flex items-center gap-2 rounded-xl bg-amber-600 hover:bg-amber-700 disabled:opacity-60 px-5 py-3 font-bold"
-                        >
-                          {busy === 'download' ? <Loader2 className="w-5 h-5 animate-spin" /> : <Download className="w-5 h-5" />}
-                          {busy === 'download' ? tx.downloading : tx.download}
-                        </button>
-                      )}
+                      <p className="text-sm text-gray-300">{view.gift_card.kind === 'ritual' ? tx.versionsRitual : tx.versions}</p>
+                      <div className="flex flex-wrap gap-3">
+                        {(view.gift_card.kind === 'ritual' ? ['ribbon', 'light', 'a4'] as const : ['ribbon', 'light'] as const).map((kind) => {
+                          const mine = busy === kind;
+                          const label = kind === 'a4' ? tx.downloadA4 : kind === 'light' ? tx.downloadLight : tx.downloadRibbon;
+                          return (
+                            <button
+                              key={kind}
+                              onClick={() => download(kind)}
+                              disabled={busy !== null}
+                              className="inline-flex items-center gap-2 rounded-xl bg-amber-600 hover:bg-amber-700 disabled:opacity-60 px-5 py-3 font-bold"
+                            >
+                              {mine ? <Loader2 className="w-5 h-5 animate-spin" /> : <Download className="w-5 h-5" />}
+                              {mine ? tx.downloading : label}
+                            </button>
+                          );
+                        })}
+                      </div>
                     </div>
                   )}
                   {!view.gift_card && view.type === 'gift_card' && (

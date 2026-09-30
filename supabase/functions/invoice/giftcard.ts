@@ -3,16 +3,17 @@
 // ribbon on navy, with a collage of the sauna on the back. The pictures
 // (public/giftcard/card_front.jpg, card_back.jpg) carry the design and its
 // title; the parts that change are drawn here: the number and its code for
-// booking online, the amount (or, on a ritual card, the ritual), the date,
-// what the card is for, and the footer. A ritual card comes with an A4
-// version as well (giftcardA4.ts).
+// booking online, the amount (a ritual card: the ritual's price), the date,
+// what the card is for (a ritual card names the ritual), and the footer.
+// Every order also gets the light card (giftcardLight.ts), and a ritual the
+// A4 card (giftcardA4.ts).
 //
 // Positions are in the pictures' own pixels, 2000 × 873 for the whole card.
 
 import { PDFDocument, rgb, setCharacterSpacing, type PDFFont, type PDFPage, type RGB } from 'npm:pdf-lib@1.17.1';
 import fontkit from 'npm:@pdf-lib/fontkit@1.1.1';
 import type { GiftCardRitual } from './pricing.ts';
-import { formatCardDate, giftCardWords, ritualLine, ritualName } from './giftCardText.ts';
+import { formatCardDate, giftCardWords, ritualName } from './giftCardText.ts';
 
 export interface GiftCardData {
   code: string;
@@ -20,7 +21,7 @@ export interface GiftCardData {
   pin: string;
   validUntil: string; // ISO date
   locale: 'lv' | 'en';
-  // A ritual card names the ritual and shows no price; a value card shows its value.
+  // A ritual card names the ritual; every card shows its value (a ritual's price).
   ritual: GiftCardRitual | null;
   value: number;
 }
@@ -36,10 +37,15 @@ const FILES = {
   sansBold: 'fonts/giftcard/Montserrat_600SemiBold.ttf',
   cardFront: 'giftcard/card_front.jpg',
   cardBack: 'giftcard/card_back.jpg',
+  lightFront: 'giftcard/value_front.jpg',
+  lightBack: 'giftcard/light_back.jpg',
   logoOnLight: 'giftcard/logo_on_light.png',
   a4Tub: 'giftcard/a4_tub.jpg',
   a4Whisk: 'giftcard/a4_whisk.jpg',
   a4Scrub: 'giftcard/a4_scrub.jpg',
+  a4Swim: 'giftcard/a4_swim.jpg',
+  a4Douse: 'giftcard/a4_douse.jpg',
+  a4Rest: 'giftcard/a4_rest.jpg',
 } as const;
 export type GiftCardAsset = keyof typeof FILES;
 type Asset = GiftCardAsset;
@@ -126,14 +132,9 @@ export async function renderGiftCardPdf(card: GiftCardData): Promise<Uint8Array>
   const labelWidth = line(pageFront, w.codeLine, 1524, 322, fitted(w.codeLine, { font: regular, size: 22, color: GOLD }, 300, 16));
   line(pageFront, card.pin, 1524 + labelWidth + 12, 322, { font: bold, size: 28, color: GOLD, spacing: 2 });
 
-  // The amount and "vērtībā" on their dotted line, or the ritual in their place.
-  if (ritual) {
-    const name = `${w.ritual} ${ritualLine(ritual, card.locale)}`;
-    line(pageFront, name, 1045, 506, fitted(name, { font: bold, size: 48, color: GOLD }, 780, 28), 'center');
-  } else {
-    line(pageFront, `${card.value} EUR`, 955, 510, { font: bold, size: 68, color: GOLD }, 'center');
-    line(pageFront, w.valueWord, 1280, 516, { font: bold, size: 36, color: GOLD });
-  }
+  // The amount and "vērtībā" on their dotted line.
+  line(pageFront, `${card.value} EUR`, 955, 510, { font: bold, size: 68, color: GOLD }, 'center');
+  line(pageFront, w.valueWord, 1280, 516, { font: bold, size: 36, color: GOLD });
 
   // The date on its dotted line.
   line(pageFront, formatCardDate(card.validUntil), 1418, 607, { font: bold, size: 50, color: GOLD });
@@ -145,7 +146,7 @@ export async function renderGiftCardPdf(card: GiftCardData): Promise<Uint8Array>
 
   // The footer: the address, and both ways to book.
   const footer = { font: regular, size: 20, color: GOLD_SOFT, spacing: 5 };
-  line(pageFront, w.address, 1040, 766, fitted(w.address, footer, 1120, 14), 'center');
+  line(pageFront, w.ribbonAddress, 1040, 766, fitted(w.ribbonAddress, footer, 1120, 14), 'center');
   line(pageFront, w.book, 1040, 798, fitted(w.book, footer, 1120, 14), 'center');
 
   const pageBack = doc.addPage([W * PX, H * PX]);

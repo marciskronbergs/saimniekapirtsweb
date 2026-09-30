@@ -53,6 +53,7 @@
 // And by Stripe's webhook (checkout.session.* events).
 
 import { createClient } from 'npm:@supabase/supabase-js@2';
+import { PDFDocument } from 'npm:pdf-lib@1.17.1';
 import catalog from './priceCatalog.json' with { type: 'json' };
 import { priceReservation, priceGiftCard, type PriceCatalog } from './pricing.ts';
 import seller from './seller.json' with { type: 'json' };
@@ -63,6 +64,7 @@ import {
   type ConfirmationInput,
 } from './email.ts';
 import { renderGiftCardPdf } from './giftcard.ts';
+import { renderLightCardPdf } from './giftcardLight.ts';
 import { renderGiftCardA4Pdf } from './giftcardA4.ts';
 import { ritualName, type GiftCardKind } from './giftCardText.ts';
 import {
@@ -469,7 +471,7 @@ async function deliverAdvance(invoice: Invoice) {
   if (invoice.source_type === 'gift_card') {
     try {
       const card = await giftCard(invoice.source_id);
-      cards = (card?.files ?? []).map((file) => ({ filename: file.filename, content: toBase64(file.pdf) }));
+      cards = card ? await cardAttachments(card.files) : [];
     } catch (e) {
       console.error(e);
     }
@@ -860,7 +862,7 @@ async function sendFinalToGuest(invoice: Invoice) {
   );
   await sendToGuest(invoice.customer_email, message, [
     { filename: message.filename, content: toBase64(pdf) },
-    ...(card?.files ?? []).map((file) => ({ filename: file.filename, content: toBase64(file.pdf) })),
+    ...(card ? await cardAttachments(card.files) : []),
   ]);
 }
 
@@ -1100,27 +1102,22 @@ async function giftCard(orderId: string, only?: GiftCardKind) {
   if (!card?.code) throw new Error('The gift card waits for its advance invoice');
   const ritual = ritualOf(order);
   const locale: 'lv' | 'en' = order.locale === 'en' ? 'en' : 'lv';
-  // A value card is one PDF; a ritual card comes as a card and as an A4 page.
-  const all: GiftCardKind[] = ritual ? ['ritual', 'a4'] : ['value'];
+  // Every order gets the ribbon card and the light card, both with the amount;
+  // a ritual also the A4 card, the one without it.
+  const all: GiftCardKind[] = ritual ? ['ribbon', 'light', 'a4'] : ['ribbon', 'light'];
   const kinds = only && all.includes(only) ? [only] : only ? [all[0]] : all;
   const name = locale === 'en' ? 'Gift-card' : 'Davanu-karte';
   const suffix: Record<GiftCardKind, string> = {
-    ritual: '',
+    ribbon: '',
+    light: locale === 'en' ? '-light' : '-gaisa',
     a4: '-A4',
-    value: '',
   };
   const files: { kind: GiftCardKind; filename: string; pdf: Uint8Array }[] = [];
   for (const kind of kinds) {
-    const pdf = kind === 'a4' && ritual
-      ? await renderGiftCardA4Pdf({ code: card.code, pin: card.pin, validUntil: card.valid_until, locale, ritual })
-      : await renderGiftCardPdf({
-      code: card.code,
-      pin: card.pin,
-      validUntil: card.valid_until,
-      locale,
-      ritual,
-      value: priced.total,
-    });
+    const data = { code: card.code, pin: card.pin, validUntil: card.valid_until, locale, ritual, value: priced.total };
+    const pdf = kind === 'a4' && ritual ? await renderGiftCardA4Pdf({ ...data, ritual })
+      : kind === 'light' ? await renderLightCardPdf(data)
+      : await renderGiftCardPdf(data);
     files.push({ kind, filename: `${name}-${card.code}${suffix[kind]}.pdf`, pdf });
   }
   return {
@@ -1391,14 +1388,36 @@ async function paymentSwitch(body: { p?: string }) {
   return json({ status: 'switched' });
 }
 
-// One of the order's PDFs: a ritual's A4 card when `a4` asks; otherwise the card itself.
-const variantOf = (body: { a4?: boolean }): GiftCardKind | undefined => (body.a4 ? 'a4' : undefined);
+// The cards as email attachments: the two small cards (the ribbon card and
+// the light one) as one PDF of four pages, and a ritual's A4 card on its own,
+// so an email carries at most three files with its invoice.
+async function cardAttachments(files: { kind: GiftCardKind; filename: string; pdf: Uint8Array }[]): Promise<Attachment[]> {
+  const small = files.filter((f) => f.kind !== 'a4');
+  const rest = files.filter((f) => f.kind === 'a4');
+  const out: Attachment[] = [];
+  if (small.length > 1) {
+    const doc = await PDFDocument.load(small[0].pdf);
+    for (const f of small.slice(1)) {
+      const other = await PDFDocument.load(f.pdf);
+      for (const page of await doc.copyPages(other, other.getPageIndices())) doc.addPage(page);
+    }
+    out.push({ filename: small[0].filename, content: toBase64(await doc.save()) });
+  } else {
+    out.push(...small.map((f) => ({ filename: f.filename, content: toBase64(f.pdf) })));
+  }
+  return [...out, ...rest.map((f) => ({ filename: f.filename, content: toBase64(f.pdf) }))];
+}
 
-async function giftCardDownload(body: { p?: string; plain?: boolean; a4?: boolean }) {
+// One of the order's PDFs: the light card when `light` asks, a ritual's A4
+// card when `a4` does; otherwise the ribbon card.
+const variantOf = (body: { a4?: boolean; light?: boolean }): GiftCardKind | undefined =>
+  body.a4 ? 'a4' : body.light ? 'light' : undefined;
+
+async function giftCardDownload(body: { p?: string; a4?: boolean; light?: boolean }) {
   const payment = await paymentOf(body.p);
   if (!payment || payment.source_type !== 'gift_card') return json({ error: 'not_found' }, 404);
   if (payment.status !== 'paid') return json({ error: 'not_paid' }, 409);
-  const card = await giftCard(payment.source_id, variantOf(body) ?? 'value');
+  const card = await giftCard(payment.source_id, variantOf(body) ?? 'ribbon');
   if (!card) return json({ error: 'not_found' }, 404);
   const [file] = card.files;
   return json({ filename: file.filename, pdf_base64: toBase64(file.pdf) });
@@ -1813,7 +1832,7 @@ async function removeFromCalendar(r: any) {
 // the PIN, since the list holds guests' names, emails and phone numbers.
 // deno-lint-ignore no-explicit-any
 async function office(body: {
-  pin?: string; action?: string; reservation?: string; order?: string; plain?: boolean; a4?: boolean; master_id?: string | null; master?: any;
+  pin?: string; action?: string; reservation?: string; order?: string; a4?: boolean; light?: boolean; master_id?: string | null; master?: any;
   type?: string; id?: string; pay_link?: boolean; percent?: number; reason?: string;
 }) {
   const pinResult = await pinCheck(body.pin);
@@ -1847,7 +1866,7 @@ async function office(body: {
   if (body.action === 'gift_card_pdf') {
     if (!body.order || !uuidPattern.test(body.order)) return json({ error: 'not_found' }, 404);
     try {
-      const card = await giftCard(body.order, variantOf(body) ?? 'value');
+      const card = await giftCard(body.order, variantOf(body) ?? 'ribbon');
       if (!card) return json({ error: 'not_found' }, 404);
       const [file] = card.files;
       return json({ code: card.code, kind: card.kind, filename: file.filename, pdf_base64: toBase64(file.pdf) });

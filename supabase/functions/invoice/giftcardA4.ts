@@ -272,9 +272,10 @@ export async function renderGiftCardA4Pdf(card: GiftCardA4Data): Promise<Uint8Ar
   doc.setAuthor('SaimniekaPirts');
   doc.setLanguage(card.locale === 'lv' ? 'lv-LV' : 'en-GB');
 
-  const [serifItalic, serifBold, sans, sansBold, logo, whisk, pond, rest] = await Promise.all([
+  // The header photos tell the ritual in order, three on each page.
+  const [serifItalic, serifBold, sans, sansBold, logo, ...pictures] = await Promise.all([
     load('serifItalic'), load('serifBold'), load('sans'), load('sansBold'), load('logoOnLight'),
-    load('a4Tub'), load('a4Whisk'), load('a4Scrub'),
+    load('a4Tub'), load('a4Whisk'), load('a4Scrub'), load('a4Swim'), load('a4Douse'), load('a4Rest'),
   ]);
   const f: Fonts = {
     serifItalic: await doc.embedFont(serifItalic, { subset: true }),
@@ -283,15 +284,15 @@ export async function renderGiftCardA4Pdf(card: GiftCardA4Data): Promise<Uint8Ar
     sansBold: await doc.embedFont(sansBold, { subset: true }),
   };
   const logoImage = await doc.embedPng(logo);
-  const photos = [await doc.embedJpg(whisk), await doc.embedJpg(pond), await doc.embedJpg(rest)];
+  const photos = await Promise.all(pictures.map((p) => doc.embedJpg(p)));
   const subtitle = ritualLine(card.ritual, card.locale);
 
   const info = doc.addPage([PAGE_W, PAGE_H]);
-  header(info, f, logoImage, photos, w.title, subtitle, w.giftCard);
+  header(info, f, logoImage, photos.slice(0, 3), w.title, subtitle, w.giftCard);
   infoPage(info, f, card);
 
   const details = doc.addPage([PAGE_W, PAGE_H]);
-  header(details, f, logoImage, photos, w.title, subtitle, w.web);
+  header(details, f, logoImage, photos.slice(3), w.title, subtitle, w.web);
   detailsPage(details, f, card);
 
   return await doc.save();

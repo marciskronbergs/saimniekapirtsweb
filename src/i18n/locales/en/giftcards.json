@@ -37,10 +37,12 @@
     "close": "Close",
     "enlarge": "Enlarge",
     "fit": "Fit to screen",
-    "card": "Card",
     "a4": "A4",
-    "bothVersionsRitual": "Once it is paid, you receive both versions – the card and an A4 page – and give whichever you like.",
     "page1": "Page 1",
-    "page2": "Page 2"
+    "page2": "Page 2",
+    "ribbon": "Pirts priekiem",
+    "light": "Light",
+    "versions": "Once it is paid, you receive both versions – and give whichever you like.",
+    "versionsRitual": "Once it is paid, you receive all three versions – two cards with the amount and an A4 page without it – and give whichever you like."
   }
 }

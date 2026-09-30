@@ -106,6 +106,9 @@ const DavanuKartesPage = () => {
   const { min: customMin, max: customMax, step: customStep } = priceCatalog.giftCard.custom;
 
   const closePreview = useCallback(() => setPreview(null), []);
+  const previewRitual = priceCatalog.giftCard.rituals.find((ritual) => ritual.value === selectedRitual)
+    ?? priceCatalog.giftCard.rituals.find((ritual) => ritual.value === 'diviem-ar')
+    ?? priceCatalog.giftCard.rituals[0];
   // An open form is likely to be previewed: fetch its card's fonts and photos.
   useEffect(() => {
     if (activeSection === 'custom') preloadGiftCard('value');
@@ -292,6 +295,15 @@ const DavanuKartesPage = () => {
                       <ChevronDown className="w-5 h-5" />
                     )}
                   </button>
+                  {/* The cards can be seen before ordering: a sample. */}
+                  <button
+                    type="button"
+                    onClick={() => { preloadGiftCard('ritual'); setPreview('ritual'); }}
+                    className="mt-3 w-full inline-flex items-center justify-center gap-2 rounded-xl border border-amber-500/60 bg-black/30 hover:bg-amber-600/20 px-4 py-3 text-amber-200 font-semibold transition-colors min-h-[48px]"
+                  >
+                    <Eye className="w-5 h-5" />
+                    {t('preview.open')}
+                  </button>
                 </div>
               </div>
             </div>
@@ -346,6 +358,15 @@ const DavanuKartesPage = () => {
                     ) : (
                       <ChevronDown className="w-5 h-5" />
                     )}
+                  </button>
+                  {/* The cards can be seen before ordering: a sample. */}
+                  <button
+                    type="button"
+                    onClick={() => { preloadGiftCard('value'); setPreview('custom'); }}
+                    className="mt-3 w-full inline-flex items-center justify-center gap-2 rounded-xl border border-amber-500/60 bg-black/30 hover:bg-amber-600/20 px-4 py-3 text-amber-200 font-semibold transition-colors min-h-[48px]"
+                  >
+                    <Eye className="w-5 h-5" />
+                    {t('preview.open')}
                   </button>
                 </div>
               </div>
@@ -623,7 +644,9 @@ const DavanuKartesPage = () => {
       {preview === 'custom' && <GiftCardPreview value={customValue} onClose={closePreview} />}
       {preview === 'ritual' && (
         <GiftCardPreview
-          ritual={priceCatalog.giftCard.rituals.find((ritual) => ritual.value === selectedRitual)?.card ?? null}
+          // The chosen ritual, or before one is chosen a sample of the first.
+          ritual={previewRitual.card}
+          value={previewRitual.price}
           onClose={closePreview}
         />
       )}

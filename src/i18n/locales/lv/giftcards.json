@@ -37,10 +37,12 @@
     "close": "Aizvērt",
     "enlarge": "Palielināt",
     "fit": "Samazināt",
-    "card": "Karte",
     "a4": "A4",
-    "bothVersionsRitual": "Pēc apmaksas saņemsiet abus variantus – karti un A4 formātu – un varēsiet uzdāvināt to, kurš Jums labāk patīk.",
     "page1": "1. lapa",
-    "page2": "2. lapa"
+    "page2": "2. lapa",
+    "ribbon": "Pirts priekiem",
+    "light": "Gaišā",
+    "versions": "Pēc apmaksas saņemsiet abus variantus – un varēsiet uzdāvināt to, kurš Jums labāk patīk.",
+    "versionsRitual": "Pēc apmaksas saņemsiet visus trīs variantus – divas kartes ar summu un A4 formātu bez summas – un varēsiet uzdāvināt to, kurš Jums labāk patīk."
   }
 }
