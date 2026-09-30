@@ -18,7 +18,9 @@ const TransportChoice: React.FC<TransportChoiceProps> = ({ value, onChange }) =>
     { label: '', text: t('transport.own') },
     ...priceCatalog.transport.map((option) => ({
       label: option.label,
-      text: `${en ? option.en : option.lv} – ${option.price > 0 ? `${option.price} €` : t('transport.free')}`,
+      text: `${en ? option.en : option.lv} – ${
+        'custom' in option && option.custom ? t('transport.by_agreement') : option.price > 0 ? `${option.price} €` : t('transport.free')
+      }`,
     })),
   ];
   const chosen = priceCatalog.transport.find((option) => option.label === value);
@@ -56,7 +58,11 @@ const TransportChoice: React.FC<TransportChoiceProps> = ({ value, onChange }) =>
       </p>
       {chosen && (
         <p className="mt-1 text-sm text-green-300">
-          {chosen.price > 0 ? t('transport.transfer_note') : t('transport.pickup_note')}
+          {'custom' in chosen && chosen.custom
+            ? t('transport.custom_note')
+            : chosen.price > 0
+              ? t('transport.transfer_note')
+              : t('transport.pickup_note')}
         </p>
       )}
     </div>

@@ -32,6 +32,8 @@ interface CatalogRental extends Named {
 interface CatalogTransport extends Named {
   label: string;
   price: number;
+  // Priced by agreement with the office, so never an invoice line.
+  custom?: boolean;
 }
 
 interface CatalogExtra extends Named {
@@ -113,8 +115,8 @@ const perPersonItem = (
   };
 };
 
-// Getting here: a free pick-up from the bus stop is no invoice line; the
-// transfer from Riga is.
+// Getting here: a transfer from Riga is an invoice line; a free pick-up from
+// the bus stop, or a transfer whose price is agreed separately, is not.
 const addTransport = (
   catalog: PriceCatalog,
   booking: ReservationForPricing,
@@ -127,7 +129,7 @@ const addTransport = (
     problems.push(`Unknown transport: ${booking.transport}`);
     return;
   }
-  if (option.price > 0) {
+  if (option.price > 0 && !option.custom) {
     items.push({ name: { lv: option.lv, en: option.en }, quantity: 1, unit: 'service', unitPrice: option.price, amount: option.price });
   }
 };

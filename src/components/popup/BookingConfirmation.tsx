@@ -35,8 +35,11 @@ const BookingConfirmation: React.FC<BookingConfirmationProps> = ({ booking, onCl
     locale === 'lv' ? 'lv-LV' : 'en-GB',
     { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }
   );
-  // A free pick-up is no price line, so it is named here instead.
-  const pickup = priceCatalog.transport.find((option) => option.label === booking.transport && option.price === 0);
+  // A free pick-up, or a transfer priced by agreement, is no price line, so it
+  // is named here instead.
+  const pickup = priceCatalog.transport.find(
+    (option) => option.label === booking.transport && (option.price === 0 || ('custom' in option && option.custom))
+  );
   const sauna = booking.sauna_type === 'Baltā pirts' ? t('noma.saunas.baltā') : t('noma.saunas.pelēkā');
 
   return (
@@ -80,7 +83,9 @@ const BookingConfirmation: React.FC<BookingConfirmationProps> = ({ booking, onCl
           {pickup && (
             <div className="flex justify-between gap-4 text-sm">
               <span className="text-gray-300">{pickup[locale]}</span>
-              <span className="text-white whitespace-nowrap">{t('transport.free')}</span>
+              <span className="text-white whitespace-nowrap">
+                {'custom' in pickup && pickup.custom ? t('transport.by_agreement') : t('transport.free')}
+              </span>
             </div>
           )}
           <div className="flex justify-between gap-4 border-t border-gray-700 pt-3 font-semibold">

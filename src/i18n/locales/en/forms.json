@@ -115,6 +115,8 @@
     "bus_hint": "From Riga you can take the bus to the \"Dzimtmisa\" stop – we will collect you there.",
     "timetable": "Bus timetable",
     "pickup_note": "Please tell us in the comments which bus you will take.",
-    "transfer_note": "Please tell us in the comments where in Riga to collect you."
+    "transfer_note": "Please tell us in the comments where in Riga to collect you.",
+    "by_agreement": "price by agreement",
+    "custom_note": "Please tell us in the comments how many you are and where to collect you – we will be in touch to agree the price."
   }
 }

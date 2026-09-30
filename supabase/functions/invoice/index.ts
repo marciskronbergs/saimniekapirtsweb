@@ -317,6 +317,7 @@ function transportName(label: string | null | undefined, locale: 'lv' | 'en') {
   const option = prices.transport.find((x) => x.label === label);
   if (!option) return '';
   const name = locale === 'lv' ? option.lv : option.en;
+  if (option.custom) return `${name} (${locale === 'lv' ? 'cena pēc vienošanās' : 'price by agreement'})`;
   return option.price > 0 ? name : `${name} (${locale === 'lv' ? 'bez maksas' : 'free'})`;
 }
 

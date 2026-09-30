@@ -28,7 +28,9 @@
   ],
   "transport": [
     { "label": "Savākšana no autobusa pieturas \"Dzimtmisa\" – bez maksas", "price": 0, "lv": "Savākšana no autobusa pieturas \"Dzimtmisa\"", "en": "Pick-up from the \"Dzimtmisa\" bus stop" },
-    { "label": "Transfērs no Rīgas un atpakaļ – 70€", "price": 70, "lv": "Transfērs no Rīgas un atpakaļ", "en": "Transfer from Riga and back" }
+    { "label": "Transfērs no Rīgas un atpakaļ (līdz 4 cilvēkiem) – 60€", "price": 60, "lv": "Transfērs no Rīgas un atpakaļ (līdz 4 cilvēkiem)", "en": "Transfer from Riga and back (up to 4 people)" },
+    { "label": "Transfērs no Rīgas un atpakaļ (5–8 cilvēki) – 120€", "price": 120, "lv": "Transfērs no Rīgas un atpakaļ (5–8 cilvēki)", "en": "Transfer from Riga and back (5–8 people)" },
+    { "label": "Cits transfērs (piem., vairāk nekā 8 cilvēkiem) – cena pēc vienošanās", "price": 0, "custom": true, "lv": "Cits transfērs (piem., vairāk nekā 8 cilvēkiem)", "en": "Other transfer (e.g. more than 8 people)" }
   ],
   "giftCard": {
     "rituals": [
