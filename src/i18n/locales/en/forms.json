@@ -107,5 +107,14 @@
     "changes": "If your plans change, please call +371 26 752 661 – cancellation is free.",
     "close": "Close",
     "slot_taken": "Someone has just booked this sauna for this time. Please choose another sauna or time."
+  },
+  "transport": {
+    "label": "How will you get here?",
+    "own": "I will come on my own",
+    "free": "free",
+    "bus_hint": "From Riga you can take the bus to the \"Dzimtmisa\" stop – we will collect you there.",
+    "timetable": "Bus timetable",
+    "pickup_note": "Please tell us in the comments which bus you will take.",
+    "transfer_note": "Please tell us in the comments where in Riga to collect you."
   }
 }

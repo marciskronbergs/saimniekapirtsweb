@@ -146,6 +146,7 @@ async function loadSource(type: SourceType, id: string): Promise<Source | null> 
         ['Veids', r.form_type === 'noma' ? r.rental_type : r.ritual_type],
         ['Personu skaits', r.ritual_participants ? String(r.ritual_participants) : ''],
         ['Nakšņošana', r.overnight_stay ? 'jā' : ''],
+        ['Transports', r.transport ?? ''],
         ['Papildus', (r.rental_extras_detail ?? []).map((e: { label: string; quantity: number }) => `${e.label} × ${e.quantity}`).join('; ') ||
           (r.rental_extras ?? []).join('; ')],
       ],
@@ -311,6 +312,14 @@ async function archive(invoice: Invoice) {
 // ---------------------------------------------------------------------------
 // Guest booking confirmation.
 
+// The transport a guest chose, in their language, with "free" for the pick-up.
+function transportName(label: string | null | undefined, locale: 'lv' | 'en') {
+  const option = prices.transport.find((x) => x.label === label);
+  if (!option) return '';
+  const name = locale === 'lv' ? option.lv : option.en;
+  return option.price > 0 ? name : `${name} (${locale === 'lv' ? 'bez maksas' : 'free'})`;
+}
+
 function guestInput(source: Source): ConfirmationInput {
   const r = source.row;
   const ritual = prices.ritual.find((x) => x.label === r.ritual_type);
@@ -325,6 +334,7 @@ function guestInput(source: Source): ConfirmationInput {
     participants: r.ritual_participants ?? null,
     overnight: !!r.overnight_stay || (r.rental_extras ?? []).some((e: string) => e.startsWith('Nakšņošana')),
     giftLabel: source.type === 'gift_card' ? r.ritual_type ?? '' : undefined,
+    transport: transportName(r.transport, source.locale),
     priced: source.priced,
     individual: ritual?.people === 1,
     seller: typedSeller,
@@ -829,6 +839,7 @@ async function office(body: { pin?: string; action?: string }) {
       service: r.form_type === 'noma' ? r.rental_type : r.ritual_type,
       participants: r.ritual_participants,
       overnight: !!r.overnight_stay,
+      transport: transportName(r.transport, 'lv') || null,
       message: (r.form_type === 'noma' ? r.rental_message : r.ritual_message) || null,
       name: r.name,
       email: r.email,

@@ -26,6 +26,10 @@
     { "label": "Augu skrubji – 15€ / 200ml", "unitPrice": 15, "unit": "pcs", "lv": "Augu skrubis, 200 ml", "en": "Herbal scrub, 200 ml" },
     { "label": "Nakšņošana – 19.99 €/persona", "unitPrice": 19.99, "minimum": 36, "unit": "person", "overnight": true, "lv": "Nakšņošana", "en": "Overnight stay" }
   ],
+  "transport": [
+    { "label": "Savākšana no autobusa pieturas \"Dzimtmisa\" – bez maksas", "price": 0, "lv": "Savākšana no autobusa pieturas \"Dzimtmisa\"", "en": "Pick-up from the \"Dzimtmisa\" bus stop" },
+    { "label": "Transfērs no Rīgas un atpakaļ – 70€", "price": 70, "lv": "Transfērs no Rīgas un atpakaļ", "en": "Transfer from Riga and back" }
+  ],
   "giftCard": {
     "rituals": [
       { "value": "individuali-ar", "price": 280, "label": { "lv": "Pirts Rituāls Individuāli (Ar Zāļu Kubulu) – 280€", "en": "Individual Sauna Ritual (With Herbal Hot Tub) – 280€" } },

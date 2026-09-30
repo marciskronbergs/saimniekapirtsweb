@@ -108,5 +108,14 @@
     "changes": "Ja plāni mainās, lūdzu, zvaniet +371 26 752 661 – atcelšana ir bez maksas.",
     "close": "Aizvērt",
     "slot_taken": "Šo pirti šajā laikā kāds tikko rezervēja. Lūdzu, izvēlieties citu pirti vai laiku."
+  },
+  "transport": {
+    "label": "Kā nokļūsiet pie mums?",
+    "own": "Atbraukšu pats",
+    "free": "bez maksas",
+    "bus_hint": "No Rīgas var atbraukt ar autobusu līdz pieturai \"Dzimtmisa\" – tur Jūs savāksim.",
+    "timetable": "Autobusu saraksts",
+    "pickup_note": "Komentārā norādiet, ar kuru reisu atbrauksiet.",
+    "transfer_note": "Komentārā norādiet, no kurienes Rīgā Jūs savākt."
   }
 }

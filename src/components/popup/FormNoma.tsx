@@ -4,6 +4,7 @@ import { supabase } from '../../lib/supabase';
 import { useTranslation } from 'react-i18next';
 import priceCatalog from '../../data/priceCatalog.json';
 import BookingConfirmation, { type ConfirmedBooking } from './BookingConfirmation';
+import TransportChoice from './TransportChoice';
 import { scrollIntoPopup } from './scrollIntoPopup';
 import { cancelUrl } from './cancelUrl';
 
@@ -31,7 +32,8 @@ const FormNoma: React.FC<FormNomaProps> = ({ selectedDate, selectedTime, onClose
     saunaType: '',
     rentalType: '',
     extras: [] as string[],
-    message: ''
+    message: '',
+    transport: ''
   });
   // How many of each ticked extra. Without it an invoice could not total a
   // booking of "whisks, 4 € each" or "overnight, per person".
@@ -156,7 +158,8 @@ const FormNoma: React.FC<FormNomaProps> = ({ selectedDate, selectedTime, onClose
           quantity: extraQuantities[label] ?? 1,
         })),
         locale: i18n.language === 'en' ? 'en' : 'lv',
-        rental_message: formData.message || ''
+        rental_message: formData.message || '',
+        transport: formData.transport || null
       };
 
       const { error } = await supabase.from('reservations').insert([reservationData]);
@@ -348,6 +351,8 @@ const FormNoma: React.FC<FormNomaProps> = ({ selectedDate, selectedTime, onClose
   </div>
 </div>
 
+
+        <TransportChoice value={formData.transport} onChange={(label) => setFormData((prev) => ({ ...prev, transport: label }))} />
 
         {/* Message */}
         <div>

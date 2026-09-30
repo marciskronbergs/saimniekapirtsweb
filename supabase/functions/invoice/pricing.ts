@@ -29,6 +29,11 @@ interface CatalogRental extends Named {
   price: number;
 }
 
+interface CatalogTransport extends Named {
+  label: string;
+  price: number;
+}
+
 interface CatalogExtra extends Named {
   label: string;
   unitPrice: number;
@@ -41,6 +46,7 @@ export interface PriceCatalog {
   ritual: CatalogRitual[];
   rental: CatalogRental[];
   extras: CatalogExtra[];
+  transport: CatalogTransport[];
   giftCard: {
     rituals: { value: string; price: number; label: Named }[];
     custom: { min: number; max: number; step: number };
@@ -69,6 +75,7 @@ export interface ReservationForPricing {
   rental_type?: string | null;
   rental_extras?: string[] | null;
   rental_extras_detail?: { label: string; quantity: number }[] | null;
+  transport?: string | null;
 }
 
 export interface GiftCardForPricing {
@@ -104,6 +111,25 @@ const perPersonItem = (
     unitPrice: minimum,
     amount: minimum,
   };
+};
+
+// Getting here: a free pick-up from the bus stop is no invoice line; the
+// transfer from Riga is.
+const addTransport = (
+  catalog: PriceCatalog,
+  booking: ReservationForPricing,
+  items: PricedItem[],
+  problems: string[]
+) => {
+  if (!booking.transport) return;
+  const option = catalog.transport.find((entry) => entry.label === booking.transport);
+  if (!option) {
+    problems.push(`Unknown transport: ${booking.transport}`);
+    return;
+  }
+  if (option.price > 0) {
+    items.push({ name: { lv: option.lv, en: option.en }, quantity: 1, unit: 'service', unitPrice: option.price, amount: option.price });
+  }
 };
 
 const finish = (items: PricedItem[], problems: string[]): PricedOrder => ({
@@ -149,6 +175,7 @@ export function priceReservation(
         problems.push('Overnight stay without a number of people');
       }
     }
+    addTransport(catalog, booking, items, problems);
     return finish(items, problems);
   }
 
@@ -190,6 +217,7 @@ export function priceReservation(
         });
       }
     }
+    addTransport(catalog, booking, items, problems);
     return finish(items, problems);
   }
 

@@ -13,6 +13,7 @@ import { supabase } from '../../lib/supabase';
 
 import priceCatalog from '../../data/priceCatalog.json';
 import BookingConfirmation, { type ConfirmedBooking } from './BookingConfirmation';
+import TransportChoice from './TransportChoice';
 import { scrollIntoPopup } from './scrollIntoPopup';
 import { cancelUrl } from './cancelUrl';
 
@@ -43,6 +44,7 @@ const FormRitual: React.FC<FormRitualProps> = ({ selectedDate, selectedTime, onC
     participants: '',
     overnightStay: false,
     message: '',
+    transport: '',
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
@@ -151,7 +153,8 @@ const reservationData = {
   sauna_type: assignedSaunaType,
   rental_type: '',
   rental_extras: [],
-  rental_message: ''
+  rental_message: '',
+  transport: formData.transport || null
 };
 
       // Nothing is read back: visitors may read only the columns that show
@@ -186,6 +189,7 @@ const reservationData = {
   rental_type: '',             // <- Empty for rituals
   rental_extras: [],           // <- Empty for rituals
   rental_message: '',          // <- Empty for rituals
+  transport: formData.transport || '',
   locale: i18n.language === 'en' ? 'en' : 'lv', // lets Make answer in the guest's language
   // For the office's calendar: cancels the booking, freeing the slot and
   // annulling its advance invoice.
@@ -349,6 +353,8 @@ const reservationData = {
             </div>
           )}
         </div>
+
+        <TransportChoice value={formData.transport} onChange={(label) => handleInputChange('transport', label)} />
 
         {/* Message */}
         <div>

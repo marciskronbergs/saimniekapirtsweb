@@ -30,6 +30,7 @@ interface Booking extends InvoiceInfo {
   service: string | null;
   participants: number | null;
   overnight: boolean;
+  transport: string | null;
   message: string | null;
   name: string;
   email: string;
@@ -423,6 +424,7 @@ const BirojsPage = () => {
                           ))
                         : b.service && <li>{b.service}</li>}
                       {b.participants ? <li className="text-gray-400">Dalībnieki: {b.participants}</li> : null}
+                      {b.transport && <li className="text-sky-300">🚌 {b.transport}</li>}
                       {b.overnight && b.items.every((i) => !i.name.startsWith('Nakšņošana')) && (
                         <li className="text-gray-400">Ar nakšņošanu</li>
                       )}

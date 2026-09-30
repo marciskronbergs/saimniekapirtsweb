@@ -17,6 +17,10 @@ type Locale = 'lv' | 'en';
 // shares; Waze finds the gate when searched for by name.
 export const MAP_URL = 'https://share.google/KE7fXPd8s220O9YdS';
 export const WAZE_URL = 'https://waze.com/ul?q=saimniekapirts&navigate=yes';
+export const BUS_URL = {
+  lv: 'https://www.1188.lv/satiksme/saraksti/riga/dzimtmisa/200001/102628',
+  en: 'https://www.1188.lv/en/transport/schedules/riga/dzimtmisa/200001/102628',
+};
 export const REVIEW_URL = 'https://www.google.com/maps?cid=15868172019720510571';
 const LOGO_URL =
   'https://wigoyeorqnssgbrgexku.supabase.co/storage/v1/object/public/websiteassets/logo/logoTitle.png';
@@ -97,8 +101,8 @@ const findUs = (t: Tr) =>
     `Address: "Sarma Nr. 123", Baldone parish, Ķekava municipality, LV-2125, Latvia.`)) +
   p(t(`Atrašanās vieta kartē: <a href="${MAP_URL}" style="color:#2e7d32">atvērt Google Maps</a>. Waze lietotnē meklējiet <strong>"saimniekapirts"</strong> – tā atvedīs līdz pašiem vārtiem (<a href="${WAZE_URL}" style="color:#2e7d32">atvērt Waze</a>). Teritorijā ir plaša privāta autostāvvieta.`,
     `Location on the map: <a href="${MAP_URL}" style="color:#2e7d32">open Google Maps</a>. In Waze, search for <strong>"saimniekapirts"</strong> – it takes you right to the gate (<a href="${WAZE_URL}" style="color:#2e7d32">open Waze</a>). There is plenty of private parking on site.`)) +
-  p(t('Ar sabiedrisko transportu brauciet maršrutā Rīga – Baldone; ja atbildēsiet uz šo e-pastu, varam Jūs savākt Baldones autoostā.',
-    'By public transport, take the Riga – Baldone route; reply to this email and we can collect you from the Baldone bus station.'));
+  p(t(`No Rīgas var atbraukt ar autobusu līdz pieturai <strong>"Dzimtmisa"</strong> (<a href="${BUS_URL.lv}" style="color:#2e7d32">autobusu saraksts</a>) – tur Jūs savāksim bez maksas; atbildiet uz šo e-pastu un pasakiet, ar kuru reisu brauksiet. Ir arī transfērs no Rīgas un atpakaļ – 70 €.`,
+    `From Riga you can take the bus to the <strong>"Dzimtmisa"</strong> stop (<a href="${BUS_URL.en}" style="color:#2e7d32">bus timetable</a>) – we collect you there free of charge; reply to this email and tell us which bus you will take. There is also a transfer from Riga and back for €70.`));
 
 const whatToBring = (t: Tr, ritual: boolean) =>
   h2(ritual ? t('Kas ir iekļauts un ko ņemt līdzi', 'What is included and what to bring') : t('Ko ņemt līdzi', 'What to bring')) +
@@ -132,6 +136,7 @@ export interface ConfirmationInput {
   participants?: number | null;
   overnight?: boolean;
   giftLabel?: string;
+  transport?: string;
   priced: PricedOrder;
   individual?: boolean;
   seller: InvoiceRow['seller'];
@@ -187,6 +192,7 @@ export function confirmationEmail(c: ConfirmationInput) {
       [t('Pirts', 'Sauna'), saunaName(c.sauna, c.locale)],
       [t('Personu skaits', 'Number of people'), c.participants ? String(c.participants) : ''],
       [t('Nakšņošana', 'Overnight stay'), c.overnight ? t('jā', 'yes') : ''],
+      [t('Transports', 'Transport'), c.transport ?? ''],
     ], c.priced, c.locale),
     duration ? p(duration) : '',
     findUs(t),
@@ -227,6 +233,7 @@ export function reminderEmail(c: ConfirmationInput) {
       [t('Pirts', 'Sauna'), saunaName(c.sauna, c.locale)],
       [t('Personu skaits', 'Number of people'), c.participants ? String(c.participants) : ''],
       [t('Nakšņošana', 'Overnight stay'), c.overnight ? t('jā', 'yes') : ''],
+      [t('Transports', 'Transport'), c.transport ?? ''],
     ], null, c.locale),
     findUs(t),
     whatToBring(t, ritual),
