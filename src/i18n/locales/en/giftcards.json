@@ -27,5 +27,16 @@
     "submitting": "Processing...",
     "success": "Thank you!",
     "successMessage": "We have emailed you the invoice for payment. As soon as it is paid, we will send you the gift card."
+  },
+  "preview": {
+    "open": "See the gift card",
+    "title": "Your gift card",
+    "withAmount": "With the amount",
+    "withoutAmount": "Without the amount",
+    "bothVersions": "Once it is paid, you receive both versions – with the amount and without it – and give whichever you like.",
+    "sample": "Sample: the card number is assigned once it is paid. The card is valid for one year.",
+    "front": "Front",
+    "back": "Back",
+    "close": "Close"
   }
 }

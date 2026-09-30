@@ -119,10 +119,12 @@ if (bundle) {
 
 // The invoice Edge Function is deployed on its own, so it carries copies of the
 // price list and the pricing code. An invoice must bill what the guest was
-// shown on the site, so the copies may not drift from the originals.
+// shown on the site, and a gift card must say what its preview on the site
+// said, so the copies may not drift from the originals.
 for (const [original, copy] of [
   ['src/data/priceCatalog.json', 'supabase/functions/invoice/priceCatalog.json'],
   ['src/lib/pricing.ts', 'supabase/functions/invoice/pricing.ts'],
+  ['src/lib/giftCardText.ts', 'supabase/functions/invoice/giftCardText.ts'],
 ]) {
   if (readFileSync(original, 'utf8') !== readFileSync(copy, 'utf8')) {
     fail(`${copy} differs from ${original}. Copy it over and redeploy the invoice function.`)
@@ -135,6 +137,27 @@ for (const font of ['SaimniekaInvoiceSans-Regular.ttf', 'SaimniekaInvoiceSans-Bo
     readFileSync(join(DIST, 'fonts', 'invoice', font))
   } catch {
     fail(`dist/fonts/invoice/${font} is missing; invoices could not be drawn.`)
+  }
+}
+
+// And its gift cards with fonts and photos from the live site too.
+for (const file of [
+  'fonts/giftcard/CormorantGaramond_500Medium.ttf',
+  'fonts/giftcard/CormorantGaramond_500Medium_Italic.ttf',
+  'fonts/giftcard/CormorantGaramond_600SemiBold.ttf',
+  'fonts/giftcard/Montserrat_400Regular.ttf',
+  'fonts/giftcard/Montserrat_600SemiBold.ttf',
+  'giftcard/value_front.jpg',
+  'giftcard/value_back.jpg',
+  'giftcard/ritual_front.jpg',
+  'giftcard/ritual_back.jpg',
+  'giftcard/logo_on_light.png',
+  'giftcard/logo_on_dark.png',
+]) {
+  try {
+    readFileSync(join(DIST, file))
+  } catch {
+    fail(`dist/${file} is missing; gift cards could not be drawn.`)
   }
 }
 

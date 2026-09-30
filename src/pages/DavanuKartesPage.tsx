@@ -1,12 +1,13 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import HeaderSection from '../components/HeaderSection';
 import FooterSection from '../components/FooterSection';
-import { Gift, ChevronDown, ChevronUp, Check } from 'lucide-react';
+import { Gift, ChevronDown, ChevronUp, Check, Eye } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useTranslation } from 'react-i18next';
 import priceCatalog from '../data/priceCatalog.json';
 import PaymentChoice from '../components/popup/PaymentChoice';
 import { goToCardPayment, useCardPayments } from '../lib/cardPayments';
+import GiftCardPreview from '../components/giftcards/GiftCardPreview';
 
 const DavanuKartesPage = () => {
   const [isVisible, setIsVisible] = useState(false);
@@ -15,6 +16,8 @@ const DavanuKartesPage = () => {
   const [selectedRitual, setSelectedRitual] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
+  // Which card the buyer is looking at in the preview, if any.
+  const [preview, setPreview] = useState<'ritual' | 'custom' | null>(null);
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -100,6 +103,10 @@ const DavanuKartesPage = () => {
     label: ritual.label[locale]
   }));
   const { min: customMin, max: customMax, step: customStep } = priceCatalog.giftCard.custom;
+
+  const closePreview = useCallback(() => setPreview(null), []);
+  const previewButtonClass =
+    'mt-4 inline-flex items-center gap-2 rounded-xl border border-amber-500/60 bg-black/30 hover:bg-amber-600/20 px-4 py-2.5 text-amber-200 font-semibold transition-colors min-h-[44px]';
 
   const handleSectionToggle = (section: 'ritual' | 'custom') => {
     if (activeSection === section) {
@@ -391,6 +398,12 @@ const DavanuKartesPage = () => {
                         </option>
                       ))}
                     </select>
+                    {selectedRitual && (
+                      <button type="button" onClick={() => setPreview('ritual')} className={previewButtonClass}>
+                        <Eye className="w-5 h-5" />
+                        {t('preview.open')}
+                      </button>
+                    )}
                   </div>
 
                   {/* Personal Information */}
@@ -508,6 +521,10 @@ const DavanuKartesPage = () => {
                         <span>{customMax}€</span>
                       </div>
                     </div>
+                    <button type="button" onClick={() => setPreview('custom')} className={previewButtonClass}>
+                      <Eye className="w-5 h-5" />
+                      {t('preview.open')}
+                    </button>
                   </div>
 
                   {/* Personal Information */}
@@ -596,6 +613,14 @@ const DavanuKartesPage = () => {
       </main>
 
       <FooterSection />
+
+      {preview === 'custom' && <GiftCardPreview value={customValue} onClose={closePreview} />}
+      {preview === 'ritual' && (
+        <GiftCardPreview
+          ritual={priceCatalog.giftCard.rituals.find((ritual) => ritual.value === selectedRitual)?.card ?? null}
+          onClose={closePreview}
+        />
+      )}
 
       {/* Custom Slider Styles */}
       <style jsx>{`

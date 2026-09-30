@@ -27,5 +27,16 @@
     "submitting": "Apstrādā...",
     "success": "Paldies!",
     "successMessage": "Rēķinu apmaksai nosūtījām uz Jūsu e-pastu. Tiklīdz tas būs apmaksāts, nosūtīsim dāvanu karti."
+  },
+  "preview": {
+    "open": "Apskatīt dāvanu karti",
+    "title": "Jūsu dāvanu karte",
+    "withAmount": "Ar summu",
+    "withoutAmount": "Bez summas",
+    "bothVersions": "Pēc apmaksas saņemsiet abus variantus – ar summu un bez summas – un varēsiet uzdāvināt to, kurš Jums labāk patīk.",
+    "sample": "Paraugs: kartes numuru piešķirsim pēc apmaksas. Karte ir derīga vienu gadu.",
+    "front": "Priekšpuse",
+    "back": "Aizmugure",
+    "close": "Aizvērt"
   }
 }

@@ -340,6 +340,8 @@ export function thanksEmail(c: ConfirmationInput) {
 export interface GiftCardNote {
   code: string;
   validUntil: string;
+  // A value card is attached twice: with its amount and without it.
+  bothVersions?: boolean;
 }
 
 // For a gift card, the final invoice travels with the gift card itself.
@@ -355,8 +357,11 @@ export function finalInvoiceGuestEmail(invoice: InvoiceRow, giftCard?: GiftCardN
       p(t(`Sveiki, ${who}!`, `Hello ${who},`)),
       p(t('Paldies par dāvanu kartes pirkumu! Pielikumā ir:', 'Thank you for buying a gift card! Attached are:')),
       list([
-        t(`<strong>dāvanu karte Nr. ${card}</strong>, derīga līdz ${formatDate(giftCard.validUntil)} – to var izdrukāt vai uzdāvināt elektroniski;`,
-          `<strong>gift card no. ${card}</strong>, valid until ${formatDate(giftCard.validUntil)} – print it or give it electronically;`),
+        giftCard.bothVersions
+          ? t(`<strong>dāvanu karte Nr. ${card}</strong>, derīga līdz ${formatDate(giftCard.validUntil)}, divos variantos – ar summu un bez summas. Dāviniet to, kurš Jums labāk patīk: to var izdrukāt vai uzdāvināt elektroniski;`,
+            `<strong>gift card no. ${card}</strong>, valid until ${formatDate(giftCard.validUntil)}, in two versions – with the amount and without it. Give whichever you like: print it or give it electronically;`)
+          : t(`<strong>dāvanu karte Nr. ${card}</strong>, derīga līdz ${formatDate(giftCard.validUntil)} – to var izdrukāt vai uzdāvināt elektroniski;`,
+            `<strong>gift card no. ${card}</strong>, valid until ${formatDate(giftCard.validUntil)} – print it or give it electronically;`),
         t(`rēķins Nr. ${invoice.number} par ${eur(invoice.total)} – tas ir apmaksāts.`,
           `invoice ${invoice.number} for ${eur(invoice.total, 'en')} – it has been paid.`),
       ]),
@@ -369,7 +374,6 @@ export function finalInvoiceGuestEmail(invoice: InvoiceRow, giftCard?: GiftCardN
       subject: t(`Jūsu dāvanu karte ${giftCard.code} · SaimniekaPirts`, `Your gift card ${giftCard.code} · SaimniekaPirts`),
       html: guestLayout(t('Jūsu dāvanu karte', 'Your gift card'), body, invoice.locale, invoice.seller),
       filename,
-      giftCardFilename: `${lv ? 'Davanu-karte' : 'Gift-card'}-${giftCard.code}.pdf`,
     };
   }
   const subject = visit
@@ -390,7 +394,7 @@ export function finalInvoiceGuestEmail(invoice: InvoiceRow, giftCard?: GiftCardN
     visit ? p(t('Būsiet gaidīti atkal! 🌿', 'You are always welcome back! 🌿')) : '',
   ].join('');
   const title = visit ? t('Paldies par apmeklējumu!', 'Thank you for visiting!') : t('Jūsu rēķins', 'Your invoice');
-  return { subject, html: guestLayout(title, body, invoice.locale, invoice.seller), filename, giftCardFilename: '' };
+  return { subject, html: guestLayout(title, body, invoice.locale, invoice.seller), filename };
 }
 
 // ---------------------------------------------------------------------------

@@ -24,7 +24,8 @@ interface PaymentView {
   time: string | null;
   items: { name: string; quantity: number; amount: number }[];
   total: number;
-  gift_card: { code: string; valid_until: string } | null;
+  // A value card comes in two versions: with its amount and without it.
+  gift_card: { code: string; valid_until: string; kind?: 'ritual' | 'value' } | null;
 }
 
 const texts = {
@@ -40,6 +41,9 @@ const texts = {
     giftNumber: 'Dāvanu kartes Nr.',
     validUntil: 'derīga līdz',
     download: 'Lejupielādēt dāvanu karti (PDF)',
+    downloadValue: 'Ar summu (PDF)',
+    downloadPlain: 'Bez summas (PDF)',
+    twoVersions: 'Dāvanu karte ir divos variantos – ar summu un bez summas. Dāviniet to, kurš Jums labāk patīk.',
     downloading: 'Sagatavojam…',
     total: 'Kopā',
     unpaidTitle: 'Maksājums netika pabeigts',
@@ -66,6 +70,9 @@ const texts = {
     giftNumber: 'Gift card no.',
     validUntil: 'valid until',
     download: 'Download the gift card (PDF)',
+    downloadValue: 'With the amount (PDF)',
+    downloadPlain: 'Without the amount (PDF)',
+    twoVersions: 'The gift card comes in two versions – with the amount and without it. Give whichever you like.',
     downloading: 'Preparing…',
     total: 'Total',
     unpaidTitle: 'The payment was not completed',
@@ -97,7 +104,7 @@ const ApmaksaPage = () => {
   const { i18n } = useTranslation();
   const [view, setView] = useState<PaymentView | null>(null);
   const [missing, setMissing] = useState(false);
-  const [busy, setBusy] = useState<'retry' | 'transfer' | 'download' | null>(null);
+  const [busy, setBusy] = useState<'retry' | 'transfer' | 'download' | 'download-plain' | null>(null);
   const [failed, setFailed] = useState(false);
   const polls = useRef(0);
 
@@ -152,11 +159,12 @@ const ApmaksaPage = () => {
     setBusy(null);
   };
 
-  const download = async () => {
-    setBusy('download');
+  // A value card downloads with its amount, or without it (plain).
+  const download = async (plain = false) => {
+    setBusy(plain ? 'download-plain' : 'download');
     setFailed(false);
     try {
-      const r = await callInvoiceFunction<{ filename: string; pdf_base64: string }>({ gift_card_pdf: { p: payment } });
+      const r = await callInvoiceFunction<{ filename: string; pdf_base64: string }>({ gift_card_pdf: { p: payment, plain } });
       const bytes = Uint8Array.from(atob(r.pdf_base64), (c) => c.charCodeAt(0));
       const url = URL.createObjectURL(new Blob([bytes], { type: 'application/pdf' }));
       const a = document.createElement('a');
@@ -205,17 +213,39 @@ const ApmaksaPage = () => {
                   {view.gift_card && (
                     <div className="rounded-2xl border border-amber-500/40 bg-gradient-to-br from-[#1b2631] to-black p-5 space-y-3">
                       <p className="flex items-center gap-2 text-amber-300">
-                        <Gift className="w-5 h-5" /> {tx.giftNumber} <strong className="text-amber-200">{view.gift_card.code}</strong>
+                        <Gift className="w-5 h-5" /> {tx.giftNumber} <strong className="text-amber-200 whitespace-nowrap">{view.gift_card.code}</strong>
                       </p>
                       <p className="text-sm text-gray-400">{tx.validUntil} {formatDate(view.gift_card.valid_until)}</p>
-                      <button
-                        onClick={download}
-                        disabled={busy !== null}
-                        className="inline-flex items-center gap-2 rounded-xl bg-amber-600 hover:bg-amber-700 disabled:opacity-60 px-5 py-3 font-bold"
-                      >
-                        {busy === 'download' ? <Loader2 className="w-5 h-5 animate-spin" /> : <Download className="w-5 h-5" />}
-                        {busy === 'download' ? tx.downloading : tx.download}
-                      </button>
+                      {view.gift_card.kind === 'value' ? (
+                        <>
+                          <p className="text-sm text-gray-300">{tx.twoVersions}</p>
+                          <div className="flex flex-wrap gap-3">
+                            {([false, true] as const).map((plain) => {
+                              const mine = busy === (plain ? 'download-plain' : 'download');
+                              return (
+                                <button
+                                  key={String(plain)}
+                                  onClick={() => download(plain)}
+                                  disabled={busy !== null}
+                                  className="inline-flex items-center gap-2 rounded-xl bg-amber-600 hover:bg-amber-700 disabled:opacity-60 px-5 py-3 font-bold"
+                                >
+                                  {mine ? <Loader2 className="w-5 h-5 animate-spin" /> : <Download className="w-5 h-5" />}
+                                  {mine ? tx.downloading : plain ? tx.downloadPlain : tx.downloadValue}
+                                </button>
+                              );
+                            })}
+                          </div>
+                        </>
+                      ) : (
+                        <button
+                          onClick={() => download()}
+                          disabled={busy !== null}
+                          className="inline-flex items-center gap-2 rounded-xl bg-amber-600 hover:bg-amber-700 disabled:opacity-60 px-5 py-3 font-bold"
+                        >
+                          {busy === 'download' ? <Loader2 className="w-5 h-5 animate-spin" /> : <Download className="w-5 h-5" />}
+                          {busy === 'download' ? tx.downloading : tx.download}
+                        </button>
+                      )}
                     </div>
                   )}
                   <ul className="text-sm text-gray-300 space-y-1 border-t border-gray-800 pt-4">

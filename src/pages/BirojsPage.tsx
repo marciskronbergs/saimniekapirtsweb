@@ -56,6 +56,8 @@ interface GiftCard extends InvoiceInfo {
   card_paid: boolean;
   // The gift card's number, once its PDF has been made.
   gift_card: { code: string; valid_until: string } | null;
+  // A value card comes in two versions: with its amount and without it.
+  kind?: 'ritual' | 'value';
 }
 
 interface OfficeList {
@@ -228,12 +230,12 @@ const BirojsPage = () => {
     setError(null);
   };
 
-  const downloadGiftCard = async (g: GiftCard) => {
-    setBusyId(g.id);
+  const downloadGiftCard = async (g: GiftCard, plain = false) => {
+    setBusyId(plain ? `${g.id}:plain` : g.id);
     setError(null);
     try {
       const r = await callInvoiceFunction<{ code: string; filename: string; pdf_base64: string }>({
-        office: { pin, action: 'gift_card_pdf', order: g.id },
+        office: { pin, action: 'gift_card_pdf', order: g.id, plain },
       });
       const bytes = Uint8Array.from(atob(r.pdf_base64), (c) => c.charCodeAt(0));
       const url = URL.createObjectURL(new Blob([bytes], { type: 'application/pdf' }));
@@ -648,15 +650,26 @@ const BirojsPage = () => {
                   className="inline-flex items-center gap-1 rounded-lg bg-gray-800 hover:bg-gray-700 disabled:opacity-50 px-3 py-1.5"
                 >
                   <Download className="w-4 h-4" />
-                  {busyId === g.id ? 'Sagatavo…' : 'Dāvanu karte (PDF)'}
+                  {busyId === g.id ? 'Sagatavo…' : g.kind === 'value' ? 'Dāvanu karte ar summu (PDF)' : 'Dāvanu karte (PDF)'}
                 </button>
+                {g.kind === 'value' && (
+                  <button
+                    onClick={() => downloadGiftCard(g, true)}
+                    disabled={busyId !== null}
+                    className="inline-flex items-center gap-1 rounded-lg bg-gray-800 hover:bg-gray-700 disabled:opacity-50 px-3 py-1.5"
+                  >
+                    <Download className="w-4 h-4" />
+                    {busyId === `${g.id}:plain` ? 'Sagatavo…' : 'Bez summas (PDF)'}
+                  </button>
+                )}
               </div>
             </article>
           ))}
           <p className="text-xs text-gray-500">
             Ar karti apmaksātām dāvanu kartēm rēķins un dāvanu karte klientam aiziet automātiski. Ar pārskaitījumu:
             kad nauda saņemta, atveriet avansa rēķina saiti un nospiediet “Apmaksāts – izrakstīt gala rēķinu tagad” –
-            klientam aizies rēķins kopā ar dāvanu karti (PDF).
+            klientam aizies rēķins kopā ar dāvanu karti (PDF). Karte ar summu klientam aiziet divos variantos – ar summu
+            un bez summas –, lai viņš var uzdāvināt to, kurš patīk.
           </p>
         </section>
       </div>

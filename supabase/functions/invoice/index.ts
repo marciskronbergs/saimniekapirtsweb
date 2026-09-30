@@ -45,7 +45,8 @@
 //   { payment_status | payment_retry | payment_switch | gift_card_pdf: { p } }
 //                                           one Checkout payment: how it went, a
 //                                           new page, bank transfer instead, and
-//                                           the paid gift card as a PDF
+//                                           the paid gift card as a PDF (a value
+//                                           card without its amount with plain: true)
 //   { invoice_payment | pay_invoice: { i, t } }
 //                                           an invoice's payment link: what it is
 //                                           for, and a Checkout page to pay it
@@ -62,6 +63,7 @@ import {
   type ConfirmationInput,
 } from './email.ts';
 import { renderGiftCardPdf } from './giftcard.ts';
+import type { GiftCardKind } from './giftCardText.ts';
 import {
   stripeConfigured, createCheckoutSession, getCheckoutSession, expireCheckoutSession, type CheckoutSession,
 } from './stripe.ts';
@@ -242,23 +244,21 @@ async function sendToOffice(
   });
 }
 
-// To a guest, through the second scenario.
-// A second attachment (the gift card beside its invoice) goes as filename2 /
-// pdf2_base64, which the scenario sends on a route of its own.
+// To a guest, through the second scenario, with up to three attachments: an
+// invoice, then a gift card (filename2 / pdf2_base64) and the value card's
+// version without its amount (filename3 / pdf3_base64). The scenario has a
+// route for each count.
 type Attachment = { filename: string; content: string };
-async function sendToGuest(
-  to: string,
-  message: { subject: string; html: string },
-  attachment?: Attachment,
-  second?: Attachment,
-) {
+async function sendToGuest(to: string, message: { subject: string; html: string }, attachments: Attachment[] = []) {
+  const [first, second, third] = attachments;
   await post(await guestUrl(), 'Guest mail', {
     route: 'email',
     to,
     subject: message.subject,
     html: message.html,
-    ...(attachment ? { filename: attachment.filename, pdf_base64: attachment.content } : {}),
-    ...(attachment && second ? { filename2: second.filename, pdf2_base64: second.content } : {}),
+    ...(first ? { filename: first.filename, pdf_base64: first.content } : {}),
+    ...(first && second ? { filename2: second.filename, pdf2_base64: second.content } : {}),
+    ...(first && second && third ? { filename3: third.filename, pdf3_base64: third.content } : {}),
   });
 }
 
@@ -295,7 +295,7 @@ async function deliverAdvanceToGuest(invoice: Invoice) {
 
   const pdf = await renderInvoicePdf(invoice);
   const message = advanceInvoiceGuestEmail(invoice);
-  await sendToGuest(invoice.customer_email, message, { filename: message.filename, content: toBase64(pdf) });
+  await sendToGuest(invoice.customer_email, message, [{ filename: message.filename, content: toBase64(pdf) }]);
   await db.from('invoices').update({ customer_emailed_at: new Date().toISOString() }).eq('id', invoice.id);
   return { status: 'sent_to_guest' };
 }
@@ -618,21 +618,28 @@ async function issueFinal(advance: Invoice) {
   return await deliverFinal(invoice);
 }
 
+// The final invoice to the guest; for a gift card, with the card itself
+// (a value card in both its versions).
+async function sendFinalToGuest(invoice: Invoice) {
+  const pdf = await renderInvoicePdf(invoice);
+  const card = invoice.source_type === 'gift_card' ? await giftCard(invoice.source_id) : null;
+  const message = finalInvoiceGuestEmail(
+    invoice,
+    card ? { code: card.code, validUntil: card.valid_until, bothVersions: card.kind === 'value' } : undefined,
+  );
+  await sendToGuest(invoice.customer_email, message, [
+    { filename: message.filename, content: toBase64(pdf) },
+    ...(card?.files ?? []).map((file) => ({ filename: file.filename, content: toBase64(file.pdf) })),
+  ]);
+}
+
 async function deliverFinal(invoice: Invoice) {
   let sent: Record<string, unknown> = { status: 'already_sent' };
   if (!invoice.customer_emailed_at) {
     const { data: claimed, error } = await db.rpc('claim_customer_invoice_email', { p_invoice_id: invoice.id });
     if (error) throw error;
     if (claimed) {
-      const pdf = await renderInvoicePdf(invoice);
-      const card = invoice.source_type === 'gift_card' ? await giftCard(invoice.source_id) : null;
-      const message = finalInvoiceGuestEmail(invoice, card ? { code: card.code, validUntil: card.valid_until } : undefined);
-      await sendToGuest(
-        invoice.customer_email,
-        message,
-        { filename: message.filename, content: toBase64(pdf) },
-        card ? { filename: message.giftCardFilename, content: toBase64(card.pdf) } : undefined,
-      );
+      await sendFinalToGuest(invoice);
       await db.from('invoices').update({ customer_emailed_at: new Date().toISOString() }).eq('id', invoice.id);
       sent = { status: 'sent_to_guest' };
     } else {
@@ -841,9 +848,15 @@ async function sweep() {
 
 // ---------------------------------------------------------------------------
 // Gift cards: the card itself, drawn from the order and numbered the first
-// time it is needed.
+// time it is needed. A ritual card is one PDF. A value card is two, with its
+// amount and without it, so the buyer can give whichever they like; `only`
+// draws just one of them, for a download.
 
-async function giftCard(orderId: string) {
+// The ritual an order is for, as its card describes it; null for a value card.
+const ritualOf = (order: { ritual_type?: string | null }) =>
+  prices.giftCard.rituals.find((r) => r.label.lv === order.ritual_type || r.label.en === order.ritual_type)?.card ?? null;
+
+async function giftCard(orderId: string, only?: 'value' | 'plain') {
   const { data: order, error } = await db.from('davanu_kartes_pasutijumi').select('*').eq('id', orderId).maybeSingle();
   if (error) throw error;
   if (!order) return null;
@@ -851,17 +864,33 @@ async function giftCard(orderId: string) {
   if (priced.problems.length) throw new Error(`Gift card cannot be priced: ${priced.problems.join('; ')}`);
   const { data: card, error: cardError } = await db.rpc('gift_card_for', { p_order: orderId });
   if (cardError) throw cardError;
-  const ritual = prices.giftCard.rituals.find((r) => r.label.lv === order.ritual_type || r.label.en === order.ritual_type);
+  const ritual = ritualOf(order);
   const locale: 'lv' | 'en' = order.locale === 'en' ? 'en' : 'lv';
-  const pdf = await renderGiftCardPdf({
-    code: card.code,
-    validUntil: card.valid_until,
-    locale,
-    ritual: ritual?.card ?? null,
-    value: priced.total,
-  });
-  const filename = `${locale === 'en' ? 'Gift-card' : 'Davanu-karte'}-${card.code}.pdf`;
-  return { code: card.code as string, valid_until: card.valid_until as string, filename, pdf };
+  const kinds: GiftCardKind[] = ritual ? ['ritual'] : only ? [only] : ['value', 'plain'];
+  const name = locale === 'en' ? 'Gift-card' : 'Davanu-karte';
+  const suffix: Record<GiftCardKind, string> = {
+    ritual: '',
+    value: locale === 'en' ? '-with-amount' : '-ar-summu',
+    plain: locale === 'en' ? '-without-amount' : '-bez-summas',
+  };
+  const files: { kind: GiftCardKind; filename: string; pdf: Uint8Array }[] = [];
+  for (const kind of kinds) {
+    const pdf = await renderGiftCardPdf({
+      code: card.code,
+      validUntil: card.valid_until,
+      locale,
+      ritual,
+      value: priced.total,
+      plain: kind === 'plain',
+    });
+    files.push({ kind, filename: `${name}-${card.code}${suffix[kind]}.pdf`, pdf });
+  }
+  return {
+    code: card.code as string,
+    valid_until: card.valid_until as string,
+    kind: ritual ? 'ritual' as const : 'value' as const,
+    files,
+  };
 }
 
 // ---------------------------------------------------------------------------
@@ -1079,10 +1108,10 @@ async function paymentStatus(body: { p?: string }) {
   if (now.status === 'paid' && payment.status !== 'paid') await inBackground(afterPayment(now));
   const source = await loadSource(now.source_type, now.source_id);
   if (!source) return json({ error: 'not_found' }, 404);
-  let gift: { code: string; valid_until: string } | null = null;
+  let gift: { code: string; valid_until: string; kind: 'ritual' | 'value' } | null = null;
   if (now.status === 'paid' && now.source_type === 'gift_card') {
     const { data } = await db.rpc('gift_card_for', { p_order: now.source_id });
-    if (data) gift = { code: data.code, valid_until: data.valid_until };
+    if (data) gift = { code: data.code, valid_until: data.valid_until, kind: ritualOf(source.row) ? 'ritual' : 'value' };
   }
   return json({
     status: now.status,
@@ -1123,13 +1152,15 @@ async function paymentSwitch(body: { p?: string }) {
   return json({ status: 'switched' });
 }
 
-async function giftCardDownload(body: { p?: string }) {
+// A value card downloads with its amount, or without it when `plain` asks.
+async function giftCardDownload(body: { p?: string; plain?: boolean }) {
   const payment = await paymentOf(body.p);
   if (!payment || payment.source_type !== 'gift_card') return json({ error: 'not_found' }, 404);
   if (payment.status !== 'paid') return json({ error: 'not_paid' }, 409);
-  const card = await giftCard(payment.source_id);
+  const card = await giftCard(payment.source_id, body.plain ? 'plain' : 'value');
   if (!card) return json({ error: 'not_found' }, 404);
-  return json({ filename: card.filename, pdf_base64: toBase64(card.pdf) });
+  const [file] = card.files;
+  return json({ filename: file.filename, pdf_base64: toBase64(file.pdf) });
 }
 
 // Stripe's webhook. Only the Checkout page's id is taken from the message.
@@ -1195,11 +1226,7 @@ async function officeInvoice(body: { action?: string; type?: string; id?: string
     .eq('source_type', type).eq('source_id', body.id).eq('kind', 'final').maybeSingle();
   if (final) {
     if (body.action === 'pay_link') return json({ error: 'already_paid' }, 409);
-    const pdf = await renderInvoicePdf(final);
-    const card = type === 'gift_card' ? await giftCard(body.id) : null;
-    const message = finalInvoiceGuestEmail(final, card ? { code: card.code, validUntil: card.valid_until } : undefined);
-    await sendToGuest(final.customer_email, message, { filename: message.filename, content: toBase64(pdf) },
-      card ? { filename: message.giftCardFilename, content: toBase64(card.pdf) } : undefined);
+    await sendFinalToGuest(final);
     return json({ status: 'sent', number: final.number, to: final.customer_email });
   }
 
@@ -1224,7 +1251,7 @@ async function officeInvoice(body: { action?: string; type?: string; id?: string
   await db.from('invoices').update({ customer_email_attempted_at: new Date().toISOString() }).eq('id', invoice.id);
   const pdf = await renderInvoicePdf(invoice);
   const message = advanceInvoiceGuestEmail(invoice, withLink ? payLink(invoice) : undefined);
-  await sendToGuest(invoice.customer_email, message, { filename: message.filename, content: toBase64(pdf) });
+  await sendToGuest(invoice.customer_email, message, [{ filename: message.filename, content: toBase64(pdf) }]);
   await db.from('invoices').update({ customer_emailed_at: new Date().toISOString() }).eq('id', invoice.id);
   return json({ status: 'sent', number: invoice.number, to: invoice.customer_email, link: withLink });
 }
@@ -1475,7 +1502,7 @@ async function removeFromCalendar(r: any) {
 // the PIN, since the list holds guests' names, emails and phone numbers.
 // deno-lint-ignore no-explicit-any
 async function office(body: {
-  pin?: string; action?: string; reservation?: string; order?: string; master_id?: string | null; master?: any;
+  pin?: string; action?: string; reservation?: string; order?: string; plain?: boolean; master_id?: string | null; master?: any;
   type?: string; id?: string; pay_link?: boolean;
 }) {
   const pinResult = await pinCheck(body.pin);
@@ -1493,9 +1520,10 @@ async function office(body: {
   if (body.action === 'gift_card_pdf') {
     if (!body.order || !uuidPattern.test(body.order)) return json({ error: 'not_found' }, 404);
     try {
-      const card = await giftCard(body.order);
+      const card = await giftCard(body.order, body.plain ? 'plain' : 'value');
       if (!card) return json({ error: 'not_found' }, 404);
-      return json({ code: card.code, filename: card.filename, pdf_base64: toBase64(card.pdf) });
+      const [file] = card.files;
+      return json({ code: card.code, kind: card.kind, filename: file.filename, pdf_base64: toBase64(file.pdf) });
     } catch (e) {
       return json({ error: describe(e) }, 409);
     }
@@ -1581,6 +1609,8 @@ async function office(body: {
       payment: g.payment_method === 'card' ? 'card' : 'transfer',
       card_paid: cardPaid.has(g.id),
       gift_card: codeOf(g.id),
+      // A value card has two versions: with its amount and without it.
+      kind: ritualOf(g) ? 'ritual' : 'value',
       ...invoiceView(g.id, priceGiftCard(prices, g)),
     })),
     masters: await mastersList(),

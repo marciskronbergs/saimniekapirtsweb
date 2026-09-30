@@ -1,20 +1,34 @@
-// Draws a gift card as a two-page PDF, 225 × 98 mm, in the look of the cards
-// the office used to make by hand in Canva: a dark card tied with a gold
-// ribbon. The front says what the card is for, its number and until when it
-// is valid; the back, with a photo, how to use it. It is in the language the
-// order was placed in.
+// Draws a gift card as a two-page PDF, 225 × 98 mm: a front and a back, in
+// the language the order was placed in, with the owner's own photos.
+//
+//   * a value card: the herbal hot tub on the left, a linen panel with the
+//     amount on the right; on the back, how to use the card beside the pond;
+//   * the same value card without the amount ("Pirts priekiem · pēc Jūsu
+//     izvēles"), for a gift that does not say what it cost; a value card
+//     order gets both, and the buyer gives whichever they like;
+//   * a ritual card, with no price: a forest-green panel naming the ritual
+//     beside the whisk steaming; on the back, the ritual step by step beside
+//     the herbal scrub.
+//
+// The layout was designed as HTML (the "SaimniekaPirts dāvanu kartes" design
+// canvas) and measured from it: every position below is in the design's CSS
+// pixels, 850 × 370 for the whole card, and converted to PDF points here. The
+// words are shared with the preview on the gift card page (giftCardText.ts).
 
 import { PDFDocument, rgb, setCharacterSpacing, type PDFFont, type PDFImage, type PDFPage, type RGB } from 'npm:pdf-lib@1.17.1';
 import fontkit from 'npm:@pdf-lib/fontkit@1.1.1';
 import type { GiftCardRitual } from './pricing.ts';
+import { formatCardDate, giftCardWords, ritualLine, ritualName, ritualSteps, type GiftCardWords } from './giftCardText.ts';
 
 export interface GiftCardData {
   code: string;
   validUntil: string; // ISO date
   locale: 'lv' | 'en';
-  // A ritual card names the ritual; a value card has only its value.
+  // A ritual card names the ritual and shows no price; a value card shows its
+  // value, unless `plain` asks for the version without it.
   ritual: GiftCardRitual | null;
   value: number;
+  plain?: boolean;
 }
 
 // The fonts (public/fonts/giftcard, with their licence) and pictures
@@ -27,228 +41,258 @@ const FILES = {
   serifBold: 'fonts/giftcard/CormorantGaramond_600SemiBold.ttf',
   sans: 'fonts/giftcard/Montserrat_400Regular.ttf',
   sansBold: 'fonts/giftcard/Montserrat_600SemiBold.ttf',
-  ribbon: 'giftcard/ribbon.png',
-  logo: 'giftcard/logo.png',
-  photo: 'giftcard/back.jpg',
+  valueFront: 'giftcard/value_front.jpg',
+  valueBack: 'giftcard/value_back.jpg',
+  ritualFront: 'giftcard/ritual_front.jpg',
+  ritualBack: 'giftcard/ritual_back.jpg',
+  logoOnLight: 'giftcard/logo_on_light.png',
+  logoOnDark: 'giftcard/logo_on_dark.png',
 } as const;
-type Assets = Record<keyof typeof FILES, ArrayBuffer>;
-let assets: Promise<Assets> | null = null;
+type Asset = keyof typeof FILES;
+const cache = new Map<Asset, Promise<ArrayBuffer>>();
 
-const loadAssets = () => {
-  assets ??= Promise.all(
-    Object.entries(FILES).map(async ([key, file]) => {
-      const res = await fetch(`${ASSET_BASE}/${file}`);
-      if (!res.ok) throw new Error(`Gift card ${file}: HTTP ${res.status}`);
-      return [key, await res.arrayBuffer()] as const;
-    })
-  ).then((entries) => Object.fromEntries(entries) as Assets).catch((e) => {
-    assets = null;
-    throw e;
-  });
-  return assets;
+const load = (key: Asset) => {
+  let p = cache.get(key);
+  if (!p) {
+    p = fetch(`${ASSET_BASE}/${FILES[key]}`).then(async (res) => {
+      if (!res.ok) throw new Error(`Gift card ${FILES[key]}: HTTP ${res.status}`);
+      return await res.arrayBuffer();
+    });
+    p.catch(() => cache.delete(key));
+    cache.set(key, p);
+  }
+  return p;
 };
 
-const mm = (n: number) => (n * 72) / 25.4;
-const W = mm(225);
-const H = mm(98);
+// Design pixels to PDF points: the card is 225 mm wide, 850 px in the design.
+const PX = (225 / 25.4 * 72) / 850;
+const W = 850;
+const H = 370;
 
-const navy = rgb(0.106, 0.149, 0.192);
-const gold = rgb(0.84, 0.69, 0.33);
-const goldLight = rgb(0.96, 0.87, 0.62);
-const cream = rgb(0.93, 0.9, 0.83);
-const muted = rgb(0.68, 0.7, 0.72);
+const hex = (h: string) => rgb(parseInt(h.slice(1, 3), 16) / 255, parseInt(h.slice(3, 5), 16) / 255, parseInt(h.slice(5, 7), 16) / 255);
+const INK = hex('#1D2A22');
+const SOFT = hex('#55615A');
+const LABEL = hex('#5E665F');
+const HONEY = hex('#8A5A22');
+const RULE = hex('#C9BDA5');
+const LINEN = hex('#F4EFE6');
+const PAPER = hex('#F7F3EC');
+const TAGLINE = hex('#3B5443');
+const FOREST = hex('#16221B');
+const CREAM = hex('#F3EBDC');
+const CREAM2 = hex('#E6DBC4');
+const CREAM_SOFT = hex('#D9CDB4');
+const HONEY_ON_DARK = hex('#C9A96E');
+const RULE_ON_DARK = hex('#4A4636');
 
-const formatDate = (iso: string) => {
-  const [y, m, d] = iso.split('-');
-  return `${d}.${m}.${y}`;
-};
-const amount = (n: number, locale: 'lv' | 'en') => {
-  const s = Number.isInteger(n) ? String(n) : n.toFixed(2).replace('.', locale === 'lv' ? ',' : '.');
-  return locale === 'lv' ? `${s} EUR` : `€${s}`;
-};
+interface Fonts {
+  serif: PDFFont;
+  serifItalic: PDFFont;
+  serifBold: PDFFont;
+  sans: PDFFont;
+  sansBold: PDFFont;
+}
 
-interface TextOptions {
+interface Text {
   font: PDFFont;
-  size: number;
-  color?: RGB;
-  spacing?: number;
-  align?: 'left' | 'center' | 'right';
-  opacity?: number;
+  size: number; // px
+  color: RGB;
+  spacing?: number; // letter-spacing, px
 }
 
-function draw(page: PDFPage, text: string, x: number, y: number, o: TextOptions) {
-  const spacing = o.spacing ?? 0;
-  const width = o.font.widthOfTextAtSize(text, o.size) + spacing * Math.max(0, text.length - 1);
-  const left = o.align === 'center' ? x - width / 2 : o.align === 'right' ? x - width : x;
-  if (spacing) page.pushOperators(setCharacterSpacing(spacing));
-  page.drawText(text, { x: left, y, size: o.size, font: o.font, color: o.color ?? cream, opacity: o.opacity });
-  if (spacing) page.pushOperators(setCharacterSpacing(0));
-  return width;
+const width = (text: string, t: Text) =>
+  t.font.widthOfTextAtSize(text, t.size) + (t.spacing ?? 0) * Math.max(0, [...text].length - 1);
+
+// Draws one line with its baseline at y (design px from the top), starting
+// at x, centred on x or ending at x.
+function line(page: PDFPage, text: string, x: number, y: number, t: Text, align: 'left' | 'center' | 'right' = 'left') {
+  const w = width(text, t);
+  const left = align === 'center' ? x - w / 2 : align === 'right' ? x - w : x;
+  if (t.spacing) page.pushOperators(setCharacterSpacing(t.spacing * PX));
+  page.drawText(text, { x: left * PX, y: (H - y) * PX, size: t.size * PX, font: t.font, color: t.color });
+  if (t.spacing) page.pushOperators(setCharacterSpacing(0));
+  return w;
 }
 
-function wrap(text: string, font: PDFFont, size: number, width: number) {
+// The largest size, from `t.size` down to `min`, at which the text fits.
+const fitted = (text: string, t: Text, max: number, min: number): Text => {
+  let size = t.size;
+  while (size > min && width(text, { ...t, size }) > max) size -= 0.25;
+  return { ...t, size };
+};
+
+// Breaks only at plain spaces: the words keep their no-break spaces.
+function wrap(text: string, t: Text, max: number) {
   const lines: string[] = [];
-  let line = '';
-  for (const word of text.split(/\s+/)) {
-    const next = line ? `${line} ${word}` : word;
-    if (line && font.widthOfTextAtSize(next, size) > width) {
-      lines.push(line);
-      line = word;
+  let current = '';
+  for (const word of text.split(' ')) {
+    const next = current ? `${current} ${word}` : word;
+    if (current && width(next, t) > max) {
+      lines.push(current);
+      current = word;
     } else {
-      line = next;
+      current = next;
     }
   }
-  if (line) lines.push(line);
+  if (current) lines.push(current);
   return lines;
 }
 
-// The largest size, up to `size`, at which the text fits the width.
-const fit = (text: string, font: PDFFont, size: number, width: number) =>
-  Math.min(size, (size * width) / font.widthOfTextAtSize(text, size));
-
-function frame(page: PDFPage) {
-  page.drawRectangle({
-    x: 9, y: 9, width: W - 18, height: H - 18,
-    borderColor: gold, borderWidth: 0.6, borderOpacity: 0.45,
-  });
+function rect(page: PDFPage, x: number, y: number, w: number, h: number, color: RGB) {
+  page.drawRectangle({ x: x * PX, y: (H - y - h) * PX, width: w * PX, height: h * PX, color });
 }
 
-// A thin gold rule with a small diamond in the middle.
-function ornament(page: PDFPage, cx: number, y: number, half: number) {
-  page.drawLine({ start: { x: cx - half, y }, end: { x: cx - 7, y }, thickness: 0.6, color: gold });
-  page.drawLine({ start: { x: cx + 7, y }, end: { x: cx + half, y }, thickness: 0.6, color: gold });
-  page.drawSvgPath('M 0 -3.2 L 3.2 0 L 0 3.2 L -3.2 0 Z', { x: cx, y, color: gold });
+function image(page: PDFPage, img: PDFImage, x: number, y: number, w: number, h: number) {
+  page.drawImage(img, { x: x * PX, y: (H - y - h) * PX, width: w * PX, height: h * PX });
 }
 
-// "Pirts rituāls diviem ar zāļu kublu" / "Sauna ritual for two with herbal hot tub".
-const ritualName = (r: GiftCardRitual, locale: 'lv' | 'en') =>
-  locale === 'lv'
-    ? `Pirts rituāls ${r.who.lv} ${r.tub ? 'ar zāļu kublu' : 'bez zāļu kubla'}`
-    : `Sauna ritual ${r.who.en} ${r.tub ? 'with herbal hot tub' : 'without hot tub'}`;
+// ---------------------------------------------------------------------------
+// The pieces the fronts share: the logo, the "gift card" line, and the
+// number, date and contact line anchored to the bottom of the panel.
 
-const ADDRESS = {
-  lv: '“SARMA NR. 123”, BALDONES PAGASTS, ĶEKAVAS NOVADS, LV-2125',
-  en: '“SARMA NR. 123”, BALDONE PARISH, ĶEKAVA MUNICIPALITY, LV-2125, LATVIA',
-};
-const PHONE = '+371 26 752 661';
-const EMAIL = 'info@saimniekapirts.lv';
-const WEB = 'saimniekapirts.lv';
+function frontCommon(page: PDFPage, f: Fonts, w: GiftCardWords, card: GiftCardData, logo: PDFImage, axis: number, panel: [number, number],
+  colors: { eyebrow: RGB; rule: RGB; label: RGB; value: RGB; footer: RGB }) {
+  image(page, logo, axis - 29.74, 30, 59.48, 64);
+  line(page, w.giftCard.toUpperCase(), axis, 121, { font: f.sansBold, size: 11, color: colors.eyebrow, spacing: 3.52 }, 'center');
+
+  const [left, right] = panel;
+  rect(page, left, 255.81, right - left, 1, colors.rule);
+  rect(page, axis - 0.5, 268.81, 1, 33.39, colors.rule);
+  const label = { font: f.sansBold, size: 10.5, color: colors.label, spacing: 2.52 };
+  const value = { font: f.sansBold, size: 14, color: colors.value, spacing: 0.56 };
+  const col1 = (left + axis) / 2;
+  const col2 = (axis + right) / 2 + 0.5;
+  line(page, w.no.toUpperCase(), col1, 277.81, label, 'center');
+  line(page, card.code, col1, 298.41, value, 'center');
+  line(page, w.validUntil.toUpperCase(), col2, 277.81, label, 'center');
+  line(page, formatCardDate(card.validUntil), col2, 298.41, value, 'center');
+  line(page, w.contact, axis, 342.2, { font: f.sans, size: 11.5, color: colors.footer, spacing: 0.69 }, 'center');
+}
+
+// A title, a line in italics and a line of facts, as on the ritual card and
+// the value card without its amount. They shrink to fit the panel rather
+// than wrap.
+function titleBlock(page: PDFPage, f: Fonts, axis: number, max: number, lines: [string, string, string],
+  colors: { title: RGB; line: RGB; facts: RGB }) {
+  const [title, second, facts] = lines;
+  line(page, title, axis, 170.19, fitted(title, { font: f.serifBold, size: 46, color: colors.title }, max, 36), 'center');
+  line(page, second, axis, 204.19, fitted(second, { font: f.serifItalic, size: 24, color: colors.line }, max, 19), 'center');
+  line(page, facts, axis, 232.78, fitted(facts, { font: f.sans, size: 12, color: colors.facts, spacing: 0.6 }, max, 10), 'center');
+}
+
+// The backs' header row, and their footer anchored to the bottom.
+function backCommon(page: PDFPage, f: Fonts, w: GiftCardWords, card: GiftCardData, left: number, right: number, header: string) {
+  line(page, w.giftCard.toUpperCase(), left, 45, { font: f.sansBold, size: 11, color: HONEY, spacing: 3.52 });
+  line(page, header, right, 45, { font: f.sansBold, size: 12, color: INK, spacing: 0.48 }, 'right');
+  rect(page, left, 300.31, right - left, 1, RULE);
+  const small = { font: f.sans, size: 11, color: LABEL };
+  line(page, w.validity(formatCardDate(card.validUntil)), left, 322.31, small);
+  line(page, 'saimniekapirts.lv', right, 322.31, { font: f.sansBold, size: 11, color: INK }, 'right');
+  line(page, w.address, left, 340.16, small);
+}
+
+// ---------------------------------------------------------------------------
 
 export async function renderGiftCardPdf(card: GiftCardData): Promise<Uint8Array> {
-  const lv = card.locale === 'lv';
-  const t = (a: string, b: string) => (lv ? a : b);
-  const a = await loadAssets();
-
+  const ritual = card.ritual;
+  const w = giftCardWords[card.locale];
   const doc = await PDFDocument.create();
   doc.registerFontkit(fontkit);
-  doc.setTitle(t(`Dāvanu karte ${card.code}`, `Gift card ${card.code}`));
+  doc.setTitle(`${w.giftCard} ${card.code}`);
   doc.setAuthor('SaimniekaPirts');
-  const [serif, serifItalic, serifBold, sans, sansBold] = await Promise.all(
-    [a.serif, a.serifItalic, a.serifBold, a.sans, a.sansBold].map((f) => doc.embedFont(f, { subset: true }))
-  );
-  const [ribbon, logo, photo]: PDFImage[] = await Promise.all([
-    doc.embedPng(a.ribbon), doc.embedPng(a.logo), doc.embedJpg(a.photo),
+
+  const [serif, serifItalic, serifBold, sans, sansBold, front, back, logo] = await Promise.all([
+    load('serif'), load('serifItalic'), load('serifBold'), load('sans'), load('sansBold'),
+    load(ritual ? 'ritualFront' : 'valueFront'), load(ritual ? 'ritualBack' : 'valueBack'),
+    load(ritual ? 'logoOnDark' : 'logoOnLight'),
   ]);
+  const f: Fonts = {
+    serif: await doc.embedFont(serif, { subset: true }),
+    serifItalic: await doc.embedFont(serifItalic, { subset: true }),
+    serifBold: await doc.embedFont(serifBold, { subset: true }),
+    sans: await doc.embedFont(sans, { subset: true }),
+    sansBold: await doc.embedFont(sansBold, { subset: true }),
+  };
+  const frontImage = await doc.embedJpg(front);
+  const backImage = await doc.embedJpg(back);
+  const logoImage = await doc.embedPng(logo);
 
-  // ---- Front ---------------------------------------------------------------
-  const front = doc.addPage([W, H]);
-  front.drawRectangle({ x: 0, y: 0, width: W, height: H, color: navy });
-  frame(front);
-  // The ribbon crosses the card near its top and left edges, the bow at the
-  // crossing, as on the hand-made cards.
-  const ribbonWidth = 760;
-  const ribbonHeight = (ribbon.height / ribbon.width) * ribbonWidth;
-  front.drawImage(ribbon, { x: -118, y: H + 118 - ribbonHeight, width: ribbonWidth, height: ribbonHeight });
+  const pageFront = doc.addPage([W * PX, H * PX]);
+  const pageBack = doc.addPage([W * PX, H * PX]);
 
-  const cx = 392;
-  draw(front, t('DĀVANU KARTE', 'GIFT CARD'), cx, H - 90, { font: sansBold, size: 10, color: gold, spacing: 4.2, align: 'center' });
-  draw(front, t('Pirts priekiem', 'A sauna treat'), cx, H - 130, { font: serifItalic, size: 40, color: goldLight, align: 'center' });
-  ornament(front, cx, H - 144, 92);
+  if (!ritual) {
+    // ---- Value card, front: photo left, linen panel right.
+    rect(pageFront, 0, 0, W, H, LINEN);
+    image(pageFront, frontImage, 0, 0, 490, 370);
+    const axis = 670;
+    frontCommon(pageFront, f, w, card, logoImage, axis, [524, 816],
+      { eyebrow: HONEY, rule: RULE, label: LABEL, value: INK, footer: LABEL });
+    if (card.plain) {
+      titleBlock(pageFront, f, axis, 292, [w.plainTitle, w.plainLine, w.plainFacts], { title: INK, line: TAGLINE, facts: LABEL });
+    } else {
+      // The numeral sits on the panel's axis (nudged 4 px left for the eye),
+      // "EUR" beside it on the same baseline.
+      const amount = String(card.value);
+      const numeral = { font: f.serifBold, size: 86, color: INK };
+      const nw = width(amount, numeral);
+      const nx = axis - 4 - nw / 2;
+      line(pageFront, amount, nx, 195.19, numeral);
+      line(pageFront, 'EUR', nx + nw + 9, 195.19, { font: f.sansBold, size: 15, color: HONEY, spacing: 2.4 });
+      line(pageFront, w.tagline, axis, 230.88, { font: f.serifItalic, size: 25, color: TAGLINE }, 'center');
+    }
 
-  if (card.ritual) {
-    const name = ritualName(card.ritual, card.locale);
-    const size = fit(name, serif, 19, 300);
-    draw(front, name, cx, H - 168, { font: serif, size, color: cream, align: 'center' });
-    draw(front, t(`vērtība ${amount(card.value, 'lv')}`, `value ${amount(card.value, 'en')}`).toUpperCase(), cx, H - 184, {
-      font: sans, size: 7.5, color: muted, spacing: 1.6, align: 'center',
+    // ---- Value card, back: how to use it, photo right.
+    rect(pageBack, 0, 0, W, H, PAPER);
+    image(pageBack, backImage, 594, 0, 256, 370);
+    const left = 44;
+    const right = 554;
+    backCommon(pageBack, f, w, card, left, right, card.plain ? `${w.no} ${card.code}` : `${w.no} ${card.code} · ${card.value} EUR`);
+    line(pageBack, w.howTo, left, 85.39, { font: f.serifItalic, size: 32, color: INK });
+    const stepText = { font: f.sans, size: 13, color: INK };
+    let y = 126.98;
+    w.steps.forEach((step, i) => {
+      line(pageBack, String(i + 1), left + 6, y, { font: f.serifBold, size: 21, color: HONEY }, 'center');
+      const lines = wrap(step, stepText, 486);
+      lines.forEach((l, n) => line(pageBack, l, left + 24, y + n * 18.85, stepText));
+      y += (i < w.steps.length - 1) ? 3 + lines.length * 18.85 + 11 : (lines.length - 1) * 18.85;
     });
+    const note = { font: f.sans, size: 12.5, color: SOFT };
+    wrap(card.plain ? w.anyServicePlain : w.anyService, note, 510)
+      .forEach((l, n) => line(pageBack, l, left, y + 35.84 + n * 18.125, note));
   } else {
-    const big = amount(card.value, card.locale);
-    const small = t('vērtībā', 'in value');
-    const bigWidth = serifBold.widthOfTextAtSize(big, 36);
-    const smallWidth = sans.widthOfTextAtSize(small, 9) + 6;
-    const start = cx - (bigWidth + smallWidth) / 2;
-    draw(front, big, start, H - 180, { font: serifBold, size: 36, color: goldLight });
-    draw(front, small, start + bigWidth + 6, H - 180, { font: sans, size: 9, color: muted });
+    // ---- Ritual card, front: forest panel left, photo right.
+    rect(pageFront, 0, 0, W, H, FOREST);
+    image(pageFront, frontImage, 360, 0, 490, 370);
+    const axis = 180;
+    frontCommon(pageFront, f, w, card, logoImage, axis, [32, 328],
+      { eyebrow: HONEY_ON_DARK, rule: RULE_ON_DARK, label: CREAM_SOFT, value: CREAM, footer: CREAM_SOFT });
+    titleBlock(pageFront, f, axis, 296, [w.ritual, ritualLine(ritual, card.locale), w.facts(ritual)],
+      { title: CREAM, line: CREAM2, facts: CREAM_SOFT });
+
+    // ---- Ritual card, back: photo left, the ritual step by step.
+    rect(pageBack, 0, 0, W, H, PAPER);
+    image(pageBack, backImage, 0, 0, 256, 370);
+    const left = 296;
+    const right = 806;
+    backCommon(pageBack, f, w, card, left, right, `${w.no} ${card.code}`);
+    line(pageBack, w.course, left, 85.39, { font: f.serifItalic, size: 32, color: INK });
+    const sub = `${ritualName(ritual, card.locale)} · ${w.led}`;
+    line(pageBack, sub, left, 107.98, fitted(sub, { font: f.sans, size: 12, color: SOFT }, 510, 10));
+    const steps = ritualSteps(ritual, card.locale);
+    const rows = Math.ceil(steps.length / 2);
+    const name = { font: f.sansBold, size: 12.5, color: INK };
+    steps.forEach((step, i) => {
+      const col = i < rows ? 0 : 1;
+      const row = col === 0 ? i : i - rows;
+      const x = left + col * 267;
+      const y = 143.78 + row * 28.125;
+      line(pageBack, String(i + 1), x + 6, y, { font: f.serifBold, size: 21, color: HONEY }, 'center');
+      line(pageBack, step, x + 24, y, fitted(step, name, 219, 10.5));
+    });
+    const para = { font: f.sans, size: 12, color: SOFT };
+    const top = 143.78 + (rows - 1) * 28.125 + 32.12;
+    wrap(w.book, para, 510).forEach((l, n) => line(pageBack, l, left, top + n * 17.4, para));
   }
-
-  // Number and validity, side by side.
-  const colGap = 82;
-  front.drawLine({ start: { x: cx, y: 36 }, end: { x: cx, y: 62 }, thickness: 0.5, color: gold, opacity: 0.6 });
-  for (const [x, label, value] of [
-    [cx - colGap, t('NR.', 'NO.'), card.code],
-    [cx + colGap, t('DERĪGA LĪDZ', 'VALID UNTIL'), formatDate(card.validUntil)],
-  ] as const) {
-    draw(front, label, x, 54, { font: sans, size: 6.5, color: muted, spacing: 2, align: 'center' });
-    draw(front, value, x, 38, { font: sansBold, size: 12, color: goldLight, spacing: 0.6, align: 'center' });
-  }
-
-  front.drawImage(logo, { x: W - 9 - 92, y: 17, width: 88, height: 88 });
-  draw(front, `${ADDRESS[card.locale]}  ·  ${WEB.toUpperCase()}  ·  ${PHONE}`, 312, 17, {
-    font: sans, size: 5.4, color: muted, spacing: 0.9, align: 'center',
-  });
-
-  // ---- Back ----------------------------------------------------------------
-  const back = doc.addPage([W, H]);
-  back.drawRectangle({ x: 0, y: 0, width: W, height: H, color: navy });
-  // The photo's right edge already fades into the card's colour.
-  back.drawImage(photo, { x: 0, y: 0, width: 290, height: H });
-  frame(back);
-
-  back.drawImage(logo, { x: W - 20 - 62, y: H - 20 - 62, width: 62, height: 62 });
-  const left = 300;
-  const textWidth = W - 24 - left;
-  let y = H - 62;
-  draw(back, t('Kā izmantot dāvanu karti', 'How to use your gift card'), left, y, { font: serifItalic, size: 23, color: goldLight });
-  y -= 10;
-  back.drawLine({ start: { x: left, y }, end: { x: left + 64, y }, thickness: 0.7, color: gold });
-  y -= 24;
-
-  const stepsText = [
-    t(`Piesakiet apmeklējumu, zvanot ${PHONE} vai rakstot uz ${EMAIL}, un nosauciet dāvanu kartes numuru.`,
-      `Book your visit by calling ${PHONE} or writing to ${EMAIL}, quoting the gift card number.`),
-    t('Vienosimies par Jums ērtu dienu un laiku.', 'We will agree on a day and time that suits you.'),
-    t('Ierodoties uzrādiet dāvanu karti – izdrukātu vai telefonā.', 'Show the gift card when you arrive – printed or on your phone.'),
-  ];
-  const lineHeight = 12;
-  stepsText.forEach((step, i) => {
-    back.drawCircle({ x: left + 6, y: y + 3, size: 6.5, borderColor: gold, borderWidth: 0.7 });
-    draw(back, String(i + 1), left + 6, y + 0.4, { font: sansBold, size: 7.5, color: gold, align: 'center' });
-    for (const line of wrap(step, sans, 8.6, textWidth - 20)) {
-      draw(back, line, left + 20, y, { font: sans, size: 8.6, color: cream });
-      y -= lineHeight;
-    }
-    y -= 7;
-  });
-
-  y -= 6;
-  const notes = [
-    card.ritual
-      ? t(`Dāvanu karte paredzēta: ${ritualName(card.ritual, 'lv')}.`, `This gift card is for: ${ritualName(card.ritual, 'en')}.`)
-      : t('Kartes vērtību var izmantot jebkuram mūsu pakalpojumam – pirts rituālam, pirts nomai vai papildu pakalpojumiem.',
-        'The value can be used for any of our services – a sauna ritual, sauna rental or extras.'),
-    t(`Nr. ${card.code}, derīga līdz ${formatDate(card.validUntil)}. Dāvanu karte nav apmaināma pret naudu.`,
-      `No. ${card.code}, valid until ${formatDate(card.validUntil)}. The gift card cannot be exchanged for cash.`),
-  ];
-  for (const note of notes) {
-    for (const line of wrap(note, sans, 7.2, textWidth)) {
-      draw(back, line, left, y, { font: sans, size: 7.2, color: muted });
-      y -= 10;
-    }
-  }
-
-  draw(back, `${PHONE}   ·   ${EMAIL}   ·   ${WEB}`, left, 32, { font: sansBold, size: 7.2, color: gold, spacing: 0.3 });
-  draw(back, ADDRESS[card.locale], left, 18, { font: sans, size: 5.4, color: muted, spacing: 0.6 });
 
   return await doc.save();
 }
