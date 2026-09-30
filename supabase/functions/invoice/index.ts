@@ -32,7 +32,10 @@
 //                                           cancelling annuls its advance invoice,
 //                                           frees the time slot and asks Make to
 //                                           take it off the calendar
-//   { office: { pin, action: 'list' } }     the office's page: upcoming bookings
+//   { office: { pin, action: 'list' | 'assign' | 'save_master' } }
+//                                           the office's page: upcoming bookings,
+//                                           and the sauna masters assigned to them
+//   { sauna_master: { token } }             a master's own list, from their link
 
 import { createClient } from 'npm:@supabase/supabase-js@2';
 import catalog from './priceCatalog.json' with { type: 'json' };
@@ -909,9 +912,12 @@ async function removeFromCalendar(r: any) {
 // The office's page on the website (/birojs): upcoming bookings and recent
 // gift card orders, with their prices and advance invoices. Every call needs
 // the PIN, since the list holds guests' names, emails and phone numbers.
-async function office(body: { pin?: string; action?: string }) {
+// deno-lint-ignore no-explicit-any
+async function office(body: { pin?: string; action?: string; reservation?: string; master_id?: string | null; master?: any }) {
   const pinResult = await pinCheck(body.pin);
   if (pinResult !== 'ok') return pinRefusal(pinResult);
+  if (body.action === 'assign') return await assignMaster(body.reservation, body.master_id ?? null);
+  if (body.action === 'save_master') return await saveMaster(body.master);
   if (body.action !== 'list') return json({ error: 'unknown_action' }, 400);
 
   const today = rigaToday();
@@ -962,6 +968,7 @@ async function office(body: { pin?: string; action?: string }) {
       overnight: !!r.overnight_stay,
       transport: transportName(r.transport, 'lv') || null,
       payment: r.payment_method === 'cash' ? 'cash' : 'transfer',
+      master_id: r.master_id ?? null,
       message: (r.form_type === 'noma' ? r.rental_message : r.ritual_message) || null,
       name: r.name,
       email: r.email,
@@ -982,6 +989,106 @@ async function office(body: { pin?: string; action?: string }) {
       created_at: g.created_at,
       ...invoiceView(g.id, priceGiftCard(prices, g)),
     })),
+    masters: await mastersList(),
+  });
+}
+
+// ---------------------------------------------------------------------------
+// Sauna masters: the office assigns them to bookings, and each has a private
+// link to their own list.
+
+const masterLink = (token: string) => `https://saimniekapirts.lv/pirtnieks?t=${token}`;
+
+async function mastersList() {
+  const today = rigaToday();
+  const [{ data: masters, error }, { data: assigned }] = await Promise.all([
+    db.from('sauna_masters').select('*').order('active', { ascending: false }).order('name'),
+    db.from('reservations').select('master_id').not('master_id', 'is', null).gte('reservation_date', today),
+  ]);
+  if (error) throw error;
+  const count = (id: string) => (assigned ?? []).filter((r) => r.master_id === id).length;
+  return (masters ?? []).map((m) => ({
+    id: m.id,
+    name: m.name,
+    phone: m.phone,
+    email: m.email,
+    active: m.active,
+    link: masterLink(m.token),
+    upcoming: count(m.id),
+  }));
+}
+
+async function assignMaster(reservation: string | undefined, masterId: string | null) {
+  if (!reservation || !uuidPattern.test(reservation)) return json({ error: 'bad_link' }, 400);
+  if (masterId !== null && !uuidPattern.test(masterId)) return json({ error: 'unknown_master' }, 400);
+  if (masterId) {
+    const { data: master } = await db.from('sauna_masters').select('id').eq('id', masterId).maybeSingle();
+    if (!master) return json({ error: 'unknown_master' }, 404);
+  }
+  const { data, error } = await db.from('reservations').update({ master_id: masterId })
+    .eq('id', reservation).select('id').maybeSingle();
+  if (error) return json({ error: describe(error) }, 500);
+  if (!data) return json({ error: 'not_found' }, 404);
+  return json({ status: 'assigned' });
+}
+
+// deno-lint-ignore no-explicit-any
+async function saveMaster(m: any) {
+  const text = (v: unknown, max = 120) => (typeof v === 'string' ? v.trim().slice(0, max) : '');
+  const name = text(m?.name);
+  if (!name) return json({ error: 'Norādiet pirtnieka vārdu.' }, 400);
+  const fields: Record<string, unknown> = {
+    name,
+    phone: text(m?.phone, 40) || null,
+    email: text(m?.email, 120) || null,
+    active: m?.active !== false,
+  };
+  if (m?.id) {
+    if (!uuidPattern.test(m.id)) return json({ error: 'unknown_master' }, 400);
+    if (m.new_link) fields.token = crypto.randomUUID();
+    const { error } = await db.from('sauna_masters').update(fields).eq('id', m.id);
+    if (error) return json({ error: describe(error) }, 500);
+  } else {
+    const { error } = await db.from('sauna_masters').insert(fields);
+    if (error) return json({ error: describe(error) }, 500);
+  }
+  return json({ masters: await mastersList() });
+}
+
+// A master's own page. The token in their link is the only key, so an
+// inactive master's link stops working.
+async function masterView(body: { token?: string }) {
+  const token = body?.token ?? '';
+  if (!uuidPattern.test(token)) return json({ error: 'unknown_master' }, 404);
+  const { data: master } = await db.from('sauna_masters').select('*').eq('token', token).eq('active', true).maybeSingle();
+  if (!master) return json({ error: 'unknown_master' }, 404);
+  const today = rigaToday();
+  const { data: rows, error } = await db.from('reservations').select('*').eq('master_id', master.id)
+    .gte('reservation_date', today).lte('reservation_date', addDays(today, 90))
+    .order('reservation_date').order('reservation_time');
+  if (error) return json({ error: describe(error) }, 500);
+  return json({
+    name: master.name,
+    today,
+    bookings: (rows ?? []).map((r) => {
+      const priced = priceReservation(prices, r);
+      return {
+        id: r.id,
+        type: r.form_type === 'noma' ? 'noma' : 'ritual',
+        date: r.reservation_date,
+        time: r.reservation_time,
+        sauna: r.sauna_type,
+        service: r.form_type === 'noma' ? r.rental_type : r.ritual_type,
+        participants: r.ritual_participants,
+        overnight: !!r.overnight_stay,
+        transport: transportName(r.transport, 'lv') || null,
+        message: (r.form_type === 'noma' ? r.rental_message : r.ritual_message) || null,
+        name: r.name,
+        phone: r.phone || null,
+        locale: r.locale === 'en' ? 'en' : 'lv',
+        cash_due: r.payment_method === 'cash' && priced.problems.length === 0 ? priced.total : null,
+      };
+    }),
   });
 }
 
@@ -1051,6 +1158,7 @@ Deno.serve(async (req) => {
   const body = await req.json().catch(() => ({}));
 
   // The website's office page: guarded by the link and the PIN.
+  if (body.sauna_master) return await masterView(body.sauna_master);
   if (body.office) return await office(body.office);
   if (body.manage?.reservation) return await manageReservation(body.manage);
   if (body.manage) return await manage(body.manage);

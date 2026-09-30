@@ -12,6 +12,7 @@ const messages: Record<string, string> = {
   wrong_pin: 'Nepareizs PIN.',
   pin_locked: 'Pārāk daudz nepareizu PIN mēģinājumu. Mēģiniet vēlreiz pēc 15 minūtēm.',
   final_exists: 'Gala rēķins jau ir izrakstīts, tāpēc to vairs nevar mainīt.',
+  unknown_master: 'Šī pirtnieka saite nav derīga. Palūdziet birojam jaunu saiti.',
   guest_mail_off: 'Klientu e-pasti vēl nav ieslēgti, tāpēc gala rēķinu vēl nevar nosūtīt.',
 };
 
