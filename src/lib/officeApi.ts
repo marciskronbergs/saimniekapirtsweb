@@ -14,6 +14,11 @@ const messages: Record<string, string> = {
   final_exists: 'Gala rēķins jau ir izrakstīts, tāpēc to vairs nevar mainīt.',
   unknown_master: 'Šī pirtnieka saite nav derīga. Palūdziet birojam jaunu saiti.',
   guest_mail_off: 'Klientu e-pasti vēl nav ieslēgti, tāpēc gala rēķinu vēl nevar nosūtīt.',
+  no_email: 'Klientam nav derīgas e-pasta adreses.',
+  already_paid: 'Tas jau ir apmaksāts.',
+  annulled: 'Avansa rēķins ir anulēts, tāpēc to vairs nevar nosūtīt.',
+  card_off: 'Maksājumi ar karti pašlaik nav ieslēgti.',
+  cannot_invoice: 'Cenu nevarēja noteikt pēc cenrāža, tāpēc rēķins jāizraksta pašiem.',
 };
 
 export class OfficeError extends Error {

@@ -32,9 +32,11 @@
 //                                           cancelling annuls its advance invoice,
 //                                           frees the time slot and asks Make to
 //                                           take it off the calendar
-//   { office: { pin, action: 'list' | 'assign' | 'save_master' } }
+//   { office: { pin, action: 'list' | 'assign' | 'save_master' | 'gift_card_pdf'
+//               | 'send_invoice' | 'pay_link' } }
 //                                           the office's page: upcoming bookings,
-//                                           and the sauna masters assigned to them
+//                                           the sauna masters assigned to them, and
+//                                           invoices and payment links sent by hand
 //   { sauna_master: { token } }             a master's own list, from their link
 // And by the booking forms and the /apmaksa page, for paying by card:
 //   { payment_options: true }               whether card payments are on
@@ -44,6 +46,9 @@
 //                                           one Checkout payment: how it went, a
 //                                           new page, bank transfer instead, and
 //                                           the paid gift card as a PDF
+//   { invoice_payment | pay_invoice: { i, t } }
+//                                           an invoice's payment link: what it is
+//                                           for, and a Checkout page to pay it
 // And by Stripe's webhook (checkout.session.* events).
 
 import { createClient } from 'npm:@supabase/supabase-js@2';
@@ -68,6 +73,7 @@ type Invoice = InvoiceRow & {
   logged_at?: string | null;
   annul_logged_at?: string | null;
   manage_token: string;
+  pay_token?: string;
   advance_id?: string | null;
   source_id: string;
 };
@@ -524,20 +530,27 @@ async function processLoaded(source: Source) {
 
 // Paid by card, the advance invoice says so and asks for nothing.
 async function issueAdvance(source: Source, paidOn?: string) {
+  const made = await createAdvance(source, paidOn);
+  if (!made.invoice) return { status: 'held', ...(made.reason ? { reason: made.reason } : {}) };
+  const invoice = made.invoice;
+  const guest = await attempt(() => deliverAdvanceToGuest(invoice));
+  const sent = await deliverAdvance(invoice);
+  const filed = await attempt(() => archive(invoice));
+  return { ...sent, guest, filed };
+}
+
+// The booking's or order's advance invoice: the one already issued, or a new
+// one. One that cannot be priced is held for the office instead.
+async function createAdvance(source: Source, paidOn?: string): Promise<{ invoice?: Invoice; reason?: string }> {
   const { type, id } = source;
   const { data: existing, error: existingError } = await db
     .from('invoices').select('*').eq('source_type', type).eq('source_id', id).eq('kind', 'advance').maybeSingle();
   if (existingError) throw existingError;
-  if (existing) {
-    const guest = await attempt(() => deliverAdvanceToGuest(existing));
-    const sent = await deliverAdvance(existing);
-    const filed = await attempt(() => archive(existing));
-    return { ...sent, guest, filed };
-  }
+  if (existing) return { invoice: existing };
 
   const { data: hold } = await db
-    .from('invoice_holds').select('notified_at').eq('source_type', type).eq('source_id', id).maybeSingle();
-  if (hold) return { status: 'held' };
+    .from('invoice_holds').select('reason').eq('source_type', type).eq('source_id', id).maybeSingle();
+  if (hold) return { reason: hold.reason };
 
   const problems = [...source.priced.problems];
   if (source.priced.items.length === 0 && problems.length === 0) problems.push('Nothing to invoice');
@@ -553,7 +566,7 @@ async function issueAdvance(source: Source, paidOn?: string) {
       .select('source_id');
     if (error) throw error;
     if (inserted?.length) await notifyHold(type, id, reason, source.fields);
-    return { status: 'held', reason };
+    return { reason };
   }
 
   const { data: invoice, error } = await db.rpc('create_invoice', {
@@ -573,10 +586,7 @@ async function issueAdvance(source: Source, paidOn?: string) {
     p_paid: !!paidOn,
   });
   if (error) throw error;
-  const guest = await attempt(() => deliverAdvanceToGuest(invoice));
-  const sent = await deliverAdvance(invoice);
-  const filed = await attempt(() => archive(invoice));
-  return { ...sent, guest, filed };
+  return { invoice };
 }
 
 // ---------------------------------------------------------------------------
@@ -880,6 +890,8 @@ interface CardPayment {
   status: 'open' | 'paid' | 'expired';
   paid_at: string | null;
   created_at: string;
+  // Set when the page was opened from an invoice's payment link.
+  invoice_id?: string | null;
 }
 
 const cardPaymentsOn = async () => stripeConfigured() && (await setting('card_payments')) !== 'off';
@@ -1064,7 +1076,7 @@ async function paymentStatus(body: { p?: string }) {
     console.error(e);
   }
   // Straight away, rather than waiting for Stripe's own message.
-  if (now.status === 'paid' && payment.status !== 'paid') await inBackground(processSource(now.source_type, now.source_id));
+  if (now.status === 'paid' && payment.status !== 'paid') await inBackground(afterPayment(now));
   const source = await loadSource(now.source_type, now.source_id);
   if (!source) return json({ error: 'not_found' }, 404);
   let gift: { code: string; valid_until: string } | null = null;
@@ -1130,12 +1142,205 @@ async function stripeEvent(event: any) {
   if (!payment) return json({ received: true, ignored: true });
   try {
     const now = await refreshPayment(payment);
-    const result = now.status === 'open' ? null : await processSource(now.source_type, now.source_id);
+    const result = now.status === 'open' ? null : await afterPayment(now);
     return json({ received: true, status: now.status, result });
   } catch (e) {
     console.error(e);
     return json({ error: describe(e) }, 500);
   }
+}
+
+// ---------------------------------------------------------------------------
+// Invoices the office sends by hand, and paying an invoice by card from a
+// link: in the guest's email, or as a QR code the office shows on site.
+
+const payLink = (invoice: { id: string; pay_token?: string }) => `${SITE}/apmaksa?i=${invoice.id}&t=${invoice.pay_token}`;
+
+// A guest who meant to pay in cash is invoiced after all: the booking becomes
+// a bank-transfer booking, and its "no invoice" row in the list is marked and
+// given another key, so the invoice's own row is the one found from now on.
+async function leaveCash(source: Source) {
+  if (!paysCash(source)) return;
+  const { error } = await db.from('reservations').update({ payment_method: 'transfer' }).eq('id', source.id);
+  if (error) throw error;
+  source.row.payment_method = 'transfer';
+  const url = await guestUrl();
+  if (url) {
+    await attempt(() => post(url, 'List', {
+      route: 'update',
+      key: bookingLink(source.id),
+      new_key: `${bookingLink(source.id)}#skaidra-nauda`,
+      status: 'Aizstāts ar rēķinu',
+      booking_status: '—',
+    }));
+  }
+}
+
+// { office: { pin, action: 'send_invoice' | 'pay_link', type, id, pay_link? } }
+// send_invoice: the advance invoice (issued now if there is none) goes to the
+//   guest, with a link to pay it by card when pay_link is set; after the
+//   visit, the final invoice goes instead.
+// pay_link: the link (for a QR code) to pay the advance invoice by card. The
+//   invoice is issued now if there is none; the 15-minute run then emails it
+//   to the guest: as paid, if they have paid by then.
+async function officeInvoice(body: { action?: string; type?: string; id?: string; pay_link?: boolean }) {
+  const type: SourceType | null = body.type === 'reservation' || body.type === 'gift_card' ? body.type : null;
+  if (!type || !body.id || !uuidPattern.test(body.id)) return json({ error: 'not_found' }, 404);
+  const source = await loadSource(type, body.id);
+  if (!source) return json({ error: 'not_found' }, 404);
+  if (!(await guestUrl())) return json({ error: 'guest_mail_off' }, 409);
+  if (!source.email.includes('@')) return json({ error: 'no_email' }, 409);
+
+  const { data: final } = await db.from('invoices').select('*')
+    .eq('source_type', type).eq('source_id', body.id).eq('kind', 'final').maybeSingle();
+  if (final) {
+    if (body.action === 'pay_link') return json({ error: 'already_paid' }, 409);
+    const pdf = await renderInvoicePdf(final);
+    const card = type === 'gift_card' ? await giftCard(body.id) : null;
+    const message = finalInvoiceGuestEmail(final, card ? { code: card.code, validUntil: card.valid_until } : undefined);
+    await sendToGuest(final.customer_email, message, { filename: message.filename, content: toBase64(pdf) },
+      card ? { filename: message.giftCardFilename, content: toBase64(card.pdf) } : undefined);
+    return json({ status: 'sent', number: final.number, to: final.customer_email });
+  }
+
+  await leaveCash(source);
+  const made = await createAdvance(source);
+  if (!made.invoice) return json({ error: 'cannot_invoice', reason: made.reason ?? '' }, 409);
+  const invoice = made.invoice;
+  if (invoice.status === 'annulled') return json({ error: 'annulled' }, 409);
+  // The office's copy and the list, as for every advance invoice.
+  await attempt(() => deliverAdvance(invoice));
+  await attempt(() => archive(invoice));
+  const paid = !!invoice.paid || (await cardPayments(type, body.id)).some((p) => p.status === 'paid');
+
+  if (body.action === 'pay_link') {
+    if (paid) return json({ error: 'already_paid' }, 409);
+    if (!(await cardPaymentsOn())) return json({ error: 'card_off' }, 409);
+    return json({ status: 'link', number: invoice.number, total: Number(invoice.total), link: payLink(invoice) });
+  }
+
+  const withLink = !!body.pay_link && !paid && (await cardPaymentsOn());
+  // Keeps the 15-minute run from sending it a second time meanwhile.
+  await db.from('invoices').update({ customer_email_attempted_at: new Date().toISOString() }).eq('id', invoice.id);
+  const pdf = await renderInvoicePdf(invoice);
+  const message = advanceInvoiceGuestEmail(invoice, withLink ? payLink(invoice) : undefined);
+  await sendToGuest(invoice.customer_email, message, { filename: message.filename, content: toBase64(pdf) });
+  await db.from('invoices').update({ customer_emailed_at: new Date().toISOString() }).eq('id', invoice.id);
+  return json({ status: 'sent', number: invoice.number, to: invoice.customer_email, link: withLink });
+}
+
+async function invoiceByLink(body: { i?: string; t?: string }): Promise<Invoice | null> {
+  if (typeof body.i !== 'string' || typeof body.t !== 'string' || !uuidPattern.test(body.i) || !uuidPattern.test(body.t)) return null;
+  const { data } = await db.from('invoices').select('*').eq('id', body.i).eq('pay_token', body.t).eq('kind', 'advance').maybeSingle();
+  return data;
+}
+
+async function invoicePaid(invoice: Invoice) {
+  if (invoice.paid) return true;
+  const { data: final } = await db.from('invoices').select('id').eq('advance_id', invoice.id).maybeSingle();
+  if (final) return true;
+  return (await cardPayments(invoice.source_type, invoice.source_id)).some((p) => p.status === 'paid');
+}
+
+// The page a payment link opens: what the invoice is for and how to pay it.
+async function invoicePayment(body: { i?: string; t?: string }) {
+  const invoice = await invoiceByLink(body);
+  if (!invoice) return json({ error: 'not_found' }, 404);
+  const locale = invoice.locale === 'en' ? 'en' : 'lv';
+  return json({
+    number: invoice.number,
+    status: invoice.status,
+    paid: await invoicePaid(invoice),
+    type: invoice.source_type,
+    locale,
+    name: invoice.customer_name.trim().split(/\s+/)[0] ?? '',
+    date: invoice.details?.date ?? null,
+    time: invoice.details?.time ?? null,
+    items: invoice.items.map((i) => ({ name: i.name[locale], quantity: i.quantity, amount: i.amount })),
+    total: Number(invoice.total),
+    due_on: invoice.due_on,
+    bank: { payee: invoice.seller.name, iban: invoice.seller.iban, bank: invoice.seller.bank, swift: invoice.seller.swift },
+    card: await cardPaymentsOn(),
+  });
+}
+
+// "Pay by card" on that page: a Stripe Checkout page for the invoice's total.
+async function payInvoice(body: { i?: string; t?: string }) {
+  const invoice = await invoiceByLink(body);
+  if (!invoice) return json({ error: 'not_found' }, 404);
+  if (invoice.status === 'annulled') return json({ error: 'annulled' }, 409);
+  if (await invoicePaid(invoice)) return json({ status: 'paid' });
+  if (!(await cardPaymentsOn())) return json({ error: 'card_off' }, 409);
+
+  const { data: open } = await db.from('card_payments').select('*').eq('invoice_id', invoice.id).eq('status', 'open')
+    .order('created_at', { ascending: false }).limit(1);
+  const reuse = (open ?? []).find((p) => isNewerThan(p.created_at, CARD_MINUTES - 10));
+  if (reuse) return json({ url: reuse.url, payment: reuse.id });
+
+  const locale = invoice.locale === 'en' ? 'en' : 'lv';
+  const paymentId = crypto.randomUUID();
+  const lines = invoice.items.map((item) => ({
+    quantity: 1,
+    price_data: {
+      currency: 'eur',
+      unit_amount: Math.round(item.amount * 100),
+      product_data: { name: `${item.name[locale]}${item.quantity > 1 ? ` × ${item.quantity}` : ''}` },
+    },
+  }));
+  const cents = lines.reduce((sum, line) => sum + line.price_data.unit_amount, 0);
+  const metadata = { source_type: invoice.source_type, source_id: invoice.source_id, invoice: invoice.number, payment: paymentId };
+  const session = await createCheckoutSession({
+    mode: 'payment',
+    line_items: Object.fromEntries(lines.map((line, n) => [n, line])),
+    payment_method_types: { 0: 'card' },
+    customer_email: invoice.customer_email,
+    locale,
+    client_reference_id: invoice.source_id,
+    metadata,
+    payment_intent_data: { description: `SaimniekaPirts: ${invoice.number} · ${invoice.customer_name}`, metadata },
+    success_url: `${SITE}/apmaksa?p=${paymentId}`,
+    cancel_url: `${payLink(invoice)}&atcelts=1`,
+    expires_at: Math.floor(Date.now() / 1000) + CARD_MINUTES * 60,
+  }, `invoice-${paymentId}`);
+  const { error } = await db.from('card_payments').insert({
+    id: paymentId, source_type: invoice.source_type, source_id: invoice.source_id,
+    session_id: session.id, url: session.url, amount: cents / 100, invoice_id: invoice.id,
+  });
+  if (error) throw error;
+  return json({ url: session.url, payment: paymentId });
+}
+
+// A guest paid their advance invoice by card from a link: the invoice is
+// marked paid (its final invoice will say how), the booking or order counts
+// as paid by card, and its row in the list says so. The usual handling then
+// runs: a gift card goes out at once with its final invoice, and a guest who
+// has not had the invoice by email gets it, marked paid.
+async function settleInvoicePayment(payment: CardPayment) {
+  const { data: invoice } = await db.from('invoices').select('*').eq('id', payment.invoice_id).maybeSingle();
+  if (!invoice) return { status: 'no_invoice' };
+  if (!invoice.paid) {
+    const paidOn = rigaDate(payment.paid_at ?? payment.created_at);
+    const { data: updated } = await db.from('invoices')
+      .update({ paid: true, details: { ...(invoice.details ?? {}), payment: 'card', paid_on: paidOn } })
+      .eq('id', invoice.id).eq('paid', false).select('id');
+    const url = await guestUrl();
+    if (updated?.length && url) {
+      await attempt(() => post(url, 'List', {
+        route: 'update', key: cancelLink(invoice), status: 'Apmaksāts', payment: 'Karte (Stripe)', booking_status: '',
+      }));
+    }
+  }
+  const { error } = await db.from(sourceTable(invoice.source_type)).update({ payment_method: 'card' }).eq('id', invoice.source_id);
+  if (error) throw error;
+  return { status: 'settled', number: invoice.number };
+}
+
+async function afterPayment(payment: CardPayment) {
+  const settled = payment.status === 'paid' && payment.invoice_id
+    ? await attempt(() => settleInvoicePayment(payment))
+    : null;
+  const result = await processSource(payment.source_type, payment.source_id);
+  return settled ? { settled, result } : result;
 }
 
 // ---------------------------------------------------------------------------
@@ -1271,11 +1476,20 @@ async function removeFromCalendar(r: any) {
 // deno-lint-ignore no-explicit-any
 async function office(body: {
   pin?: string; action?: string; reservation?: string; order?: string; master_id?: string | null; master?: any;
+  type?: string; id?: string; pay_link?: boolean;
 }) {
   const pinResult = await pinCheck(body.pin);
   if (pinResult !== 'ok') return pinRefusal(pinResult);
   if (body.action === 'assign') return await assignMaster(body.reservation, body.master_id ?? null);
   if (body.action === 'save_master') return await saveMaster(body.master);
+  if (body.action === 'send_invoice' || body.action === 'pay_link') {
+    try {
+      return await officeInvoice(body);
+    } catch (e) {
+      console.error(e);
+      return json({ error: describe(e) }, 500);
+    }
+  }
   if (body.action === 'gift_card_pdf') {
     if (!body.order || !uuidPattern.test(body.order)) return json({ error: 'not_found' }, 404);
     try {
@@ -1303,7 +1517,7 @@ async function office(body: {
   const cardIds = (cards.data ?? []).map((g) => g.id as string);
   const [{ data: invoices, error }, { data: paidByCard }, { data: codes }] = ids.length
     ? await Promise.all([
-      db.from('invoices').select('id, number, kind, status, source_id, manage_token, total').in('source_id', ids),
+      db.from('invoices').select('id, number, kind, status, paid, source_id, manage_token, total').in('source_id', ids),
       db.from('card_payments').select('source_id').eq('status', 'paid').in('source_id', ids),
       db.from('gift_cards').select('order_id, code, valid_until').in('order_id', cardIds.length ? cardIds : [crypto.randomUUID()]),
     ])
@@ -1325,7 +1539,7 @@ async function office(body: {
         ({ name: i.name.lv, quantity: i.quantity, amount: i.amount })),
       total: advance ? Number(advance.total) : priced.problems.length ? null : priced.total,
       advance: advance
-        ? { number: advance.number, status: advance.status, link: `/rekins?id=${advance.id}&t=${advance.manage_token}` }
+        ? { number: advance.number, status: advance.status, paid: !!advance.paid, link: `/rekins?id=${advance.id}&t=${advance.manage_token}` }
         : null,
       final: final ? { number: final.number } : null,
     };
@@ -1370,6 +1584,7 @@ async function office(body: {
       ...invoiceView(g.id, priceGiftCard(prices, g)),
     })),
     masters: await mastersList(),
+    card_payments: await cardPaymentsOn(),
   });
 }
 
@@ -1498,6 +1713,7 @@ async function preview(type: SourceType, id: string, kind: 'advance' | 'final' =
     vat_note: VAT_NOTE,
     details: kind === 'final' ? { ...source.details, advance_number: 'AR-PARAUGS' } : source.details,
     manage_token: '00000000-0000-0000-0000-000000000000',
+    pay_token: '00000000-0000-0000-0000-000000000000',
   };
   const pdf = toBase64(await renderInvoicePdf(invoice));
   return { source, invoice, pdf };
@@ -1553,6 +1769,8 @@ Deno.serve(async (req) => {
     if (body.payment_retry) return await paymentRetry(body.payment_retry);
     if (body.payment_switch) return await paymentSwitch(body.payment_switch);
     if (body.gift_card_pdf) return await giftCardDownload(body.gift_card_pdf);
+    if (body.invoice_payment) return await invoicePayment(body.invoice_payment);
+    if (body.pay_invoice) return await payInvoice(body.pay_invoice);
   } catch (e) {
     console.error(e);
     return json({ error: describe(e) }, 500);

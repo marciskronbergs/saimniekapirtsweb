@@ -260,9 +260,10 @@ export function reminderEmail(c: ConfirmationInput) {
 }
 
 // ---------------------------------------------------------------------------
-// Advance invoice to the guest, straight after the confirmation.
+// Advance invoice to the guest, straight after the confirmation. When the
+// office sends it with a payment link, it offers paying by card as well.
 
-export function advanceInvoiceGuestEmail(invoice: InvoiceRow) {
+export function advanceInvoiceGuestEmail(invoice: InvoiceRow, payUrl?: string) {
   const lv = invoice.locale === 'lv';
   const t = (a: string, b: string) => (lv ? a : b);
   const who = escapeHtml(firstName(invoice.customer_name));
@@ -291,6 +292,10 @@ export function advanceInvoiceGuestEmail(invoice: InvoiceRow) {
     p(t(`Sveiki, ${who}!`, `Hello ${who},`)),
     p(t(`Pielikumā ir avansa rēķins Nr. ${invoice.number} ${what}.`,
       `Attached is advance invoice ${invoice.number} ${what}.`)),
+    payUrl ? p(t(`Rēķinu var apmaksāt ar karti tiešsaistē – ${eur(invoice.total)}:`,
+      `You can pay it by card online – ${eur(invoice.total, 'en')}:`)) : '',
+    payUrl ? button(payUrl, t('Maksāt ar karti', 'Pay by card')) : '',
+    payUrl ? p(t('Vai ar pārskaitījumu:', 'Or by bank transfer:')) : '',
     detailsTable([
       [t('Summa', 'Amount'), eur(invoice.total, invoice.locale)],
       [t('Apmaksāt līdz', 'Due by'), formatDate(invoice.due_on)],

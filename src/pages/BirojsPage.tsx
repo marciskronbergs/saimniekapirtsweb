@@ -3,6 +3,7 @@ import { CalendarDays, Download, ExternalLink, LogOut, Mail, Phone, RefreshCw, S
 import { PopupContext } from '../App';
 import { OfficeError, callInvoiceFunction, eur, useOfficePage } from '../lib/officeApi';
 import MastersSection, { type Master, type MasterDraft } from './birojs/MastersSection';
+import { InvoiceActions, PayLinkDialog, type PayLink } from './birojs/InvoiceActions';
 
 // The office's CRM: the booking calendar, new bookings through the website's
 // own forms, and the upcoming bookings with their invoices, each of which can
@@ -18,7 +19,7 @@ interface Line {
 interface InvoiceInfo {
   items: Line[];
   total: number | null;
-  advance: { number: string; status: 'issued' | 'annulled'; link: string } | null;
+  advance: { number: string; status: 'issued' | 'annulled'; paid?: boolean; link: string } | null;
   final: { number: string } | null;
 }
 
@@ -62,6 +63,8 @@ interface OfficeList {
   bookings: Booking[];
   gift_cards: GiftCard[];
   masters: Master[];
+  // Whether guests can be sent a link to pay by card.
+  card_payments?: boolean;
 }
 
 const calendars = [
@@ -144,6 +147,7 @@ const InvoiceLine = ({ info, cash = false }: { info: InvoiceInfo; cash?: boolean
     ) : (
       <span className="text-gray-500">{cash ? 'Skaidrā naudā uz vietas – bez rēķina' : 'Avansa rēķina vēl nav'}</span>
     )}
+    {info.advance?.paid && !info.final && <Badge tone="green">Apmaksāts</Badge>}
     {info.final && <Badge tone="green">Gala rēķins {info.final.number}</Badge>}
   </div>
 );
@@ -174,6 +178,7 @@ const BirojsPage = () => {
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
+  const [payLink, setPayLink] = useState<PayLink | null>(null);
   const [mode, setMode] = useState<string>('MONTH');
   const [query, setQuery] = useState('');
 
@@ -240,6 +245,52 @@ const BirojsPage = () => {
       a.remove();
       setTimeout(() => URL.revokeObjectURL(url), 10_000);
       if (!g.gift_card) await load(pin);
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setBusyId(null);
+    }
+  };
+
+  type Payable = { id: string; name: string; email: string; payment?: string };
+
+  // The guest's invoice by email, issued now if there is none yet; with a link
+  // to pay it by card if asked.
+  const sendInvoice = async (type: 'reservation' | 'gift_card', item: Payable, withLink: boolean) => {
+    const what = withLink ? 'rēķinu ar maksājuma saiti' : 'rēķinu';
+    const cash = item.payment === 'cash'
+      ? '\n\nRezervācija bija ar samaksu skaidrā naudā; tagad tai tiks izrakstīts rēķins.'
+      : '';
+    if (!window.confirm(`Nosūtīt ${what} klientam ${item.name} uz ${item.email}?${cash}`)) return;
+    setBusyId(item.id);
+    setError(null);
+    setNotice(null);
+    try {
+      const r = await callInvoiceFunction<{ number: string; to: string; link?: boolean }>({
+        office: { pin, action: 'send_invoice', type, id: item.id, pay_link: withLink },
+      });
+      setNotice(`Rēķins ${r.number} nosūtīts uz ${r.to}${r.link ? ' ar maksājuma saiti' : ''}.`);
+      await load(pin);
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setBusyId(null);
+    }
+  };
+
+  // The link to pay by card, shown as a QR code for a guest paying on site.
+  const showPayLink = async (type: 'reservation' | 'gift_card', item: Payable) => {
+    if (item.payment === 'cash' &&
+      !window.confirm(`${item.name} rezervācija bija ar samaksu skaidrā naudā. Izrakstīt rēķinu apmaksai ar karti?`)) return;
+    setBusyId(item.id);
+    setError(null);
+    setNotice(null);
+    try {
+      const r = await callInvoiceFunction<{ number: string; total: number; link: string }>({
+        office: { pin, action: 'pay_link', type, id: item.id },
+      });
+      setPayLink({ name: item.name, number: r.number, total: r.total, link: r.link });
+      await load(pin);
     } catch (e) {
       setError((e as Error).message);
     } finally {
@@ -394,6 +445,7 @@ const BirojsPage = () => {
         </header>
 
         {notice && <p className="rounded-lg bg-green-900/40 border border-green-600 p-3 text-green-300">{notice}</p>}
+        {payLink && <PayLinkDialog pay={payLink} onClose={() => setPayLink(null)} />}
         {error && <p className="rounded-lg bg-red-900/40 border border-red-600 p-3 text-red-300">{error}</p>}
 
         <section className="space-y-3">
@@ -513,24 +565,33 @@ const BirojsPage = () => {
                     </ul>
                     {b.message && <p className="text-sm italic text-gray-400 whitespace-pre-line">“{b.message}”</p>}
                     <InvoiceLine info={b} cash={b.payment === 'cash'} />
-                    <label className="flex flex-wrap items-center gap-2 text-sm text-gray-300">
-                      Pirtnieks:
-                      <select
-                        value={b.master_id ?? ''}
-                        onChange={(e) => assign(b, e.target.value)}
-                        className="rounded-lg bg-gray-800 border border-gray-600 px-2 py-1 text-white"
-                      >
-                        <option value="">— nav piešķirts —</option>
-                        {list.masters
-                          .filter((m) => m.active || m.id === b.master_id)
-                          .map((m) => (
-                            <option key={m.id} value={m.id}>
-                              {m.name}
-                            </option>
-                          ))}
-                      </select>
-                      {!b.master_id && b.type === 'ritual' && <Badge tone="red">Rituālam nav pirtnieka</Badge>}
-                    </label>
+                    <InvoiceActions
+                      settled={!!b.final || b.card_paid || !!b.advance?.paid}
+                      cardPayments={!!list.card_payments}
+                      busy={busyId !== null}
+                      onSend={(withLink) => sendInvoice('reservation', b, withLink)}
+                      onPayLink={() => showPayLink('reservation', b)}
+                    />
+                    {b.type === 'ritual' && (
+                      <label className="flex flex-wrap items-center gap-2 text-sm text-gray-300">
+                        Pirtnieks:
+                        <select
+                          value={b.master_id ?? ''}
+                          onChange={(e) => assign(b, e.target.value)}
+                          className="rounded-lg bg-gray-800 border border-gray-600 px-2 py-1 text-white"
+                        >
+                          <option value="">— nav piešķirts —</option>
+                          {list.masters
+                            .filter((m) => m.active || m.id === b.master_id)
+                            .map((m) => (
+                              <option key={m.id} value={m.id}>
+                                {m.name}
+                              </option>
+                            ))}
+                        </select>
+                        {!b.master_id && <Badge tone="red">Rituālam nav pirtnieka</Badge>}
+                      </label>
+                    )}
                   </div>
                   <div className="sm:text-right">
                     {!b.final && (
@@ -568,6 +629,13 @@ const BirojsPage = () => {
               <Contact email={g.email} phone={g.phone} />
               <p className="text-sm text-gray-300">{g.items[0]?.name ?? g.service}</p>
               <InvoiceLine info={g} />
+              <InvoiceActions
+                settled={!!g.final || g.card_paid || !!g.advance?.paid}
+                cardPayments={!!list.card_payments}
+                busy={busyId !== null}
+                onSend={(withLink) => sendInvoice('gift_card', g, withLink)}
+                onPayLink={() => showPayLink('gift_card', g)}
+              />
               <div className="flex flex-wrap items-center gap-3 text-sm">
                 {g.gift_card && (
                   <span className="text-amber-300">
