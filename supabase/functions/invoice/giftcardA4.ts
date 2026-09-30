@@ -274,7 +274,7 @@ export async function renderGiftCardA4Pdf(card: GiftCardA4Data): Promise<Uint8Ar
 
   const [serifItalic, serifBold, sans, sansBold, logo, whisk, pond, rest] = await Promise.all([
     load('serifItalic'), load('serifBold'), load('sans'), load('sansBold'), load('logoOnLight'),
-    load('a4Whisk'), load('a4Pond'), load('a4Rest'),
+    load('a4Tub'), load('a4Whisk'), load('a4Scrub'),
   ]);
   const f: Fonts = {
     serifItalic: await doc.embedFont(serifItalic, { subset: true }),

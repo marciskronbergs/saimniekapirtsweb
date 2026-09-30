@@ -23,7 +23,7 @@ const WHITE = '#FFFFFF';
 const serif = "'GC Serif', Georgia, serif";
 const sans = "'GC Sans', Helvetica, Arial, sans-serif";
 
-const PHOTOS = ['/giftcard/a4_whisk.jpg', '/giftcard/a4_pond.jpg', '/giftcard/a4_rest.jpg'];
+const PHOTOS = ['/giftcard/a4_tub.jpg', '/giftcard/a4_whisk.jpg', '/giftcard/a4_scrub.jpg'];
 
 // Lucide icons, 24 × 24, drawn with a stroke.
 const ICONS: Record<string, React.ReactNode> = {

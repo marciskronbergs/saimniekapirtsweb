@@ -165,6 +165,17 @@ interface CardProps {
 // ritual card names the ritual in its place.
 const CardSide: React.FC<CardProps> = ({ side, locale, value, ritual, sample }) => {
   const w = giftCardWords[locale];
+  // When the words on the back run long, the gaps close up, as in the PDF.
+  const backRef = useRef<HTMLDivElement>(null);
+  const [tight, setTight] = useState(false);
+  useLayoutEffect(() => {
+    const el = backRef.current;
+    if (!el) return;
+    const fit = () => setTight(el.scrollHeight > el.clientHeight);
+    setTight(false);
+    requestAnimationFrame(fit);
+    document.fonts?.ready.then(() => requestAnimationFrame(fit));
+  }, [locale, value, ritual, side]);
   const root: React.CSSProperties = { width: W, height: H, display: 'flex', overflow: 'hidden', fontFamily: sans };
 
   if (side === 'front') {
@@ -196,15 +207,15 @@ const CardSide: React.FC<CardProps> = ({ side, locale, value, ritual, sample }) 
   const header = `${w.no} ${sample.code} · ${w.code} ${sample.pin}${ritual ? '' : ` · ${value} EUR`}`;
   return (
     <div style={{ ...root, background: PAPER, color: INK }}>
-      <div style={{ width: 594, height: H, boxSizing: 'border-box', padding: '34px 40px 26px 44px', display: 'flex', flexDirection: 'column' }}>
+      <div ref={backRef} style={{ width: 594, height: H, boxSizing: 'border-box', padding: '34px 40px 26px 44px', display: 'flex', flexDirection: 'column' }}>
         <BackHeader w={w} text={header} />
         <div style={{ marginTop: 10, fontFamily: serif, fontStyle: 'italic', fontWeight: 500, fontSize: 32, lineHeight: 1.05 }}>{w.howTo}</div>
-        <ol style={{ margin: '18px 0 0', padding: 0, listStyle: 'none', display: 'flex', flexDirection: 'column', gap: 11 }}>
+        <ol style={{ margin: '18px 0 0', padding: 0, listStyle: 'none', display: 'flex', flexDirection: 'column', gap: tight ? 5 : 11 }}>
           {w.steps.map((step, i) => (
             <Step key={step} n={i + 1}>{step}</Step>
           ))}
         </ol>
-        <p style={{ margin: '18px 0 0', fontFamily: sans, fontSize: 12.5, lineHeight: 1.45, color: SOFT }}>{ritual ? w.ritualService(ritual) : w.anyService}</p>
+        <p style={{ margin: `${tight ? 10 : 18}px 0 0`, fontFamily: sans, fontSize: 12.5, lineHeight: 1.45, color: SOFT }}>{ritual ? w.ritualService(ritual) : w.anyService}</p>
         <BackFooter w={w} sample={sample} />
       </div>
       <Photo src="/giftcard/value_back.jpg" alt={w.photos.valueBack} width={256} />

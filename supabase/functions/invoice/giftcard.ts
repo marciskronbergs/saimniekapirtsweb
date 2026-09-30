@@ -38,9 +38,9 @@ const FILES = {
   valueFront: 'giftcard/value_front.jpg',
   valueBack: 'giftcard/value_back.jpg',
   logoOnLight: 'giftcard/logo_on_light.png',
+  a4Tub: 'giftcard/a4_tub.jpg',
   a4Whisk: 'giftcard/a4_whisk.jpg',
-  a4Pond: 'giftcard/a4_pond.jpg',
-  a4Rest: 'giftcard/a4_rest.jpg',
+  a4Scrub: 'giftcard/a4_scrub.jpg',
 } as const;
 export type GiftCardAsset = keyof typeof FILES;
 type Asset = GiftCardAsset;
@@ -239,16 +239,25 @@ export async function renderGiftCardPdf(card: GiftCardData): Promise<Uint8Array>
   backCommon(pageBack, f, w, card, left, right, header);
   line(pageBack, w.howTo, left, 85.39, { font: f.serifItalic, size: 32, color: INK });
   const stepText = { font: f.sans, size: 13, color: INK };
-  let y = 126.98;
-  w.steps.forEach((step, i) => {
-    line(pageBack, String(i + 1), left + 6, y, { font: f.serifBold, size: 21, color: HONEY }, 'center');
-    const lines = wrap(step, stepText, 486);
-    lines.forEach((l, n) => line(pageBack, l, left + 24, y + n * 18.85, stepText));
-    y += (i < w.steps.length - 1) ? 3 + lines.length * 18.85 + 11 : (lines.length - 1) * 18.85;
-  });
   const note = { font: f.sans, size: 12.5, color: SOFT };
-  wrap(ritual ? w.ritualService(ritual) : w.anyService, note, 510)
-    .forEach((l, n) => line(pageBack, l, left, y + 35.84 + n * 18.125, note));
+  const steps = w.steps.map((step) => wrap(step, stepText, 486));
+  const notes = wrap(ritual ? w.ritualService(ritual) : w.anyService, note, 510);
+  // The steps and the note sit 14 and 35.84 px apart; when the words run
+  // long, the gaps close up (to 8 and 26 at the least) so the note always
+  // ends above the footer's rule.
+  const lineCount = steps.reduce((sum, l) => sum + l.length, 0);
+  const natural = 126.98 + (lineCount - steps.length) * 18.85 + (steps.length - 1) * (18.85 + 14) + 35.84 + (notes.length - 1) * 18.125;
+  const over = Math.max(0, natural - 286);
+  const gaps = steps.length; // the gaps between the steps, and the note's
+  const stepGap = Math.max(8, 14 - over / gaps);
+  const noteGap = Math.max(26, 35.84 - (over - (14 - stepGap) * (gaps - 1)));
+  let y = 126.98;
+  steps.forEach((lines, i) => {
+    line(pageBack, String(i + 1), left + 6, y, { font: f.serifBold, size: 21, color: HONEY }, 'center');
+    lines.forEach((l, n) => line(pageBack, l, left + 24, y + n * 18.85, stepText));
+    y += (lines.length - 1) * 18.85 + (i < steps.length - 1 ? 18.85 + stepGap : 0);
+  });
+  notes.forEach((l, n) => line(pageBack, l, left, y + noteGap + n * 18.125, note));
 
   return await doc.save();
 }
