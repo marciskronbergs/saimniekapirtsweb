@@ -58,13 +58,6 @@ function line(page: PDFPage, text: string, x: number, y: number, t: Text, align:
   return w;
 }
 
-// The largest size, from `t.size` down to `min`, at which the text fits.
-const fitted = (text: string, t: Text, max: number, min: number): Text => {
-  let size = t.size;
-  while (size > min && width(text, { ...t, size }) > max) size -= 0.25;
-  return { ...t, size };
-};
-
 // Breaks only at plain spaces: the words keep their no-break spaces.
 function wrap(text: string, t: Text, max: number) {
   const lines: string[] = [];
