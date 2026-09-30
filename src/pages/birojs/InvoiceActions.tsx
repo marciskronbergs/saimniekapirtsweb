@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Copy, CreditCard, ExternalLink, Percent, QrCode, Send, X } from 'lucide-react';
+import { Copy, CreditCard, ExternalLink, Loader2, Percent, QrCode, Send, X } from 'lucide-react';
 import { eur } from '../../lib/officeApi';
 
 // The office's buttons on a booking or gift card order: send the guest their
@@ -61,8 +61,11 @@ const PRESETS = [10, 20, 30, 50, 100];
 // A discount for one booking or gift card: its percentage and why (e.g. a
 // collaboration). An invoice already sent is annulled and replaced.
 export const DiscountDialog = ({
-  target, busy, onApply, onClose,
-}: { target: DiscountTarget; busy: boolean; onApply: (percent: number, reason: string) => void; onClose: () => void }) => {
+  target, busy, error, onApply, onClose,
+}: {
+  target: DiscountTarget; busy: boolean; error?: string | null;
+  onApply: (percent: number, reason: string) => void; onClose: () => void;
+}) => {
   const [percent, setPercent] = useState(target.discount?.percent ?? 50);
   const [reason, setReason] = useState(target.discount?.reason ?? 'Sadarbība');
   const valid = Number.isFinite(percent) && percent > 0 && percent <= 100;
@@ -118,10 +121,11 @@ export const DiscountDialog = ({
             ? `Rēķins ${target.invoice} tiks anulēts, un klientam aizies jauns rēķins ar atlaidi${after !== null ? ` – ${eur(after)}` : ''}.`
             : `Atlaide tiks iekļauta rēķinā, kad tas tiks izrakstīts${after !== null ? ` – ${eur(after)}` : ''}.`}
         </p>
+        {error && <p className="rounded-lg bg-red-900/40 border border-red-600 p-2 text-sm text-red-300">{error}</p>}
         <div className="flex flex-wrap gap-2">
           <button type="submit" disabled={!valid || busy}
             className="inline-flex items-center gap-1.5 rounded-lg bg-amber-600 hover:bg-amber-700 disabled:opacity-50 px-4 py-2 font-semibold">
-            <Percent className="w-4 h-4" /> Piemērot atlaidi
+            {busy ? <Loader2 className="w-4 h-4 animate-spin" /> : <Percent className="w-4 h-4" />} {busy ? 'Izrakstām jauno rēķinu…' : 'Piemērot atlaidi'}
           </button>
           <button type="button" onClick={onClose} className="rounded-lg bg-gray-800 hover:bg-gray-700 px-4 py-2">Atcelt</button>
         </div>

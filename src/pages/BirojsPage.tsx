@@ -287,7 +287,8 @@ const BirojsPage = () => {
     }
   };
 
-  const openDiscount = (type: 'reservation' | 'gift_card', item: { id: string; name: string } & InvoiceInfo) =>
+  const openDiscount = (type: 'reservation' | 'gift_card', item: { id: string; name: string } & InvoiceInfo) => {
+    setError(null);
     setDiscountFor({
       type, id: item.id, name: item.name,
       invoice: item.advance && item.advance.status === 'issued' ? item.advance.number : null,
@@ -296,6 +297,7 @@ const BirojsPage = () => {
         : item.discount ? Math.round((item.total * 100) / (100 - item.discount.percent || 100) * 100) / 100 : item.total,
       discount: item.discount ?? null,
     });
+  };
 
   const applyDiscount = async (percent: number, reason: string) => {
     if (!discountFor) return;
@@ -307,6 +309,7 @@ const BirojsPage = () => {
       const r = await callInvoiceFunction<{ status: string; number?: string; replaced?: string; total?: number }>({
         office: { pin, action: 'discount', type: target.type, id: target.id, percent, reason },
       });
+      if (r.status !== 'reissued' && r.status !== 'saved') throw new Error('Atlaidi neizdevās piemērot. Mēģiniet vēlreiz pēc brīža.');
       setNotice(r.status === 'reissued'
         ? `Atlaide ${percent}% piemērota: rēķins ${r.replaced} anulēts, jaunais ${r.number} (${eur(r.total ?? 0)}) nosūtīts klientam un birojam.`
         : `Atlaide ${percent}% saglabāta – tā būs rēķinā, kad to izrakstīs.`);
@@ -488,7 +491,7 @@ const BirojsPage = () => {
         {notice && <p className="rounded-lg bg-green-900/40 border border-green-600 p-3 text-green-300">{notice}</p>}
         {payLink && <PayLinkDialog pay={payLink} onClose={() => setPayLink(null)} />}
         {discountFor && (
-          <DiscountDialog target={discountFor} busy={busyId !== null} onApply={applyDiscount} onClose={() => setDiscountFor(null)} />
+          <DiscountDialog target={discountFor} busy={busyId !== null} error={error} onApply={applyDiscount} onClose={() => { setDiscountFor(null); setError(null); }} />
         )}
         {error && <p className="rounded-lg bg-red-900/40 border border-red-600 p-3 text-red-300">{error}</p>}
 
