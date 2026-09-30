@@ -2,6 +2,7 @@ import { useCallback, useContext, useEffect, useMemo, useRef, useState, type Rea
 import { CalendarDays, ExternalLink, LogOut, Mail, Phone, RefreshCw, Search } from 'lucide-react';
 import { PopupContext } from '../App';
 import { OfficeError, callInvoiceFunction, eur, useOfficePage } from '../lib/officeApi';
+import MastersSection, { type Master, type MasterDraft } from './birojs/MastersSection';
 
 // The office's CRM: the booking calendar, new bookings through the website's
 // own forms, and the upcoming bookings with their invoices, each of which can
@@ -32,6 +33,7 @@ interface Booking extends InvoiceInfo {
   overnight: boolean;
   transport: string | null;
   payment: 'transfer' | 'cash';
+  master_id: string | null;
   message: string | null;
   name: string;
   email: string;
@@ -53,6 +55,7 @@ interface OfficeList {
   today: string;
   bookings: Booking[];
   gift_cards: GiftCard[];
+  masters: Master[];
 }
 
 const calendars = [
@@ -224,10 +227,46 @@ const BirojsPage = () => {
     }
   };
 
+  // Assigning a master saves at once; the list is updated in place.
+  const assign = async (b: Booking, masterId: string) => {
+    setError(null);
+    setNotice(null);
+    try {
+      await callInvoiceFunction({ office: { pin, action: 'assign', reservation: b.id, master_id: masterId || null } });
+      setList((l) => {
+        if (!l) return l;
+        const bookings = l.bookings.map((x) => (x.id === b.id ? { ...x, master_id: masterId || null } : x));
+        const upcoming = (id: string) => bookings.filter((x) => x.master_id === id).length;
+        return { ...l, bookings, masters: l.masters.map((m) => ({ ...m, upcoming: upcoming(m.id) })) };
+      });
+    } catch (e) {
+      setError((e as Error).message);
+    }
+  };
+
+  const saveMaster = async (draft: MasterDraft) => {
+    setBusyId('masters');
+    setError(null);
+    setNotice(null);
+    try {
+      const data = await callInvoiceFunction<{ masters: Master[] }>({ office: { pin, action: 'save_master', master: draft } });
+      setList((l) => (l ? { ...l, masters: data.masters } : l));
+      setNotice(draft.id ? `${draft.name} saglabāts.` : `${draft.name} pievienots. Nokopējiet saiti un nosūtiet to pirtniekam.`);
+      return true;
+    } catch (e) {
+      setError((e as Error).message);
+      return false;
+    } finally {
+      setBusyId(null);
+    }
+  };
+
   const bookingsByDay = useMemo(() => {
     const q = query.trim().toLowerCase();
     const matches = (b: Booking) =>
-      !q || [b.name, b.email, b.phone, b.service, b.sauna, b.advance?.number].some((v) => v?.toLowerCase().includes(q));
+      !q ||
+      [b.name, b.email, b.phone, b.service, b.sauna, b.advance?.number, list?.masters.find((m) => m.id === b.master_id)?.name]
+        .some((v) => v?.toLowerCase().includes(q));
     const days = new Map<string, Booking[]>();
     for (const b of list?.bookings ?? []) {
       if (!matches(b)) continue;
@@ -433,6 +472,24 @@ const BirojsPage = () => {
                     </ul>
                     {b.message && <p className="text-sm italic text-gray-400 whitespace-pre-line">“{b.message}”</p>}
                     <InvoiceLine info={b} cash={b.payment === 'cash'} />
+                    <label className="flex flex-wrap items-center gap-2 text-sm text-gray-300">
+                      Pirtnieks:
+                      <select
+                        value={b.master_id ?? ''}
+                        onChange={(e) => assign(b, e.target.value)}
+                        className="rounded-lg bg-gray-800 border border-gray-600 px-2 py-1 text-white"
+                      >
+                        <option value="">— nav piešķirts —</option>
+                        {list.masters
+                          .filter((m) => m.active || m.id === b.master_id)
+                          .map((m) => (
+                            <option key={m.id} value={m.id}>
+                              {m.name}
+                            </option>
+                          ))}
+                      </select>
+                      {!b.master_id && b.type === 'ritual' && <Badge tone="red">Rituālam nav pirtnieka</Badge>}
+                    </label>
                   </div>
                   <div className="sm:text-right">
                     {!b.final && (
@@ -450,6 +507,8 @@ const BirojsPage = () => {
             </div>
           ))}
         </section>
+
+        <MastersSection masters={list.masters} busy={busyId !== null} onSave={saveMaster} />
 
         <section className="space-y-3 pb-12">
           <h2 className="text-lg font-bold text-green-400">
