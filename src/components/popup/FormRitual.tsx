@@ -14,6 +14,7 @@ import { supabase } from '../../lib/supabase';
 import priceCatalog from '../../data/priceCatalog.json';
 import BookingConfirmation, { type ConfirmedBooking } from './BookingConfirmation';
 import TransportChoice from './TransportChoice';
+import PaymentChoice, { type PaymentMethod } from './PaymentChoice';
 import { scrollIntoPopup } from './scrollIntoPopup';
 import { cancelUrl } from './cancelUrl';
 
@@ -45,6 +46,7 @@ const FormRitual: React.FC<FormRitualProps> = ({ selectedDate, selectedTime, onC
     overnightStay: false,
     message: '',
     transport: '',
+    paymentMethod: 'transfer' as PaymentMethod,
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
@@ -154,7 +156,8 @@ const reservationData = {
   rental_type: '',
   rental_extras: [],
   rental_message: '',
-  transport: formData.transport || null
+  transport: formData.transport || null,
+  payment_method: formData.paymentMethod
 };
 
       // Nothing is read back: visitors may read only the columns that show
@@ -190,6 +193,8 @@ const reservationData = {
   rental_extras: [],           // <- Empty for rituals
   rental_message: '',          // <- Empty for rituals
   transport: formData.transport || '',
+  payment_method: formData.paymentMethod,
+  payment_label: formData.paymentMethod === 'cash' ? 'Skaidrā naudā uz vietas' : 'Pārskaitījums (avansa rēķins)',
   locale: i18n.language === 'en' ? 'en' : 'lv', // lets Make answer in the guest's language
   // For the office's calendar: cancels the booking, freeing the slot and
   // annulling its advance invoice.
@@ -355,6 +360,11 @@ const reservationData = {
         </div>
 
         <TransportChoice value={formData.transport} onChange={(label) => handleInputChange('transport', label)} />
+
+        <PaymentChoice
+          value={formData.paymentMethod}
+          onChange={(method) => setFormData((prev) => ({ ...prev, paymentMethod: method }))}
+        />
 
         {/* Message */}
         <div>

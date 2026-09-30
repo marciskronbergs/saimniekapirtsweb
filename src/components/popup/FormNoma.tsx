@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next';
 import priceCatalog from '../../data/priceCatalog.json';
 import BookingConfirmation, { type ConfirmedBooking } from './BookingConfirmation';
 import TransportChoice from './TransportChoice';
+import PaymentChoice, { type PaymentMethod } from './PaymentChoice';
 import { scrollIntoPopup } from './scrollIntoPopup';
 import { cancelUrl } from './cancelUrl';
 
@@ -33,7 +34,8 @@ const FormNoma: React.FC<FormNomaProps> = ({ selectedDate, selectedTime, onClose
     rentalType: '',
     extras: [] as string[],
     message: '',
-    transport: ''
+    transport: '',
+    paymentMethod: 'transfer' as PaymentMethod
   });
   // How many of each ticked extra. Without it an invoice could not total a
   // booking of "whisks, 4 € each" or "overnight, per person".
@@ -159,7 +161,8 @@ const FormNoma: React.FC<FormNomaProps> = ({ selectedDate, selectedTime, onClose
         })),
         locale: i18n.language === 'en' ? 'en' : 'lv',
         rental_message: formData.message || '',
-        transport: formData.transport || null
+        transport: formData.transport || null,
+        payment_method: formData.paymentMethod
       };
 
       const { error } = await supabase.from('reservations').insert([reservationData]);
@@ -179,7 +182,11 @@ const FormNoma: React.FC<FormNomaProps> = ({ selectedDate, selectedTime, onClose
           headers: { 'Content-Type': 'application/json' },
           // cancel_url: the office's calendar can link to it to cancel the
           // booking, which frees the slot and annuls its advance invoice.
-          body: JSON.stringify({ ...reservationData, cancel_url: cancelUrl(id) })
+          body: JSON.stringify({
+            ...reservationData,
+            cancel_url: cancelUrl(id),
+            payment_label: formData.paymentMethod === 'cash' ? 'Skaidrā naudā uz vietas' : 'Pārskaitījums (avansa rēķins)',
+          })
         });
       } catch (webhookError) {
         console.error('Webhook error:', webhookError);
@@ -353,6 +360,11 @@ const FormNoma: React.FC<FormNomaProps> = ({ selectedDate, selectedTime, onClose
 
 
         <TransportChoice value={formData.transport} onChange={(label) => setFormData((prev) => ({ ...prev, transport: label }))} />
+
+        <PaymentChoice
+          value={formData.paymentMethod}
+          onChange={(method) => setFormData((prev) => ({ ...prev, paymentMethod: method }))}
+        />
 
         {/* Message */}
         <div>

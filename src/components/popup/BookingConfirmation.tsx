@@ -12,6 +12,7 @@ export interface ConfirmedBooking extends ReservationForPricing {
   reservation_date: string;
   reservation_time: string;
   sauna_type: string;
+  payment_method?: 'transfer' | 'cash';
 }
 
 interface BookingConfirmationProps {
@@ -99,7 +100,7 @@ const BookingConfirmation: React.FC<BookingConfirmationProps> = ({ booking, onCl
 
       <div className="space-y-2 text-sm text-gray-300">
         <p>{t('confirmation.contact', { email: booking.email, phone: booking.phone })}</p>
-        <p>{t('confirmation.payment')}</p>
+        <p>{booking.payment_method === 'cash' ? t('confirmation.payment_cash') : t('confirmation.payment')}</p>
         <p className="flex items-center gap-2">
           <Phone className="w-4 h-4 text-green-400 shrink-0" />
           <span>{t('confirmation.changes')}</span>

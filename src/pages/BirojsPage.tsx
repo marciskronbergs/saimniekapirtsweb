@@ -31,6 +31,7 @@ interface Booking extends InvoiceInfo {
   participants: number | null;
   overnight: boolean;
   transport: string | null;
+  payment: 'transfer' | 'cash';
   message: string | null;
   name: string;
   email: string;
@@ -110,7 +111,7 @@ const Badge = ({ children, tone = 'gray' }: { children: ReactNode; tone?: 'green
   return <span className={`inline-block rounded-full border px-2 py-0.5 text-xs ${tones[tone]}`}>{children}</span>;
 };
 
-const InvoiceLine = ({ info }: { info: InvoiceInfo }) => (
+const InvoiceLine = ({ info, cash = false }: { info: InvoiceInfo; cash?: boolean }) => (
   <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm">
     <span className="font-semibold text-white">{info.total === null ? 'Cena jāpārbauda' : eur(info.total)}</span>
     {info.advance ? (
@@ -125,7 +126,7 @@ const InvoiceLine = ({ info }: { info: InvoiceInfo }) => (
         <ExternalLink className="w-3 h-3" />
       </a>
     ) : (
-      <span className="text-gray-500">Avansa rēķina vēl nav</span>
+      <span className="text-gray-500">{cash ? 'Skaidrā naudā uz vietas – bez rēķina' : 'Avansa rēķina vēl nav'}</span>
     )}
     {info.final && <Badge tone="green">Gala rēķins {info.final.number}</Badge>}
   </div>
@@ -408,6 +409,7 @@ const BirojsPage = () => {
                       <Badge tone={b.type === 'ritual' ? 'green' : 'blue'}>{b.type === 'ritual' ? 'Rituāls' : 'Noma'}</Badge>
                       {b.sauna && <Badge>{b.sauna}</Badge>}
                       {b.locale === 'en' && <Badge tone="blue">EN</Badge>}
+                      {b.payment === 'cash' && <Badge tone="green">💶 Skaidrā naudā</Badge>}
                       {b.advance?.status === 'annulled' && <Badge tone="red">Rēķins anulēts</Badge>}
                     </div>
                     <Contact email={b.email} phone={b.phone} />
@@ -430,7 +432,7 @@ const BirojsPage = () => {
                       )}
                     </ul>
                     {b.message && <p className="text-sm italic text-gray-400 whitespace-pre-line">“{b.message}”</p>}
-                    <InvoiceLine info={b} />
+                    <InvoiceLine info={b} cash={b.payment === 'cash'} />
                   </div>
                   <div className="sm:text-right">
                     {!b.final && (

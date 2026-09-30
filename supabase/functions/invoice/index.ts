@@ -40,7 +40,8 @@ import { priceReservation, priceGiftCard, type PriceCatalog } from './pricing.ts
 import seller from './seller.json' with { type: 'json' };
 import { renderInvoicePdf, formatDate, type InvoiceRow, type InvoiceDetails } from './pdf.ts';
 import {
-  invoiceEmail, holdEmail, confirmationEmail, reminderEmail, advanceInvoiceGuestEmail, finalInvoiceGuestEmail, manageLink,
+  invoiceEmail, holdEmail, confirmationEmail, reminderEmail, advanceInvoiceGuestEmail, finalInvoiceGuestEmail, thanksEmail,
+  manageLink,
   type ConfirmationInput,
 } from './email.ts';
 
@@ -275,6 +276,16 @@ async function notifyHold(type: SourceType, id: string, reason: string, fields: 
 // The archive: every invoice as a PDF in Drive and a line in the list, and an
 // annulled one again, stamped, when it is annulled.
 
+const bookingLink = (id: string) => `https://saimniekapirts.lv/rekins?r=${id}`;
+
+// The link in a row's "Atcelšanas links" column. It also finds the row again
+// when the booking is cancelled or the invoice annulled.
+const cancelLink = (invoice: Invoice) =>
+  invoice.source_type === 'reservation' ? bookingLink(invoice.source_id) : manageLink(invoice);
+
+const visitText = (d: InvoiceDetails | null | undefined) =>
+  d?.kind === 'reservation' && d.date ? `${formatDate(d.date)} ${d.time ?? ''} ${d.sauna ?? ''}`.trim() : 'Dāvanu karte';
+
 async function archive(invoice: Invoice) {
   const annulled = invoice.status === 'annulled';
   if (annulled ? invoice.annul_logged_at : invoice.logged_at) return { status: 'already_filed' };
@@ -282,32 +293,87 @@ async function archive(invoice: Invoice) {
   if (!url) return { status: 'archive_off' };
 
   const pdf = await renderInvoicePdf(invoice);
-  const d = invoice.details;
-  await post(url, 'Archive', {
-    route: 'archive',
-    filename: `${invoice.number}${annulled ? '-ANULETS' : ''}.pdf`,
-    pdf_base64: toBase64(pdf),
-    date: formatDate(annulled ? rigaToday() : invoice.issued_on),
-    number: invoice.number,
-    kind: invoice.kind === 'final' ? 'Rēķins' : 'Avansa rēķins',
-    status: annulled ? 'Anulēts' : invoice.kind === 'final' ? 'Apmaksāts' : 'Izrakstīts',
-    customer: invoice.customer_name,
-    email: invoice.customer_email,
-    visit: d?.kind === 'reservation' && d.date ? `${formatDate(d.date)} ${d.time ?? ''} ${d.sauna ?? ''}`.trim() : 'Dāvanu karte',
-    total: Number(invoice.total).toFixed(2).replace('.', ','),
-    // Cancels the booking (and annuls this invoice), or for a gift card
-    // annuls the invoice; empty once there is nothing left to undo.
-    cancel_url: invoice.kind !== 'advance' || annulled
-      ? ''
-      : invoice.source_type === 'reservation'
-        ? `https://saimniekapirts.lv/rekins?r=${invoice.source_id}`
-        : manageLink(invoice),
-  });
+  if (annulled) {
+    // The stamped PDF goes to Drive, and the row filed when the invoice was
+    // issued is updated rather than a second row added. A booking that has
+    // been cancelled is no longer among the bookings.
+    let bookingStatus = '';
+    if (invoice.source_type === 'reservation') {
+      const { data: booking } = await db.from('reservations').select('id').eq('id', invoice.source_id).maybeSingle();
+      if (!booking) bookingStatus = 'Atcelta';
+    }
+    await post(url, 'Archive', {
+      route: 'update',
+      key: cancelLink(invoice),
+      filename: `${invoice.number}-ANULETS.pdf`,
+      pdf_base64: toBase64(pdf),
+      status: 'Anulēts',
+      booking_status: bookingStatus,
+    });
+  } else {
+    await post(url, 'Archive', {
+      route: 'archive',
+      filename: `${invoice.number}.pdf`,
+      pdf_base64: toBase64(pdf),
+      date: formatDate(invoice.issued_on),
+      number: invoice.number,
+      kind: invoice.kind === 'final' ? 'Rēķins' : 'Avansa rēķins',
+      status: invoice.kind === 'final' ? 'Apmaksāts' : 'Izrakstīts',
+      customer: invoice.customer_name,
+      email: invoice.customer_email,
+      visit: visitText(invoice.details),
+      total: Number(invoice.total).toFixed(2).replace('.', ','),
+      // Cancels the booking (and annuls this invoice), or for a gift card
+      // annuls the invoice. Only the advance invoice's row carries it.
+      cancel_url: invoice.kind === 'advance' ? cancelLink(invoice) : '',
+      payment: 'Pārskaitījums',
+      booking_status: invoice.kind === 'advance' && invoice.source_type === 'reservation' ? 'Aktīva' : '',
+    });
+  }
   await db.from('invoices')
     .update(annulled ? { annul_logged_at: new Date().toISOString() } : { logged_at: new Date().toISOString() })
     .eq('id', invoice.id);
   return { status: 'filed' };
 }
+
+// A booking paid in cash on site gets no invoice, but a row in the list all
+// the same, so the office can see every booking in one place.
+async function logCashBooking(source: Source) {
+  const url = await guestUrl();
+  if (!url) return { status: 'archive_off' };
+  const { data: claimed, error } = await db.rpc('claim_guest_email', {
+    p_source_type: 'reservation', p_source_id: source.id, p_kind: 'sheet_row',
+  });
+  if (error) throw error;
+  if (!claimed) return { status: 'already_listed' };
+  await post(url, 'List', {
+    route: 'log',
+    date: formatDate(rigaToday()),
+    number: '',
+    kind: 'Rezervācija bez rēķina',
+    status: 'Bez rēķina',
+    customer: source.name,
+    email: source.email,
+    visit: visitText(source.details),
+    total: source.priced.problems.length ? '' : Number(source.priced.total).toFixed(2).replace('.', ','),
+    cancel_url: bookingLink(source.id),
+    payment: 'Skaidrā naudā uz vietas',
+    booking_status: 'Aktīva',
+  });
+  await db.from('guest_emails').update({ sent_at: new Date().toISOString() })
+    .eq('source_type', 'reservation').eq('source_id', source.id).eq('kind', 'sheet_row');
+  return { status: 'listed' };
+}
+
+// A cancelled booking's row in the list, when there is no invoice to annul.
+async function markCancelledInList(id: string) {
+  const url = await guestUrl();
+  if (!url) return { status: 'archive_off' };
+  await post(url, 'List', { route: 'update', key: bookingLink(id), status: '', booking_status: 'Atcelta' });
+  return { status: 'marked' };
+}
+
+const paysCash = (source: Source) => source.type === 'reservation' && source.row.payment_method === 'cash';
 
 // ---------------------------------------------------------------------------
 // Guest booking confirmation.
@@ -336,6 +402,7 @@ function guestInput(source: Source): ConfirmationInput {
     overnight: !!r.overnight_stay || (r.rental_extras ?? []).some((e: string) => e.startsWith('Nakšņošana')),
     giftLabel: source.type === 'gift_card' ? r.ritual_type ?? '' : undefined,
     transport: transportName(r.transport, source.locale),
+    cash: r.payment_method === 'cash',
     priced: source.priced,
     individual: ritual?.people === 1,
     seller: typedSeller,
@@ -410,7 +477,9 @@ async function processSource(type: SourceType, id: string) {
   if (!source) return { status: 'not_found' };
   // The guest's confirmation does not wait on, or fail with, the invoice.
   const confirmation = await attempt(() => confirmGuest(source));
-  const advance = await attempt(() => issueAdvance(source));
+  const advance = paysCash(source)
+    ? await attempt(() => logCashBooking(source))
+    : await attempt(() => issueAdvance(source));
   return { advance, confirmation };
 }
 
@@ -538,6 +607,8 @@ async function finals() {
   if (!(await guestUrl())) return { status: 'finals_off' };
   const today = rigaToday();
   const earliest = addDays(today, -14);
+  const results: unknown[] = [];
+
   const { data: advances, error } = await db.from('invoices').select('*')
     .eq('kind', 'advance').eq('status', 'issued').eq('source_type', 'reservation');
   if (error) throw error;
@@ -545,23 +616,58 @@ async function finals() {
     const date = a.details?.date as string | undefined;
     return date && date < today && date >= earliest;
   });
-  if (due.length === 0) return { status: 'nothing_due' };
+  if (due.length > 0) {
+    const { data: existing } = await db.from('invoices').select('advance_id').eq('kind', 'final')
+      .in('advance_id', due.map((a) => a.id));
+    const done = new Set((existing ?? []).map((f) => f.advance_id));
+    for (const advance of due.filter((a) => !done.has(a.id))) {
+      results.push({
+        advance: advance.number,
+        ...(await attempt(async () => {
+          const { data: booking } = await db.from('reservations').select('id').eq('id', advance.source_id).maybeSingle();
+          if (!booking) return await annul(advance);
+          return await issueFinal(advance);
+        })),
+      });
+    }
+  }
 
-  const { data: existing } = await db.from('invoices').select('advance_id').eq('kind', 'final')
-    .in('advance_id', due.map((a) => a.id));
-  const done = new Set((existing ?? []).map((f) => f.advance_id));
+  // Guests who paid in cash get the same thanks and review request, without
+  // an invoice.
+  results.push({ thanks: await attempt(() => thankCashGuests(earliest, today)) });
+  return { status: 'finals', results };
+}
+
+async function thankCashGuests(earliest: string, today: string) {
+  if ((await setting('guest_confirmations')) !== 'on') return { status: 'confirmations_off' };
+  const { data: rows, error } = await db.from('reservations').select('id')
+    .eq('payment_method', 'cash').gte('reservation_date', earliest).lt('reservation_date', today);
+  if (error) throw error;
+  const ids = (rows ?? []).map((r) => r.id as string);
+  if (ids.length === 0) return { status: 'none' };
+  const { data: done } = await db.from('guest_emails').select('source_id')
+    .eq('source_type', 'reservation').eq('kind', 'thanks').not('sent_at', 'is', null).in('source_id', ids);
+  const sent = new Set((done ?? []).map((r) => r.source_id));
   const results: unknown[] = [];
-  for (const advance of due.filter((a) => !done.has(a.id))) {
+  for (const id of ids.filter((i) => !sent.has(i))) {
     results.push({
-      advance: advance.number,
+      thanks: id,
       ...(await attempt(async () => {
-        const { data: booking } = await db.from('reservations').select('id').eq('id', advance.source_id).maybeSingle();
-        if (!booking) return await annul(advance);
-        return await issueFinal(advance);
+        const source = await loadSource('reservation', id);
+        if (!source || !source.email.includes('@')) return { status: 'no_email' };
+        const { data: claimed, error: claimError } = await db.rpc('claim_guest_email', {
+          p_source_type: 'reservation', p_source_id: id, p_kind: 'thanks',
+        });
+        if (claimError) throw claimError;
+        if (!claimed) return { status: 'in_progress' };
+        await sendToGuest(source.email, thanksEmail(guestInput(source)));
+        await db.from('guest_emails').update({ sent_at: new Date().toISOString() })
+          .eq('source_type', 'reservation').eq('source_id', id).eq('kind', 'thanks');
+        return { status: 'thanked' };
       })),
     });
   }
-  return { status: 'finals', results };
+  return { status: 'thanks', results };
 }
 
 // ---------------------------------------------------------------------------
@@ -576,21 +682,29 @@ async function sweep() {
 
   for (const [type, table] of [['reservation', 'reservations'], ['gift_card', 'davanu_kartes_pasutijumi']] as const) {
     const { data: rows, error } = await db
-      .from(table).select('id').gte('created_at', since).lt('created_at', settled);
+      .from(table).select(type === 'reservation' ? 'id, payment_method' : 'id')
+      .gte('created_at', since).lt('created_at', settled);
     if (error) throw error;
-    const ids = (rows ?? []).map((r) => r.id as string);
+    // deno-lint-ignore no-explicit-any
+    const list = (rows ?? []) as any[];
+    const ids = list.map((r) => r.id as string);
     if (ids.length === 0) continue;
+    const cash = new Set(list.filter((r) => r.payment_method === 'cash').map((r) => r.id as string));
 
-    const [{ data: invoiced }, { data: held }, { data: confirmed }] = await Promise.all([
+    const [{ data: invoiced }, { data: held }, { data: confirmed }, { data: listed }] = await Promise.all([
       db.from('invoices').select('source_id').eq('source_type', type).eq('kind', 'advance').in('source_id', ids),
       db.from('invoice_holds').select('source_id').eq('source_type', type).in('source_id', ids),
       db.from('guest_emails').select('source_id').eq('source_type', type).eq('kind', 'confirmation')
         .not('sent_at', 'is', null).in('source_id', ids),
+      db.from('guest_emails').select('source_id').eq('source_type', type).eq('kind', 'sheet_row')
+        .not('sent_at', 'is', null).in('source_id', ids),
     ]);
+    const isListed = new Set((listed ?? []).map((r) => r.source_id));
     const hasAdvance = new Set([...(invoiced ?? []), ...(held ?? [])].map((r) => r.source_id));
     const hasConfirmation = new Set((confirmed ?? []).map((r) => r.source_id));
     for (const id of ids) {
-      const needsAdvance = !hasAdvance.has(id);
+      // A cash booking gets a row in the list instead of an invoice.
+      const needsAdvance = cash.has(id) ? !isListed.has(id) : !hasAdvance.has(id);
       const needsConfirmation = confirmationsOn && !hasConfirmation.has(id);
       if (!needsAdvance && !needsConfirmation) continue;
       results.push({
@@ -599,7 +713,9 @@ async function sweep() {
           const source = await loadSource(type, id);
           if (!source) return { status: 'not_found' };
           return {
-            advance: needsAdvance ? await attempt(() => issueAdvance(source)) : 'done',
+            advance: !needsAdvance
+              ? 'done'
+              : await attempt(() => (paysCash(source) ? logCashBooking(source) : issueAdvance(source))),
             confirmation: needsConfirmation ? await attempt(() => confirmGuest(source)) : 'done',
           };
         })),
@@ -751,9 +867,13 @@ async function manageReservation(body: { reservation?: string; pin?: string; act
   if (action === 'cancel') {
     if (final) return json({ error: 'final_exists', ...view() }, 409);
     if (!booking) return json({ status: 'already_cancelled', ...view() });
-    const annulled = advance ? await attempt(() => annul(advance)) : null;
+    // The booking goes first, so the row in the list is marked cancelled when
+    // the annulled invoice is filed.
     const { error } = await db.rpc('cancel_reservation', { p_id: id });
     if (error) return json({ error: describe(error) }, 409);
+    const annulled = advance
+      ? await attempt(() => annul(advance))
+      : await attempt(() => markCancelledInList(id));
     const calendar = await attempt(() => removeFromCalendar(row));
     return json({ status: 'cancelled', annulled, calendar, ...view(true, advance ? 'annulled' : null) });
   }
@@ -841,6 +961,7 @@ async function office(body: { pin?: string; action?: string }) {
       participants: r.ritual_participants,
       overnight: !!r.overnight_stay,
       transport: transportName(r.transport, 'lv') || null,
+      payment: r.payment_method === 'cash' ? 'cash' : 'transfer',
       message: (r.form_type === 'noma' ? r.rental_message : r.ritual_message) || null,
       name: r.name,
       email: r.email,

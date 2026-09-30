@@ -137,6 +137,7 @@ export interface ConfirmationInput {
   overnight?: boolean;
   giftLabel?: string;
   transport?: string;
+  cash?: boolean;
   priced: PricedOrder;
   individual?: boolean;
   seller: InvoiceRow['seller'];
@@ -198,8 +199,10 @@ export function confirmationEmail(c: ConfirmationInput) {
     findUs(t),
     whatToBring(t, ritual),
     h2(t('Apmaksa', 'Payment')),
-    p(t('Norēķināties var ar pārskaitījumu pirms apmeklējuma (avansa rēķinu nosūtām atsevišķā e-pastā) vai skaidrā naudā uz vietas.',
-      'You can pay by bank transfer before your visit (the advance invoice follows in a separate email) or in cash on site.')),
+    p(c.cash
+      ? t('Norēķināties varēsiet skaidrā naudā uz vietas pēc apmeklējuma.', 'You will pay in cash on site after your visit.')
+      : t('Avansa rēķinu nosūtām atsevišķā e-pastā – lūdzam to apmaksāt ar pārskaitījumu pirms apmeklējuma. Ja ērtāk, var norēķināties arī skaidrā naudā uz vietas.',
+        'The advance invoice follows in a separate email – please pay it by bank transfer before your visit. If you prefer, you can also pay in cash on site.')),
     h2(t('Izmaiņas un atcelšana', 'Changes and cancellation')),
     p(t(`Rezervāciju var pārcelt vai atcelt bez maksas. Lūdzu, paziņojiet pēc iespējas agrāk – zvaniet <a href="tel:+37126752661" style="color:#2e7d32">+371 26 752 661</a> vai atbildiet uz šo e-pastu.`,
       `You can move or cancel your booking free of charge. Please let us know as early as you can – call <a href="tel:+37126752661" style="color:#2e7d32">+371 26 752 661</a> or reply to this email.`)),
@@ -238,8 +241,10 @@ export function reminderEmail(c: ConfirmationInput) {
     findUs(t),
     whatToBring(t, ritual),
     h2(t('Apmaksa', 'Payment')),
-    p(t('Ja avansa rēķins vēl nav apmaksāts, var norēķināties arī skaidrā naudā uz vietas.',
-      'If the advance invoice has not been paid yet, you can also pay in cash on site.')),
+    p(c.cash
+      ? t('Norēķināties varēsiet skaidrā naudā uz vietas pēc apmeklējuma.', 'You will pay in cash on site after your visit.')
+      : t('Ja avansa rēķins vēl nav apmaksāts, var norēķināties arī skaidrā naudā uz vietas.',
+        'If the advance invoice has not been paid yet, you can also pay in cash on site.')),
     h2(t('Ja plāni mainījušies', 'If your plans have changed')),
     p(t(`Lūdzu, paziņojiet mums pēc iespējas ātrāk – zvaniet ${callUs} vai atbildiet uz šo e-pastu.`,
       `Please let us know as soon as possible – call ${callUs} or reply to this email.`)),
@@ -281,6 +286,28 @@ export function advanceInvoiceGuestEmail(invoice: InvoiceRow) {
   ].join('');
   const filename = `${lv ? 'Avansa-rekins' : 'Advance-invoice'}-${invoice.number}.pdf`;
   return { subject, html: guestLayout(t('Avansa rēķins', 'Advance invoice'), body, invoice.locale, seller), filename };
+}
+
+// ---------------------------------------------------------------------------
+// Thanks the morning after the visit, for a guest who paid in cash and so gets
+// no final invoice: the same words, without the invoice.
+
+export function thanksEmail(c: ConfirmationInput) {
+  const lv = c.locale === 'lv';
+  const t: Tr = (a, b) => (lv ? a : b);
+  const who = escapeHtml(firstName(c.name));
+  const subject = t('Paldies par apmeklējumu! · SaimniekaPirts', 'Thank you for visiting! · SaimniekaPirts');
+  const body = [
+    p(t(`Sveiki, ${who}!`, `Hello ${who},`)),
+    p(t('Liels paldies, ka bijāt pie mums SaimniekaPirts un uzticējāties mums! Ceram, ka pirts Jums sniedza atpūtu un spēku.',
+      'Thank you so much for visiting SaimniekaPirts and trusting us with your time! We hope the sauna left you rested and renewed.')),
+    h2(t('Mums ļoti palīdzētu Jūsu atsauksme', 'Your review would mean a lot to us')),
+    p(t('Ja Jums patika, lūdzu, veltiet minūti un uzrakstiet dažus vārdus Google. Tas palīdz citiem atrast SaimniekaPirts, un mums tas ir ļoti svarīgi.',
+      'If you enjoyed your visit, please take a minute to write a few words on Google. It helps others find SaimniekaPirts, and it means a great deal to us.')),
+    button(REVIEW_URL, t('Uzrakstīt atsauksmi', 'Write a review')),
+    p(t('Būsiet gaidīti atkal! 🌿', 'You are always welcome back! 🌿')),
+  ].join('');
+  return { subject, html: guestLayout(t('Paldies par apmeklējumu!', 'Thank you for visiting!'), body, c.locale, c.seller) };
 }
 
 // ---------------------------------------------------------------------------

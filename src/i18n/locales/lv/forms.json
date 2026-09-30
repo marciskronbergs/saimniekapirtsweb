@@ -104,10 +104,11 @@
     "total": "Kopā",
     "total_tbc": "Summu precizēsim",
     "contact": "Ar Jums sazināsimies pa e-pastu {{email}} vai tālruni {{phone}}.",
-    "payment": "Norēķināties var ar pārskaitījumu pirms apmeklējuma vai skaidrā naudā uz vietas.",
+    "payment": "Avansa rēķinu apmaksai nosūtīsim uz e-pastu – lūdzam to apmaksāt pirms apmeklējuma.",
     "changes": "Ja plāni mainās, lūdzu, zvaniet +371 26 752 661 – atcelšana ir bez maksas.",
     "close": "Aizvērt",
-    "slot_taken": "Šo pirti šajā laikā kāds tikko rezervēja. Lūdzu, izvēlieties citu pirti vai laiku."
+    "slot_taken": "Šo pirti šajā laikā kāds tikko rezervēja. Lūdzu, izvēlieties citu pirti vai laiku.",
+    "payment_cash": "Norēķināties varēsiet skaidrā naudā uz vietas pēc apmeklējuma."
   },
   "transport": {
     "label": "Kā nokļūsiet pie mums?",
@@ -119,5 +120,10 @@
     "transfer_note": "Komentārā norādiet, no kurienes Rīgā Jūs savākt.",
     "by_agreement": "cena pēc vienošanās",
     "custom_note": "Komentārā norādiet cilvēku skaitu un no kurienes Jūs savākt – sazināsimies, lai vienotos par cenu."
+  },
+  "payment": {
+    "label": "Kā vēlaties norēķināties?",
+    "transfer": "Ar pārskaitījumu – avansa rēķinu nosūtīsim uz e-pastu",
+    "cash": "Skaidrā naudā uz vietas pēc apmeklējuma"
   }
 }
