@@ -19,7 +19,7 @@ revoke all on public.discounts from anon, authenticated;
 -- A discount given after the advance invoice went out replaces that invoice:
 -- the old one is annulled and a new one issued. So a booking may now hold an
 -- annulled advance invoice beside the one in force; only one may be in force.
-drop index if exists public.invoices_source_kind_key;
+alter table public.invoices drop constraint if exists invoices_source_kind_key;
 create unique index invoices_source_kind_key
   on public.invoices (source_type, source_id, kind) where status <> 'annulled';
 
