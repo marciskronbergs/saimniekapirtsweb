@@ -224,7 +224,6 @@ export function reminderEmail(c: ConfirmationInput) {
       [t('Personu skaits', 'Number of people'), c.participants ? String(c.participants) : ''],
       [t('Nakšņošana', 'Overnight stay'), c.overnight ? t('jā', 'yes') : ''],
     ], null, c.locale),
-    p(t('Lūdzu, ierodieties laicīgi – ap 10 minūtes pirms sākuma.', 'Please arrive in good time – about 10 minutes before the start.')),
     findUs(t),
     whatToBring(t, ritual),
     h2(t('Apmaksa', 'Payment')),
