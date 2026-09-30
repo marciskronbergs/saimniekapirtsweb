@@ -114,9 +114,9 @@
     "label": "Kā nokļūsiet pie mums?",
     "own": "Atbraukšu pats",
     "free": "bez maksas",
-    "bus_hint": "No Rīgas var atbraukt ar autobusu līdz pieturai \"Dzimtmisa\" – tur Jūs savāksim.",
+    "by_bus": "Braukšu ar autobusu līdz pieturai \"Dzimtmisa\" – lūdzu, savāciet mani tur (bez maksas)",
     "timetable": "Autobusu saraksts",
-    "pickup_note": "Komentārā norādiet, ar kuru reisu atbrauksiet.",
+    "pickup_note": "Komentārā norādiet, ar kuru reisu atbrauksiet – sagaidīsim Jūs pieturā.",
     "transfer_note": "Komentārā norādiet, no kurienes Rīgā Jūs savākt.",
     "by_agreement": "cena pēc vienošanās",
     "custom_note": "Komentārā norādiet cilvēku skaitu un no kurienes Jūs savākt – sazināsimies, lai vienotos par cenu."
