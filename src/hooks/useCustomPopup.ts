@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { trackBookingStart } from '../lib/analytics';
 
 type PopupType = 'noma' | 'ritual';
 
@@ -9,6 +10,7 @@ export const useCustomPopup = () => {
   const openCustomPopup = (type: PopupType) => {
     setFormType(type);
     setIsOpen(true);
+    trackBookingStart(type);
   };
 
   const closeCustomPopup = () => {

@@ -6,6 +6,7 @@ import HeaderSection from '../components/HeaderSection';
 import FooterSection from '../components/FooterSection';
 import { callInvoiceFunction, useOfficePage } from '../lib/officeApi';
 import InvoicePay from './InvoicePay';
+import { trackBookingPaid } from '../lib/analytics';
 
 // Where Stripe sends a guest back after paying by card (/apmaksa?p=<payment>),
 // or after turning back without paying (&atcelts=1). It asks the invoice
@@ -189,6 +190,13 @@ const ApmaksaPage = () => {
   };
 
   const paid = view?.status === 'paid';
+
+  // A booking paid by card is the conversion the ads are judged on. Gift cards
+  // are left out here; they are counted separately.
+  useEffect(() => {
+    if (paid && view?.type === 'reservation' && payment) trackBookingPaid(payment, view);
+  }, [paid, view, payment]);
+
   const switched = view && !paid && view.method === 'transfer';
   const unpaid = view && !paid && !switched && (cancelled || view.status === 'expired' || polls.current >= 15);
 
