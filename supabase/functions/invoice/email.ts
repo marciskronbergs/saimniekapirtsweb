@@ -93,8 +93,12 @@ type Tr = (lv: string, en: string) => string;
 // Directions, in the confirmation and again in the reminder.
 const findUs = (t: Tr) =>
   h2(t('Kā pie mums nokļūt', 'How to find us')) +
+  p(t(`Adrese: "Sarma Nr. 123", Baldones pagasts, Ķekavas novads, LV-2125.`,
+    `Address: "Sarma Nr. 123", Baldone parish, Ķekava municipality, LV-2125, Latvia.`)) +
   p(t(`Atrašanās vieta kartē: <a href="${MAP_URL}" style="color:#2e7d32">atvērt Google Maps</a>. Waze lietotnē meklējiet <strong>"saimniekapirts"</strong> – tā atvedīs līdz pašiem vārtiem (<a href="${WAZE_URL}" style="color:#2e7d32">atvērt Waze</a>). Teritorijā ir plaša privāta autostāvvieta.`,
-    `Location on the map: <a href="${MAP_URL}" style="color:#2e7d32">open Google Maps</a>. In Waze, search for <strong>"saimniekapirts"</strong> – it takes you right to the gate (<a href="${WAZE_URL}" style="color:#2e7d32">open Waze</a>). There is plenty of private parking on site.`));
+    `Location on the map: <a href="${MAP_URL}" style="color:#2e7d32">open Google Maps</a>. In Waze, search for <strong>"saimniekapirts"</strong> – it takes you right to the gate (<a href="${WAZE_URL}" style="color:#2e7d32">open Waze</a>). There is plenty of private parking on site.`)) +
+  p(t('Ar sabiedrisko transportu brauciet maršrutā Rīga – Baldone; ja atbildēsiet uz šo e-pastu, varam Jūs savākt Baldones autoostā.',
+    'By public transport, take the Riga – Baldone route; reply to this email and we can collect you from the Baldone bus station.'));
 
 const whatToBring = (t: Tr, ritual: boolean) =>
   h2(ritual ? t('Kas ir iekļauts un ko ņemt līdzi', 'What is included and what to bring') : t('Ko ņemt līdzi', 'What to bring')) +
