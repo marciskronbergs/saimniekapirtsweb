@@ -138,6 +138,8 @@ export interface ConfirmationInput {
   giftLabel?: string;
   transport?: string;
   cash?: boolean;
+  // Paid by card through Stripe before the confirmation went out.
+  card?: boolean;
   priced: PricedOrder;
   individual?: boolean;
   seller: InvoiceRow['seller'];
@@ -199,7 +201,9 @@ export function confirmationEmail(c: ConfirmationInput) {
     findUs(t),
     whatToBring(t, ritual),
     h2(t('Apmaksa', 'Payment')),
-    p(c.cash
+    p(c.card
+      ? t('Apmaksa ar karti ir saņemta – paldies! Rēķinu nosūtām atsevišķā e-pastā.', 'Your card payment has been received – thank you! The invoice follows in a separate email.')
+      : c.cash
       ? t('Norēķināties varēsiet skaidrā naudā uz vietas pēc apmeklējuma.', 'You will pay in cash on site after your visit.')
       : t('Avansa rēķinu nosūtām atsevišķā e-pastā – lūdzam to apmaksāt ar pārskaitījumu pirms apmeklējuma. Ja ērtāk, var norēķināties arī skaidrā naudā uz vietas.',
         'The advance invoice follows in a separate email – please pay it by bank transfer before your visit. If you prefer, you can also pay in cash on site.')),
@@ -241,7 +245,9 @@ export function reminderEmail(c: ConfirmationInput) {
     findUs(t),
     whatToBring(t, ritual),
     h2(t('Apmaksa', 'Payment')),
-    p(c.cash
+    p(c.card
+      ? t('Apmaksa jau ir saņemta – paldies!', 'Your payment has already been received – thank you!')
+      : c.cash
       ? t('Norēķināties varēsiet skaidrā naudā uz vietas pēc apmeklējuma.', 'You will pay in cash on site after your visit.')
       : t('Ja avansa rēķins vēl nav apmaksāts, var norēķināties arī skaidrā naudā uz vietas.',
         'If the advance invoice has not been paid yet, you can also pay in cash on site.')),
@@ -267,6 +273,20 @@ export function advanceInvoiceGuestEmail(invoice: InvoiceRow) {
     ? t(`par apmeklējumu ${formatDate(d.date)} plkst. ${d.time ?? ''}`, `for your visit on ${formatDate(d.date)} at ${d.time ?? ''}`)
     : t('par dāvanu karti', 'for your gift card');
   const subject = t(`Avansa rēķins ${invoice.number} · SaimniekaPirts`, `Advance invoice ${invoice.number} · SaimniekaPirts`);
+  const filename = `${lv ? 'Avansa-rekins' : 'Advance-invoice'}-${invoice.number}.pdf`;
+  if (d?.payment === 'card') {
+    const paid = [
+      p(t(`Sveiki, ${who}!`, `Hello ${who},`)),
+      p(t(`Paldies, apmaksa ar karti ir saņemta! Pielikumā ir rēķins Nr. ${invoice.number} ${what} par ${eur(invoice.total)}. Tas ir apmaksāts – nekas vairs nav jādara.`,
+        `Thank you, your card payment has been received! Attached is invoice ${invoice.number} ${what} for ${eur(invoice.total, 'en')}. It has been paid – there is nothing more you need to do.`)),
+      p(t('Gaidīsim Jūs! 🌿', 'We look forward to seeing you! 🌿')),
+    ].join('');
+    return {
+      subject: t(`Apmaksa saņemta · rēķins ${invoice.number} · SaimniekaPirts`, `Payment received · invoice ${invoice.number} · SaimniekaPirts`),
+      html: guestLayout(t('Apmaksa saņemta', 'Payment received'), paid, invoice.locale, seller),
+      filename,
+    };
+  }
   const body = [
     p(t(`Sveiki, ${who}!`, `Hello ${who},`)),
     p(t(`Pielikumā ir avansa rēķins Nr. ${invoice.number} ${what}.`,
@@ -284,7 +304,6 @@ export function advanceInvoiceGuestEmail(invoice: InvoiceRow) {
       : p(t('Pēc apmaksas sagatavosim un nosūtīsim dāvanu karti.', 'Once it is paid, we will prepare the gift card and send it to you.')),
     p(visit ? t('Gaidīsim Jūs! 🌿', 'We look forward to seeing you! 🌿') : t('Paldies par pasūtījumu! 🌿', 'Thank you for your order! 🌿')),
   ].join('');
-  const filename = `${lv ? 'Avansa-rekins' : 'Advance-invoice'}-${invoice.number}.pdf`;
   return { subject, html: guestLayout(t('Avansa rēķins', 'Advance invoice'), body, invoice.locale, seller), filename };
 }
 
@@ -313,11 +332,41 @@ export function thanksEmail(c: ConfirmationInput) {
 // ---------------------------------------------------------------------------
 // Final invoice to the guest.
 
-export function finalInvoiceGuestEmail(invoice: InvoiceRow) {
+export interface GiftCardNote {
+  code: string;
+  validUntil: string;
+}
+
+// For a gift card, the final invoice travels with the gift card itself.
+export function finalInvoiceGuestEmail(invoice: InvoiceRow, giftCard?: GiftCardNote) {
   const lv = invoice.locale === 'lv';
   const t = (a: string, b: string) => (lv ? a : b);
   const who = escapeHtml(firstName(invoice.customer_name));
   const visit = invoice.details?.kind === 'reservation';
+  const filename = `${lv ? 'Rekins' : 'Invoice'}-${invoice.number}.pdf`;
+  if (!visit && giftCard) {
+    const card = escapeHtml(giftCard.code);
+    const body = [
+      p(t(`Sveiki, ${who}!`, `Hello ${who},`)),
+      p(t('Paldies par dāvanu kartes pirkumu! Pielikumā ir:', 'Thank you for buying a gift card! Attached are:')),
+      list([
+        t(`<strong>dāvanu karte Nr. ${card}</strong>, derīga līdz ${formatDate(giftCard.validUntil)} – to var izdrukāt vai uzdāvināt elektroniski;`,
+          `<strong>gift card no. ${card}</strong>, valid until ${formatDate(giftCard.validUntil)} – print it or give it electronically;`),
+        t(`rēķins Nr. ${invoice.number} par ${eur(invoice.total)} – tas ir apmaksāts.`,
+          `invoice ${invoice.number} for ${eur(invoice.total, 'en')} – it has been paid.`),
+      ]),
+      h2(t('Kā izmantot dāvanu karti', 'How to use the gift card')),
+      p(t(`Lai pieteiktu apmeklējumu, zvaniet ${callUs} vai rakstiet uz <a href="mailto:${invoice.seller.email}" style="color:#2e7d32">${invoice.seller.email}</a> un nosauciet dāvanu kartes numuru.`,
+        `To book a visit, call ${callUs} or write to <a href="mailto:${invoice.seller.email}" style="color:#2e7d32">${invoice.seller.email}</a>, quoting the gift card number.`)),
+      p(t('Lai dāvana sagādā prieku! 🌿', 'We hope the gift brings a lot of joy! 🌿')),
+    ].join('');
+    return {
+      subject: t(`Jūsu dāvanu karte ${giftCard.code} · SaimniekaPirts`, `Your gift card ${giftCard.code} · SaimniekaPirts`),
+      html: guestLayout(t('Jūsu dāvanu karte', 'Your gift card'), body, invoice.locale, invoice.seller),
+      filename,
+      giftCardFilename: `${lv ? 'Davanu-karte' : 'Gift-card'}-${giftCard.code}.pdf`,
+    };
+  }
   const subject = visit
     ? t(`Paldies par apmeklējumu! Rēķins ${invoice.number} · SaimniekaPirts`, `Thank you for visiting! Invoice ${invoice.number} · SaimniekaPirts`)
     : t(`Rēķins ${invoice.number} · SaimniekaPirts`, `Invoice ${invoice.number} · SaimniekaPirts`);
@@ -336,8 +385,7 @@ export function finalInvoiceGuestEmail(invoice: InvoiceRow) {
     visit ? p(t('Būsiet gaidīti atkal! 🌿', 'You are always welcome back! 🌿')) : '',
   ].join('');
   const title = visit ? t('Paldies par apmeklējumu!', 'Thank you for visiting!') : t('Jūsu rēķins', 'Your invoice');
-  const filename = `${lv ? 'Rekins' : 'Invoice'}-${invoice.number}.pdf`;
-  return { subject, html: guestLayout(title, body, invoice.locale, invoice.seller), filename };
+  return { subject, html: guestLayout(title, body, invoice.locale, invoice.seller), filename, giftCardFilename: '' };
 }
 
 // ---------------------------------------------------------------------------
@@ -348,7 +396,8 @@ export const manageLink = (invoice: { id: string; manage_token: string }) =>
 
 export function invoiceEmail(invoice: InvoiceRow & { manage_token?: string }) {
   const subject =
-    `Avansa rēķins ${invoice.number} · ${invoice.customer_name} · ${visitLv(invoice.details)} · ${eur(invoice.total)}`;
+    `Avansa rēķins ${invoice.number} · ${invoice.customer_name} · ${visitLv(invoice.details)} · ${eur(invoice.total)}` +
+    (invoice.details?.payment === 'card' ? ' · apmaksāts ar karti' : '');
   const lines = invoice.items
     .map((item) => {
       const qty = item.quantity > 1 ? ` × ${item.quantity}` : '';
@@ -358,17 +407,26 @@ export function invoiceEmail(invoice: InvoiceRow & { manage_token?: string }) {
     .join('');
   const phone = invoice.customer_phone ? `, tālr. ${escapeHtml(invoice.customer_phone)}` : '';
   const link = invoice.manage_token ? manageLink({ id: invoice.id, manage_token: invoice.manage_token }) : '';
+  const card = invoice.details?.payment === 'card';
+  const paidNote = card ? `Apmaksāts ar karti (Stripe) ${invoice.details?.paid_on ? formatDate(invoice.details.paid_on) : ''}.`.replace(' .', '.') : '';
   const next = invoice.source_type === 'reservation'
-    ? 'Gala rēķins klientam aizies automātiski nākamajā rītā pēc apmeklējuma un tiks saglabāts Google Drive.'
-    : 'Kad dāvanu karte ir apmaksāta, izraksti gala rēķinu ar saiti zemāk – tas aizies klientam un tiks saglabāts Google Drive.';
+    ? `${paidNote ? `${paidNote} ` : ''}Gala rēķins klientam aizies automātiski nākamajā rītā pēc apmeklējuma un tiks saglabāts Google Drive.`
+    : card
+    ? `${paidNote} Klientam automātiski nosūtīts gala rēķins un dāvanu karte (PDF).`
+    : 'Kad dāvanu karte ir apmaksāta, izraksti gala rēķinu ar saiti zemāk – klientam automātiski aizies rēķins un dāvanu karte (PDF), un rēķins tiks saglabāts Google Drive.';
+  const headline = card && invoice.source_type === 'gift_card'
+    ? 'Dāvanu karte apmaksāta ar karti; klientam nosūtīts rēķins un dāvanu karte uz'
+    : card
+    ? 'Apmaksāts ar karti. Rēķins nosūtīts klientam uz'
+    : 'Avansa rēķins nosūtīts klientam uz';
 
   const html = `<!doctype html><html><body style="font-family:Arial,sans-serif;font-size:14px;color:#1a1a1a;line-height:1.5">
 <div style="background:#eef6ee;border:1px solid #9cc79c;border-radius:6px;padding:12px 14px;margin-bottom:18px">
-Avansa rēķins nosūtīts klientam uz
+${headline}
 <a href="mailto:${escapeHtml(invoice.customer_email)}">${escapeHtml(invoice.customer_email)}</a>${phone}. Šī ir biroja kopija.
 </div>
 <p style="margin:0 0 4px"><strong>${escapeHtml(invoice.customer_name)}</strong></p>
-<p style="margin:0 0 14px;color:#555">${escapeHtml(visitLv(invoice.details))} · avansa rēķins ${escapeHtml(invoice.number)} · apmaksāt līdz ${formatDate(invoice.due_on)}</p>
+<p style="margin:0 0 14px;color:#555">${escapeHtml(visitLv(invoice.details))} · avansa rēķins ${escapeHtml(invoice.number)} · ${card ? 'apmaksāts ar karti' : `apmaksāt līdz ${formatDate(invoice.due_on)}`}</p>
 <table style="border-collapse:collapse;margin-bottom:6px">${lines}
 <tr><td style="padding:8px 12px 4px 0;border-top:1px solid #ccc"><strong>Kopā</strong></td>
 <td style="padding:8px 0 4px;border-top:1px solid #ccc;text-align:right"><strong>${eur(invoice.total)}</strong></td></tr></table>
@@ -377,11 +435,11 @@ ${link ? `<p style="margin:26px 0 0;padding-top:12px;border-top:1px solid #ddd;c
 </body></html>`;
 
   const text = [
-    'Avansa rēķins nosūtīts klientam uz ' +
+    `${headline} ` +
       `${invoice.customer_email}${invoice.customer_phone ? `, tālr. ${invoice.customer_phone}` : ''}. Šī ir biroja kopija.`,
     '',
     invoice.customer_name,
-    `${visitLv(invoice.details)} · avansa rēķins ${invoice.number} · apmaksāt līdz ${formatDate(invoice.due_on)}`,
+    `${visitLv(invoice.details)} · avansa rēķins ${invoice.number} · ${card ? 'apmaksāts ar karti' : `apmaksāt līdz ${formatDate(invoice.due_on)}`}`,
     '',
     ...invoice.items.map((i) => `${i.name.lv}${i.quantity > 1 ? ` × ${i.quantity}` : ''}: ${eur(i.amount)}`),
     `Kopā: ${eur(invoice.total)}`,

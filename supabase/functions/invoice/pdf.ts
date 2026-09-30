@@ -36,6 +36,9 @@ export interface InvoiceDetails {
   sauna?: string;
   // On a final invoice, the advance invoice it settles.
   advance_number?: string;
+  // Paid by card through Stripe, on this day (both invoices say so).
+  payment?: 'card';
+  paid_on?: string;
 }
 
 export interface InvoiceRow {
@@ -230,7 +233,7 @@ export async function renderInvoicePdf(invoice: InvoiceRow): Promise<Uint8Array>
   text(`${seller.web} · ${seller.email} · ${seller.phone}`, left, { size: 8.5, color: grey });
   text(`${L('Datums', 'Date')}: ${formatDate(invoice.issued_on)}`, right, { align: 'right' });
   y -= 14;
-  if (final) {
+  if (final || invoice.details?.payment === 'card') {
     text(L('Apmaksāts', 'Paid'), right, { font: bold, color: brandGreen, align: 'right' });
   } else {
     text(`${L('Apmaksāt līdz', 'Due by')}: ${formatDate(invoice.due_on)}`, right, { font: bold, align: 'right' });
@@ -351,7 +354,11 @@ export async function renderInvoicePdf(invoice: InvoiceRow): Promise<Uint8Array>
   ensureRoom(80);
   text(L('Apmaksa', 'Payment'), left, { font: bold, size: 10 });
   y -= 15;
-  const payment = final ? [
+  const card = invoice.details?.payment === 'card';
+  const paidOn = invoice.details?.paid_on ? formatDate(invoice.details.paid_on) : '';
+  const payment = card ? [
+    L(`Apmaksāts ar maksājumu karti ${paidOn}. Paldies!`, `Paid by card on ${paidOn}. Thank you!`),
+  ] : final ? [
     L('Rēķins ir apmaksāts. Paldies!', 'This invoice has been paid in full. Thank you!'),
   ] : [
     L(`Ar pārskaitījumu līdz ${formatDate(invoice.due_on)}`, `By bank transfer by ${formatDate(invoice.due_on)}`) +

@@ -5,6 +5,8 @@ import { Gift, ChevronDown, ChevronUp, Check } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useTranslation } from 'react-i18next';
 import priceCatalog from '../data/priceCatalog.json';
+import PaymentChoice from '../components/popup/PaymentChoice';
+import { goToCardPayment, useCardPayments } from '../lib/cardPayments';
 
 const DavanuKartesPage = () => {
   const [isVisible, setIsVisible] = useState(false);
@@ -23,6 +25,11 @@ const DavanuKartesPage = () => {
   const formRef = useRef<HTMLDivElement>(null);
   const { t, i18n } = useTranslation('giftcards');
   const locale = i18n.language === 'en' ? 'en' : 'lv';
+  // Paid by card, the gift card comes straight back as a PDF; by transfer, it
+  // is sent once the invoice is paid. Card is the default while it is offered.
+  const cardPayments = useCardPayments();
+  const [chosenPayment, setChosenPayment] = useState<'card' | 'transfer' | null>(null);
+  const paymentMethod = chosenPayment ?? (cardPayments ? 'card' : 'transfer');
 
   useEffect(() => {
     const observer = new IntersectionObserver(
@@ -135,14 +142,18 @@ const DavanuKartesPage = () => {
         created_at: new Date().toISOString()
       };
 
+      // The id is made here, as the public cannot read orders back; it is the
+      // order's reference for the card payment.
+      const id = crypto.randomUUID();
       const submissionData = {
+        id,
         vards_uzvards: submissionPayload.vards_uzvards,
         epasts: submissionPayload.epasts,
         talrunis: submissionPayload.talrunis,
         ritual_type: submissionPayload.ritual_type,
         specific_ritual_type: submissionPayload.specific_ritual_type,
         custom_price_value: submissionPayload.custom_price_value,
-        created_at: submissionPayload.created_at,
+        payment_method: paymentMethod,
         locale
       };
 
@@ -171,7 +182,8 @@ const DavanuKartesPage = () => {
               form_type: type,
               created_at: submissionPayload.created_at,
               // Lets Make answer in the language the order was placed in.
-              locale
+              locale,
+              payment_method: paymentMethod,
             })
           });
         } catch (webhookError) {
@@ -179,6 +191,9 @@ const DavanuKartesPage = () => {
           // Don't show error to user as the main submission was successful
         }
 
+        // On to Stripe's page; if it cannot be opened, the order is paid by
+        // bank transfer instead and its invoice is emailed.
+        if (paymentMethod === 'card') await goToCardPayment('gift_card', id);
         setShowSuccess(true);
         // Reset form
         setFormData({
@@ -437,6 +452,15 @@ const DavanuKartesPage = () => {
                     </div>
                   </div>
 
+                  {cardPayments && (
+                    <PaymentChoice
+                      card
+                      cash={false}
+                      value={paymentMethod}
+                      onChange={(method) => setChosenPayment(method === 'card' ? 'card' : 'transfer')}
+                    />
+                  )}
+
                   {/* Purchase Button */}
                   <div className="text-center pt-4 sm:pt-6">
                     <button
@@ -544,6 +568,15 @@ const DavanuKartesPage = () => {
                       />
                     </div>
                   </div>
+
+                  {cardPayments && (
+                    <PaymentChoice
+                      card
+                      cash={false}
+                      value={paymentMethod}
+                      onChange={(method) => setChosenPayment(method === 'card' ? 'card' : 'transfer')}
+                    />
+                  )}
 
                   {/* Purchase Button */}
                   <div className="text-center pt-4 sm:pt-6">

@@ -123,6 +123,7 @@
   },
   "payment": {
     "label": "Kā vēlaties norēķināties?",
+    "card": "Ar karti tagad – droši caur Stripe (arī Apple Pay un Google Pay)",
     "transfer": "Ar pārskaitījumu – avansa rēķinu nosūtīsim uz e-pastu",
     "cash": "Skaidrā naudā uz vietas pēc apmeklējuma"
   }

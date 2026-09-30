@@ -6,6 +6,7 @@ import priceCatalog from '../../data/priceCatalog.json';
 import BookingConfirmation, { type ConfirmedBooking } from './BookingConfirmation';
 import TransportChoice from './TransportChoice';
 import PaymentChoice, { type PaymentMethod } from './PaymentChoice';
+import { goToCardPayment, paymentLabel, useCardPayments } from '../../lib/cardPayments';
 import { scrollIntoPopup } from './scrollIntoPopup';
 import { cancelUrl } from './cancelUrl';
 
@@ -43,6 +44,7 @@ const FormNoma: React.FC<FormNomaProps> = ({ selectedDate, selectedTime, onClose
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [confirmed, setConfirmed] = useState<ConfirmedBooking | null>(null);
+  const cardPayments = useCardPayments();
   // The button is disabled through state, which only takes effect on the next
   // render; a quick double click lands before that and used to book twice.
   const submittingRef = useRef(false);
@@ -185,13 +187,20 @@ const FormNoma: React.FC<FormNomaProps> = ({ selectedDate, selectedTime, onClose
           body: JSON.stringify({
             ...reservationData,
             cancel_url: cancelUrl(id),
-            payment_label: formData.paymentMethod === 'cash' ? 'Skaidrā naudā uz vietas' : 'Pārskaitījums (avansa rēķins)',
+            payment_label: paymentLabel(formData.paymentMethod),
           })
         });
       } catch (webhookError) {
         console.error('Webhook error:', webhookError);
       }
 
+      // Paying by card: on to Stripe's page. If that cannot be opened, the
+      // booking stands and is paid by bank transfer instead.
+      if (formData.paymentMethod === 'card') {
+        await goToCardPayment('reservation', id);
+        setConfirmed({ ...reservationData, payment_method: 'transfer' });
+        return;
+      }
       setConfirmed(reservationData);
 
     } catch (error) {
@@ -362,6 +371,7 @@ const FormNoma: React.FC<FormNomaProps> = ({ selectedDate, selectedTime, onClose
         <TransportChoice value={formData.transport} onChange={(label) => setFormData((prev) => ({ ...prev, transport: label }))} />
 
         <PaymentChoice
+          card={cardPayments}
           value={formData.paymentMethod}
           onChange={(method) => setFormData((prev) => ({ ...prev, paymentMethod: method }))}
         />

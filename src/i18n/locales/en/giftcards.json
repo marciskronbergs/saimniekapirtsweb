@@ -26,6 +26,6 @@
     "submit": "Purchase Gift Card",
     "submitting": "Processing...",
     "success": "Thank you!",
-    "successMessage": "We will contact you within 24 hours."
+    "successMessage": "We have emailed you the invoice for payment. As soon as it is paid, we will send you the gift card."
   }
 }

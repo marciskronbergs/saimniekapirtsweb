@@ -36,6 +36,15 @@
 //                                           the office's page: upcoming bookings,
 //                                           and the sauna masters assigned to them
 //   { sauna_master: { token } }             a master's own list, from their link
+// And by the booking forms and the /apmaksa page, for paying by card:
+//   { payment_options: true }               whether card payments are on
+//   { checkout: { type, id } }              a Stripe Checkout page for a booking
+//                                           or order the guest chose to pay by card
+//   { payment_status | payment_retry | payment_switch | gift_card_pdf: { p } }
+//                                           one Checkout payment: how it went, a
+//                                           new page, bank transfer instead, and
+//                                           the paid gift card as a PDF
+// And by Stripe's webhook (checkout.session.* events).
 
 import { createClient } from 'npm:@supabase/supabase-js@2';
 import catalog from './priceCatalog.json' with { type: 'json' };
@@ -47,6 +56,10 @@ import {
   manageLink,
   type ConfirmationInput,
 } from './email.ts';
+import { renderGiftCardPdf } from './giftcard.ts';
+import {
+  stripeConfigured, createCheckoutSession, getCheckoutSession, expireCheckoutSession, type CheckoutSession,
+} from './stripe.ts';
 
 type SourceType = 'reservation' | 'gift_card';
 type Invoice = InvoiceRow & {
@@ -119,6 +132,8 @@ interface Source {
   fields: [string, string][];
   // deno-lint-ignore no-explicit-any
   row: any;
+  // Set once a card payment for it is known to have gone through.
+  cardPaid?: boolean;
 }
 
 async function loadSource(type: SourceType, id: string): Promise<Source | null> {
@@ -222,10 +237,14 @@ async function sendToOffice(
 }
 
 // To a guest, through the second scenario.
+// A second attachment (the gift card beside its invoice) goes as filename2 /
+// pdf2_base64, which the scenario sends on a route of its own.
+type Attachment = { filename: string; content: string };
 async function sendToGuest(
   to: string,
   message: { subject: string; html: string },
-  attachment?: { filename: string; content: string }
+  attachment?: Attachment,
+  second?: Attachment,
 ) {
   await post(await guestUrl(), 'Guest mail', {
     route: 'email',
@@ -233,6 +252,7 @@ async function sendToGuest(
     subject: message.subject,
     html: message.html,
     ...(attachment ? { filename: attachment.filename, pdf_base64: attachment.content } : {}),
+    ...(attachment && second ? { filename2: second.filename, pdf2_base64: second.content } : {}),
   });
 }
 
@@ -257,6 +277,11 @@ async function deliverAdvance(invoice: Invoice) {
 async function deliverAdvanceToGuest(invoice: Invoice) {
   if (invoice.customer_emailed_at) return { status: 'already_sent' };
   if (invoice.status !== 'issued') return { status: 'annulled' };
+  if (invoice.source_type === 'gift_card' && invoice.details?.payment === 'card') {
+    // Paid at once: the guest gets the final invoice, with the gift card, instead.
+    await db.from('invoices').update({ customer_emailed_at: new Date().toISOString() }).eq('id', invoice.id);
+    return { status: 'not_needed' };
+  }
   if (!(await guestUrl())) return { status: 'guest_mail_off' };
   const { data: claimed, error } = await db.rpc('claim_customer_invoice_email', { p_invoice_id: invoice.id });
   if (error) throw error;
@@ -321,7 +346,7 @@ async function archive(invoice: Invoice) {
       date: formatDate(invoice.issued_on),
       number: invoice.number,
       kind: invoice.kind === 'final' ? 'Rēķins' : 'Avansa rēķins',
-      status: invoice.kind === 'final' ? 'Apmaksāts' : 'Izrakstīts',
+      status: invoice.kind === 'final' || invoice.details?.payment === 'card' ? 'Apmaksāts' : 'Izrakstīts',
       customer: invoice.customer_name,
       email: invoice.customer_email,
       visit: visitText(invoice.details),
@@ -329,7 +354,7 @@ async function archive(invoice: Invoice) {
       // Cancels the booking (and annuls this invoice), or for a gift card
       // annuls the invoice. Only the advance invoice's row carries it.
       cancel_url: invoice.kind === 'advance' ? cancelLink(invoice) : '',
-      payment: 'Pārskaitījums',
+      payment: invoice.details?.payment === 'card' ? 'Karte (Stripe)' : 'Pārskaitījums',
       booking_status: invoice.kind === 'advance' && invoice.source_type === 'reservation' ? 'Aktīva' : '',
     });
   }
@@ -406,6 +431,7 @@ function guestInput(source: Source): ConfirmationInput {
     giftLabel: source.type === 'gift_card' ? r.ritual_type ?? '' : undefined,
     transport: transportName(r.transport, source.locale),
     cash: r.payment_method === 'cash',
+    card: !!source.cardPaid,
     priced: source.priced,
     individual: ritual?.people === 1,
     seller: typedSeller,
@@ -442,6 +468,7 @@ async function reminders() {
         const source = await loadSource('reservation', id);
         if (!source) return { status: 'not_found' };
         if (!source.email.includes('@')) return { status: 'no_email' };
+        source.cardPaid = await hasCardPayment(source);
         const { data: claimed, error: claimError } = await db.rpc('claim_guest_email', {
           p_source_type: 'reservation', p_source_id: id, p_kind: 'reminder',
         });
@@ -466,7 +493,9 @@ async function confirmGuest(source: Source) {
   if (error) throw error;
   if (!claimed) return { status: 'already_sent' };
 
-  await sendToGuest(source.email, confirmationFor(source));
+  // A gift card paid by card goes to the guest at once, with its invoice; an
+  // order confirmation saying it will follow would only confuse.
+  if (!(source.type === 'gift_card' && source.cardPaid)) await sendToGuest(source.email, confirmationFor(source));
   await db.from('guest_emails').update({ sent_at: new Date().toISOString() })
     .eq('source_type', source.type).eq('source_id', source.id).eq('kind', 'confirmation');
   return { status: 'confirmed' };
@@ -478,6 +507,13 @@ async function confirmGuest(source: Source) {
 async function processSource(type: SourceType, id: string) {
   const source = await loadSource(type, id);
   if (!source) return { status: 'not_found' };
+  return await processLoaded(source);
+}
+
+async function processLoaded(source: Source) {
+  const card = await cardState(source);
+  if (card === 'awaiting') return { status: 'awaiting_payment' };
+  if (card === 'paid') return await paidByCard(source);
   // The guest's confirmation does not wait on, or fail with, the invoice.
   const confirmation = await attempt(() => confirmGuest(source));
   const advance = paysCash(source)
@@ -486,7 +522,8 @@ async function processSource(type: SourceType, id: string) {
   return { advance, confirmation };
 }
 
-async function issueAdvance(source: Source) {
+// Paid by card, the advance invoice says so and asks for nothing.
+async function issueAdvance(source: Source, paidOn?: string) {
   const { type, id } = source;
   const { data: existing, error: existingError } = await db
     .from('invoices').select('*').eq('source_type', type).eq('source_id', id).eq('kind', 'advance').maybeSingle();
@@ -532,7 +569,8 @@ async function issueAdvance(source: Source) {
     p_total: source.priced.total,
     p_seller: seller,
     p_vat_note: VAT_NOTE,
-    p_details: source.details,
+    p_details: paidOn ? { ...source.details, payment: 'card', paid_on: paidOn } : source.details,
+    p_paid: !!paidOn,
   });
   if (error) throw error;
   const guest = await attempt(() => deliverAdvanceToGuest(invoice));
@@ -577,8 +615,14 @@ async function deliverFinal(invoice: Invoice) {
     if (error) throw error;
     if (claimed) {
       const pdf = await renderInvoicePdf(invoice);
-      const message = finalInvoiceGuestEmail(invoice);
-      await sendToGuest(invoice.customer_email, message, { filename: message.filename, content: toBase64(pdf) });
+      const card = invoice.source_type === 'gift_card' ? await giftCard(invoice.source_id) : null;
+      const message = finalInvoiceGuestEmail(invoice, card ? { code: card.code, validUntil: card.valid_until } : undefined);
+      await sendToGuest(
+        invoice.customer_email,
+        message,
+        { filename: message.filename, content: toBase64(pdf) },
+        card ? { filename: message.giftCardFilename, content: toBase64(card.pdf) } : undefined,
+      );
       await db.from('invoices').update({ customer_emailed_at: new Date().toISOString() }).eq('id', invoice.id);
       sent = { status: 'sent_to_guest' };
     } else {
@@ -715,6 +759,9 @@ async function sweep() {
         ...(await attempt(async () => {
           const source = await loadSource(type, id);
           if (!source) return { status: 'not_found' };
+          const card = await cardState(source);
+          if (card === 'awaiting') return { status: 'awaiting_payment' };
+          if (card === 'paid') return await paidByCard(source);
           return {
             advance: !needsAdvance
               ? 'done'
@@ -780,6 +827,315 @@ async function sweep() {
   }
   results.push({ reminders: await attempt(() => reminders()) });
   return { status: 'swept', results };
+}
+
+// ---------------------------------------------------------------------------
+// Gift cards: the card itself, drawn from the order and numbered the first
+// time it is needed.
+
+async function giftCard(orderId: string) {
+  const { data: order, error } = await db.from('davanu_kartes_pasutijumi').select('*').eq('id', orderId).maybeSingle();
+  if (error) throw error;
+  if (!order) return null;
+  const priced = priceGiftCard(prices, order);
+  if (priced.problems.length) throw new Error(`Gift card cannot be priced: ${priced.problems.join('; ')}`);
+  const { data: card, error: cardError } = await db.rpc('gift_card_for', { p_order: orderId });
+  if (cardError) throw cardError;
+  const ritual = prices.giftCard.rituals.find((r) => r.label.lv === order.ritual_type || r.label.en === order.ritual_type);
+  const locale: 'lv' | 'en' = order.locale === 'en' ? 'en' : 'lv';
+  const pdf = await renderGiftCardPdf({
+    code: card.code,
+    validUntil: card.valid_until,
+    locale,
+    ritual: ritual?.card ?? null,
+    value: priced.total,
+  });
+  const filename = `${locale === 'en' ? 'Gift-card' : 'Davanu-karte'}-${card.code}.pdf`;
+  return { code: card.code as string, valid_until: card.valid_until as string, filename, pdf };
+}
+
+// ---------------------------------------------------------------------------
+// Card payments through Stripe Checkout.
+//
+// The booking form saves the booking or order with payment_method 'card' and
+// asks for a Checkout page ({ checkout }). The guest pays there and comes back
+// to /apmaksa, which asks how it went ({ payment_status }). Stripe also tells
+// this function about every Checkout page that is paid or closes (its
+// webhook); the function asks Stripe about the page itself rather than
+// trusting what it was sent. Until the guest has paid, or their hour is up,
+// nothing goes out: then the guest gets the confirmation and a paid invoice,
+// or, if they did not pay, the confirmation and the advance invoice for a
+// bank transfer, as if they had chosen one.
+
+const CARD_MINUTES = 60; // how long a Checkout page stays open
+const SITE = 'https://saimniekapirts.lv';
+
+interface CardPayment {
+  id: string;
+  source_type: SourceType;
+  source_id: string;
+  session_id: string;
+  url: string;
+  amount: number | string;
+  status: 'open' | 'paid' | 'expired';
+  paid_at: string | null;
+  created_at: string;
+}
+
+const cardPaymentsOn = async () => stripeConfigured() && (await setting('card_payments')) !== 'off';
+const isNewerThan = (iso: string, minutes: number) => new Date(iso).getTime() > Date.now() - minutes * 60_000;
+const rigaDate = (iso: string) => new Date(iso).toLocaleDateString('en-CA', { timeZone: 'Europe/Riga' });
+const sourceTable = (type: SourceType) => (type === 'reservation' ? 'reservations' : 'davanu_kartes_pasutijumi');
+
+// Runs after the response is sent, where the platform allows it.
+const inBackground = (work: Promise<unknown>) => {
+  // deno-lint-ignore no-explicit-any
+  const runtime = (globalThis as any).EdgeRuntime;
+  if (runtime?.waitUntil) runtime.waitUntil(work.catch((e) => console.error(e)));
+  else return work.catch((e) => console.error(e));
+};
+
+async function cardPayments(type: SourceType, id: string): Promise<CardPayment[]> {
+  const { data, error } = await db.from('card_payments').select('*')
+    .eq('source_type', type).eq('source_id', id).order('created_at', { ascending: false });
+  if (error) throw error;
+  return data ?? [];
+}
+
+async function hasCardPayment(source: Source) {
+  if (source.row.payment_method !== 'card') return false;
+  return (await cardPayments(source.type, source.id)).some((p) => p.status === 'paid');
+}
+
+// What Stripe says about a Checkout page, written down. With `close`, a page
+// still open is closed first, so it cannot be paid once the booking has moved
+// on to a bank transfer.
+async function refreshPayment(payment: CardPayment, close = false): Promise<CardPayment> {
+  if (payment.status !== 'open') return payment;
+  let session: CheckoutSession = await getCheckoutSession(payment.session_id);
+  if (close && session.status === 'open') {
+    session = await expireCheckoutSession(payment.session_id).catch(() => getCheckoutSession(payment.session_id));
+  }
+  const paid = session.payment_status === 'paid';
+  if (paid && (
+    session.amount_total !== Math.round(Number(payment.amount) * 100) ||
+    session.currency !== 'eur' ||
+    session.metadata?.source_id !== payment.source_id
+  )) {
+    throw new Error(`Checkout ${payment.session_id} does not match its booking`);
+  }
+  const status = paid ? 'paid' : session.status === 'expired' ? 'expired' : 'open';
+  if (status === 'open') return payment;
+  await db.from('card_payments')
+    .update({ status, paid_at: paid ? new Date().toISOString() : null, payment_intent: session.payment_intent })
+    .eq('id', payment.id).eq('status', 'open');
+  const { data, error } = await db.from('card_payments').select('*').eq('id', payment.id).single();
+  if (error) throw error;
+  return data;
+}
+
+// Where a booking the guest chose to pay by card stands. One whose hour is up,
+// or whose Checkout page was never opened, moves to a bank transfer.
+async function cardState(source: Source): Promise<'none' | 'awaiting' | 'paid' | 'lapsed'> {
+  if (source.row.payment_method !== 'card') return 'none';
+  const payments = await cardPayments(source.type, source.id);
+  if (payments.some((p) => p.status === 'paid')) {
+    source.cardPaid = true;
+    return 'paid';
+  }
+  const latest = payments[0];
+  const waiting = latest
+    ? latest.status === 'open' && isNewerThan(latest.created_at, CARD_MINUTES + 5)
+    : isNewerThan(source.row.created_at, 15); // the form opens the page just after saving
+  if (waiting) return 'awaiting';
+  for (const payment of payments.filter((p) => p.status === 'open')) {
+    const now = await refreshPayment(payment, true);
+    if (now.status === 'paid') {
+      source.cardPaid = true;
+      return 'paid';
+    }
+    if (now.status === 'open') return 'awaiting';
+  }
+  await toTransfer(source);
+  return 'lapsed';
+}
+
+async function toTransfer(source: Source) {
+  const { error } = await db.from(sourceTable(source.type)).update({ payment_method: 'transfer' }).eq('id', source.id);
+  if (error) throw error;
+  source.row.payment_method = 'transfer';
+}
+
+async function paidByCard(source: Source) {
+  const payment = (await cardPayments(source.type, source.id)).find((p) => p.status === 'paid')!;
+  const paidOn = rigaDate(payment.paid_at ?? payment.created_at);
+  source.cardPaid = true;
+  const confirmation = await attempt(() => confirmGuest(source));
+  const advance = await attempt(() => issueAdvance(source, paidOn));
+  if (source.type === 'reservation') return { paid: true, confirmation, advance };
+  // A gift card is settled at once: its final invoice and the card itself go
+  // to the guest together.
+  const final = await attempt(async () => {
+    const { data: issued } = await db.from('invoices').select('*')
+      .eq('source_type', 'gift_card').eq('source_id', source.id).eq('kind', 'advance').maybeSingle();
+    if (!issued) return { status: 'no_advance' };
+    const { data: existing } = await db.from('invoices').select('*').eq('advance_id', issued.id).maybeSingle();
+    return existing ? await deliverFinal(existing) : await issueFinal(issued);
+  });
+  return { paid: true, confirmation, advance, final };
+}
+
+// The guest pays by bank transfer after all: the booking gets the usual
+// confirmation and advance invoice.
+async function fallBack(source: Source, reason: string) {
+  await toTransfer(source);
+  inBackground(processLoaded(source));
+  return { fallback: reason };
+}
+
+async function startCheckout(type: SourceType, id: string) {
+  const source = await loadSource(type, id);
+  if (!source) return { error: 'not_found' };
+  if (source.row.payment_method !== 'card') return { status: 'not_card' };
+  const payments = await cardPayments(type, id);
+  const paid = payments.find((p) => p.status === 'paid');
+  if (paid) return { status: 'paid', payment: paid.id };
+  // A page opened a moment ago, if the guest comes back to it.
+  const open = payments.find((p) => p.status === 'open' && isNewerThan(p.created_at, CARD_MINUTES - 10));
+  if (open) return { url: open.url, payment: open.id };
+
+  const reason = !(await cardPaymentsOn()) ? 'card_off'
+    : source.priced.problems.length || source.priced.total <= 0 ? 'cannot_price'
+    : !source.email.includes('@') ? 'no_email'
+    : null;
+  if (reason) return await fallBack(source, reason);
+
+  try {
+    const paymentId = crypto.randomUUID();
+    const lines = source.priced.items.map((item) => ({
+      quantity: 1,
+      price_data: {
+        currency: 'eur',
+        unit_amount: Math.round(item.amount * 100),
+        product_data: { name: `${item.name[source.locale]}${item.quantity > 1 ? ` × ${item.quantity}` : ''}` },
+      },
+    }));
+    const cents = lines.reduce((sum, line) => sum + line.price_data.unit_amount, 0);
+    const what = type === 'reservation' ? visitText(source.details) : 'Dāvanu karte';
+    const metadata = { source_type: type, source_id: id, payment: paymentId };
+    const session = await createCheckoutSession({
+      mode: 'payment',
+      line_items: Object.fromEntries(lines.map((line, n) => [n, line])),
+      payment_method_types: { 0: 'card' },
+      customer_email: source.email.trim(),
+      locale: source.locale,
+      client_reference_id: id,
+      metadata,
+      payment_intent_data: { description: `SaimniekaPirts: ${what} · ${source.name.trim()}`, metadata },
+      success_url: `${SITE}/apmaksa?p=${paymentId}`,
+      cancel_url: `${SITE}/apmaksa?p=${paymentId}&atcelts=1`,
+      expires_at: Math.floor(Date.now() / 1000) + CARD_MINUTES * 60,
+    }, `checkout-${paymentId}`);
+    const { error } = await db.from('card_payments').insert({
+      id: paymentId, source_type: type, source_id: id, session_id: session.id, url: session.url, amount: cents / 100,
+    });
+    if (error) throw error;
+    return { url: session.url, payment: paymentId };
+  } catch (e) {
+    console.error(e);
+    return await fallBack(source, 'stripe_error');
+  }
+}
+
+async function paymentOf(p: unknown): Promise<CardPayment | null> {
+  if (typeof p !== 'string' || !uuidPattern.test(p)) return null;
+  const { data } = await db.from('card_payments').select('*').eq('id', p).maybeSingle();
+  return data;
+}
+
+// The /apmaksa page: how a payment went, and what was bought.
+async function paymentStatus(body: { p?: string }) {
+  const payment = await paymentOf(body.p);
+  if (!payment) return json({ error: 'not_found' }, 404);
+  let now = payment;
+  try {
+    now = await refreshPayment(payment);
+  } catch (e) {
+    console.error(e);
+  }
+  // Straight away, rather than waiting for Stripe's own message.
+  if (now.status === 'paid' && payment.status !== 'paid') await inBackground(processSource(now.source_type, now.source_id));
+  const source = await loadSource(now.source_type, now.source_id);
+  if (!source) return json({ error: 'not_found' }, 404);
+  let gift: { code: string; valid_until: string } | null = null;
+  if (now.status === 'paid' && now.source_type === 'gift_card') {
+    const { data } = await db.rpc('gift_card_for', { p_order: now.source_id });
+    if (data) gift = { code: data.code, valid_until: data.valid_until };
+  }
+  return json({
+    status: now.status,
+    method: source.row.payment_method,
+    type: now.source_type,
+    locale: source.locale,
+    name: source.name.trim().split(/\s+/)[0] ?? '',
+    email: source.email,
+    date: source.details.date ?? null,
+    time: source.details.time ?? null,
+    items: source.priced.items.map((i) => ({ name: i.name[source.locale], quantity: i.quantity, amount: i.amount })),
+    total: Number(now.amount),
+    gift_card: gift,
+  });
+}
+
+// Back from Stripe without paying: try again, or pay by bank transfer.
+async function paymentRetry(body: { p?: string }) {
+  const payment = await paymentOf(body.p);
+  if (!payment) return json({ error: 'not_found' }, 404);
+  return json(await startCheckout(payment.source_type, payment.source_id));
+}
+
+async function paymentSwitch(body: { p?: string }) {
+  const payment = await paymentOf(body.p);
+  if (!payment) return json({ error: 'not_found' }, 404);
+  const source = await loadSource(payment.source_type, payment.source_id);
+  if (!source) return json({ error: 'not_found' }, 404);
+  if (source.row.payment_method !== 'card') return json({ status: 'switched' });
+  for (const p of await cardPayments(source.type, source.id)) {
+    const now = await refreshPayment(p, true);
+    if (now.status === 'paid') {
+      await inBackground(processLoaded(source));
+      return json({ status: 'paid' });
+    }
+  }
+  await fallBack(source, 'guest_chose_transfer');
+  return json({ status: 'switched' });
+}
+
+async function giftCardDownload(body: { p?: string }) {
+  const payment = await paymentOf(body.p);
+  if (!payment || payment.source_type !== 'gift_card') return json({ error: 'not_found' }, 404);
+  if (payment.status !== 'paid') return json({ error: 'not_paid' }, 409);
+  const card = await giftCard(payment.source_id);
+  if (!card) return json({ error: 'not_found' }, 404);
+  return json({ filename: card.filename, pdf_base64: toBase64(card.pdf) });
+}
+
+// Stripe's webhook. Only the Checkout page's id is taken from the message.
+// deno-lint-ignore no-explicit-any
+async function stripeEvent(event: any) {
+  if (typeof event.type !== 'string' || !event.type.startsWith('checkout.session.')) return json({ received: true });
+  const sessionId = event.data?.object?.id;
+  if (typeof sessionId !== 'string') return json({ received: true });
+  const { data: payment } = await db.from('card_payments').select('*').eq('session_id', sessionId).maybeSingle();
+  if (!payment) return json({ received: true, ignored: true });
+  try {
+    const now = await refreshPayment(payment);
+    const result = now.status === 'open' ? null : await processSource(now.source_type, now.source_id);
+    return json({ received: true, status: now.status, result });
+  } catch (e) {
+    console.error(e);
+    return json({ error: describe(e) }, 500);
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -913,11 +1269,23 @@ async function removeFromCalendar(r: any) {
 // gift card orders, with their prices and advance invoices. Every call needs
 // the PIN, since the list holds guests' names, emails and phone numbers.
 // deno-lint-ignore no-explicit-any
-async function office(body: { pin?: string; action?: string; reservation?: string; master_id?: string | null; master?: any }) {
+async function office(body: {
+  pin?: string; action?: string; reservation?: string; order?: string; master_id?: string | null; master?: any;
+}) {
   const pinResult = await pinCheck(body.pin);
   if (pinResult !== 'ok') return pinRefusal(pinResult);
   if (body.action === 'assign') return await assignMaster(body.reservation, body.master_id ?? null);
   if (body.action === 'save_master') return await saveMaster(body.master);
+  if (body.action === 'gift_card_pdf') {
+    if (!body.order || !uuidPattern.test(body.order)) return json({ error: 'not_found' }, 404);
+    try {
+      const card = await giftCard(body.order);
+      if (!card) return json({ error: 'not_found' }, 404);
+      return json({ code: card.code, filename: card.filename, pdf_base64: toBase64(card.pdf) });
+    } catch (e) {
+      return json({ error: describe(e) }, 409);
+    }
+  }
   if (body.action !== 'list') return json({ error: 'unknown_action' }, 400);
 
   const today = rigaToday();
@@ -932,10 +1300,18 @@ async function office(body: { pin?: string; action?: string; reservation?: strin
   if (cards.error) return json({ error: describe(cards.error) }, 500);
 
   const ids = [...(bookings.data ?? []), ...(cards.data ?? [])].map((r) => r.id as string);
-  const { data: invoices, error } = ids.length
-    ? await db.from('invoices').select('id, number, kind, status, source_id, manage_token, total').in('source_id', ids)
-    : { data: [], error: null };
+  const cardIds = (cards.data ?? []).map((g) => g.id as string);
+  const [{ data: invoices, error }, { data: paidByCard }, { data: codes }] = ids.length
+    ? await Promise.all([
+      db.from('invoices').select('id, number, kind, status, source_id, manage_token, total').in('source_id', ids),
+      db.from('card_payments').select('source_id').eq('status', 'paid').in('source_id', ids),
+      db.from('gift_cards').select('order_id, code, valid_until').in('order_id', cardIds.length ? cardIds : [crypto.randomUUID()]),
+    ])
+    : [{ data: [], error: null }, { data: [] }, { data: [] }];
   if (error) return json({ error: describe(error) }, 500);
+  const cardPaid = new Set((paidByCard ?? []).map((p) => p.source_id));
+  // deno-lint-ignore no-explicit-any
+  const codeOf = (id: string) => (codes ?? []).find((c: any) => c.order_id === id) ?? null;
 
   // deno-lint-ignore no-explicit-any
   const invoiceOf = (sourceId: string) => (invoices ?? []).filter((i: any) => i.source_id === sourceId);
@@ -967,7 +1343,8 @@ async function office(body: { pin?: string; action?: string; reservation?: strin
       participants: r.ritual_participants,
       overnight: !!r.overnight_stay,
       transport: transportName(r.transport, 'lv') || null,
-      payment: r.payment_method === 'cash' ? 'cash' : 'transfer',
+      payment: ['cash', 'card'].includes(r.payment_method) ? r.payment_method : 'transfer',
+      card_paid: cardPaid.has(r.id),
       master_id: r.master_id ?? null,
       message: (r.form_type === 'noma' ? r.rental_message : r.ritual_message) || null,
       name: r.name,
@@ -987,6 +1364,9 @@ async function office(body: { pin?: string; action?: string; reservation?: strin
         : g.ritual_type,
       locale: g.locale === 'en' ? 'en' : 'lv',
       created_at: g.created_at,
+      payment: g.payment_method === 'card' ? 'card' : 'transfer',
+      card_paid: cardPaid.has(g.id),
+      gift_card: codeOf(g.id),
       ...invoiceView(g.id, priceGiftCard(prices, g)),
     })),
     masters: await mastersList(),
@@ -1156,6 +1536,27 @@ Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response(null, { headers: cors });
   if (req.method !== 'POST') return json({ error: 'POST only' }, 405);
   const body = await req.json().catch(() => ({}));
+
+  // Stripe's webhook, and the booking forms' card payments. A payment is
+  // found by its own random id (or a booking by its secret id).
+  try {
+    if (body.object === 'event') return await stripeEvent(body);
+    if (body.payment_options) return json({ card: await cardPaymentsOn() });
+    if (body.checkout) {
+      const { type: t, id } = body.checkout;
+      if ((t !== 'reservation' && t !== 'gift_card') || typeof id !== 'string' || !uuidPattern.test(id)) {
+        return json({ error: 'bad_request' }, 400);
+      }
+      return json(await startCheckout(t, id));
+    }
+    if (body.payment_status) return await paymentStatus(body.payment_status);
+    if (body.payment_retry) return await paymentRetry(body.payment_retry);
+    if (body.payment_switch) return await paymentSwitch(body.payment_switch);
+    if (body.gift_card_pdf) return await giftCardDownload(body.gift_card_pdf);
+  } catch (e) {
+    console.error(e);
+    return json({ error: describe(e) }, 500);
+  }
 
   // The website's office page: guarded by the link and the PIN.
   if (body.sauna_master) return await masterView(body.sauna_master);

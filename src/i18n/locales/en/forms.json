@@ -122,6 +122,7 @@
   },
   "payment": {
     "label": "How would you like to pay?",
+    "card": "By card now – securely through Stripe (Apple Pay and Google Pay too)",
     "transfer": "By bank transfer – we will email you an advance invoice",
     "cash": "In cash on site after your visit"
   }

@@ -12,7 +12,7 @@ export interface ConfirmedBooking extends ReservationForPricing {
   reservation_date: string;
   reservation_time: string;
   sauna_type: string;
-  payment_method?: 'transfer' | 'cash';
+  payment_method?: 'transfer' | 'cash' | 'card';
 }
 
 interface BookingConfirmationProps {

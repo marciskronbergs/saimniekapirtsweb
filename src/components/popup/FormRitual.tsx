@@ -15,6 +15,7 @@ import priceCatalog from '../../data/priceCatalog.json';
 import BookingConfirmation, { type ConfirmedBooking } from './BookingConfirmation';
 import TransportChoice from './TransportChoice';
 import PaymentChoice, { type PaymentMethod } from './PaymentChoice';
+import { goToCardPayment, paymentLabel, useCardPayments } from '../../lib/cardPayments';
 import { scrollIntoPopup } from './scrollIntoPopup';
 import { cancelUrl } from './cancelUrl';
 
@@ -51,6 +52,7 @@ const FormRitual: React.FC<FormRitualProps> = ({ selectedDate, selectedTime, onC
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [confirmed, setConfirmed] = useState<ConfirmedBooking | null>(null);
+  const cardPayments = useCardPayments();
   // The button is disabled through state, which only takes effect on the next
   // render; a quick double click lands before that and used to book twice.
   const submittingRef = useRef(false);
@@ -194,7 +196,7 @@ const reservationData = {
   rental_message: '',          // <- Empty for rituals
   transport: formData.transport || '',
   payment_method: formData.paymentMethod,
-  payment_label: formData.paymentMethod === 'cash' ? 'Skaidrā naudā uz vietas' : 'Pārskaitījums (avansa rēķins)',
+  payment_label: paymentLabel(formData.paymentMethod),
   locale: i18n.language === 'en' ? 'en' : 'lv', // lets Make answer in the guest's language
   // For the office's calendar: cancels the booking, freeing the slot and
   // annulling its advance invoice.
@@ -219,6 +221,13 @@ const reservationData = {
         console.error('Webhook error:', webhookError);
       }
 
+      // Paying by card: on to Stripe's page. If that cannot be opened, the
+      // booking stands and is paid by bank transfer instead.
+      if (formData.paymentMethod === 'card') {
+        await goToCardPayment('reservation', id);
+        setConfirmed({ ...reservationData, payment_method: 'transfer' });
+        return;
+      }
       // Show what was booked in place of the form.
       setConfirmed(reservationData);
 
@@ -362,6 +371,7 @@ const reservationData = {
         <TransportChoice value={formData.transport} onChange={(label) => handleInputChange('transport', label)} />
 
         <PaymentChoice
+          card={cardPayments}
           value={formData.paymentMethod}
           onChange={(method) => setFormData((prev) => ({ ...prev, paymentMethod: method }))}
         />

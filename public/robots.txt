@@ -6,6 +6,7 @@ Disallow: /api/
 Disallow: /rekins
 Disallow: /birojs
 Disallow: /pirtnieks
+Disallow: /apmaksa
 
 # The assistants people now ask for recommendations. They are covered by the
 # rule above, but several of them only look for their own name, and naming them

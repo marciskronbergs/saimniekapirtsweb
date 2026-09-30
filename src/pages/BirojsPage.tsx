@@ -1,5 +1,5 @@
 import { useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
-import { CalendarDays, ExternalLink, LogOut, Mail, Phone, RefreshCw, Search } from 'lucide-react';
+import { CalendarDays, Download, ExternalLink, LogOut, Mail, Phone, RefreshCw, Search } from 'lucide-react';
 import { PopupContext } from '../App';
 import { OfficeError, callInvoiceFunction, eur, useOfficePage } from '../lib/officeApi';
 import MastersSection, { type Master, type MasterDraft } from './birojs/MastersSection';
@@ -32,7 +32,9 @@ interface Booking extends InvoiceInfo {
   participants: number | null;
   overnight: boolean;
   transport: string | null;
-  payment: 'transfer' | 'cash';
+  payment: 'transfer' | 'cash' | 'card';
+  // Paid through Stripe; a card booking not yet paid is waiting for the guest.
+  card_paid: boolean;
   master_id: string | null;
   message: string | null;
   name: string;
@@ -49,6 +51,10 @@ interface GiftCard extends InvoiceInfo {
   service: string | null;
   locale: 'lv' | 'en';
   created_at: string;
+  payment: 'transfer' | 'card';
+  card_paid: boolean;
+  // The gift card's number, once its PDF has been made.
+  gift_card: { code: string; valid_until: string } | null;
 }
 
 interface OfficeList {
@@ -113,6 +119,13 @@ const Badge = ({ children, tone = 'gray' }: { children: ReactNode; tone?: 'green
   };
   return <span className={`inline-block rounded-full border px-2 py-0.5 text-xs ${tones[tone]}`}>{children}</span>;
 };
+
+const CardBadge = ({ payment, paid }: { payment: string; paid: boolean }) =>
+  payment !== 'card' ? null : paid ? (
+    <Badge tone="green">💳 Apmaksāts ar karti</Badge>
+  ) : (
+    <Badge tone="blue">💳 Karte – gaida apmaksu</Badge>
+  );
 
 const InvoiceLine = ({ info, cash = false }: { info: InvoiceInfo; cash?: boolean }) => (
   <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm">
@@ -210,9 +223,36 @@ const BirojsPage = () => {
     setError(null);
   };
 
+  const downloadGiftCard = async (g: GiftCard) => {
+    setBusyId(g.id);
+    setError(null);
+    try {
+      const r = await callInvoiceFunction<{ code: string; filename: string; pdf_base64: string }>({
+        office: { pin, action: 'gift_card_pdf', order: g.id },
+      });
+      const bytes = Uint8Array.from(atob(r.pdf_base64), (c) => c.charCodeAt(0));
+      const url = URL.createObjectURL(new Blob([bytes], { type: 'application/pdf' }));
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = r.filename;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 10_000);
+      if (!g.gift_card) await load(pin);
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setBusyId(null);
+    }
+  };
+
   const cancel = async (b: Booking) => {
     const when = `${longDate(b.date)} ${b.time}`;
-    if (!window.confirm(`Atcelt ${b.name} rezervāciju (${when})?\n\nLaiks mājaslapā atkal būs brīvs, avansa rēķins tiks anulēts, un notikums tiks izņemts no kalendāra.`)) return;
+    const refund = b.payment === 'card' && b.card_paid
+      ? '\n\nApmaksāts ar karti: naudu atmaksājiet Stripe panelī (Payments → maksājums → Refund).'
+      : '';
+    if (!window.confirm(`Atcelt ${b.name} rezervāciju (${when})?\n\nLaiks mājaslapā atkal būs brīvs, avansa rēķins tiks anulēts, un notikums tiks izņemts no kalendāra.${refund}`)) return;
     setBusyId(b.id);
     setError(null);
     setNotice(null);
@@ -449,6 +489,7 @@ const BirojsPage = () => {
                       {b.sauna && <Badge>{b.sauna}</Badge>}
                       {b.locale === 'en' && <Badge tone="blue">EN</Badge>}
                       {b.payment === 'cash' && <Badge tone="green">💶 Skaidrā naudā</Badge>}
+                      <CardBadge payment={b.payment} paid={b.card_paid} />
                       {b.advance?.status === 'annulled' && <Badge tone="red">Rēķins anulēts</Badge>}
                     </div>
                     <Contact email={b.email} phone={b.phone} />
@@ -521,15 +562,33 @@ const BirojsPage = () => {
                 <span className="text-sm text-gray-400">{shortDate(g.created_at)}</span>
                 <span className="font-semibold">{g.name}</span>
                 {g.locale === 'en' && <Badge tone="blue">EN</Badge>}
+                <CardBadge payment={g.payment} paid={g.card_paid} />
+                {g.final && <Badge tone="green">Apmaksāta · karte nosūtīta</Badge>}
               </div>
               <Contact email={g.email} phone={g.phone} />
               <p className="text-sm text-gray-300">{g.items[0]?.name ?? g.service}</p>
               <InvoiceLine info={g} />
+              <div className="flex flex-wrap items-center gap-3 text-sm">
+                {g.gift_card && (
+                  <span className="text-amber-300">
+                    Nr. {g.gift_card.code} · derīga līdz {g.gift_card.valid_until.split('-').reverse().join('.')}
+                  </span>
+                )}
+                <button
+                  onClick={() => downloadGiftCard(g)}
+                  disabled={busyId !== null}
+                  className="inline-flex items-center gap-1 rounded-lg bg-gray-800 hover:bg-gray-700 disabled:opacity-50 px-3 py-1.5"
+                >
+                  <Download className="w-4 h-4" />
+                  {busyId === g.id ? 'Sagatavo…' : 'Dāvanu karte (PDF)'}
+                </button>
+              </div>
             </article>
           ))}
           <p className="text-xs text-gray-500">
-            Dāvanu kartes gala rēķinu izraksta, kad karte ir apmaksāta: atveriet avansa rēķina saiti un nospiediet
-            “Apmaksāts – izrakstīt gala rēķinu tagad”.
+            Ar karti apmaksātām dāvanu kartēm rēķins un dāvanu karte klientam aiziet automātiski. Ar pārskaitījumu:
+            kad nauda saņemta, atveriet avansa rēķina saiti un nospiediet “Apmaksāts – izrakstīt gala rēķinu tagad” –
+            klientam aizies rēķins kopā ar dāvanu karti (PDF).
           </p>
         </section>
       </div>

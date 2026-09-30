@@ -17,7 +17,7 @@ export class SEOManager {
   public updateSEO(pathname: string, language: 'lv' | 'en'): void {
     // The office's pages set their own title and noindex, and have nothing
     // for search engines.
-    if (/^\/(rekins|birojs|pirtnieks)\/?$/.test(pathname)) return;
+    if (/^\/(rekins|birojs|pirtnieks|apmaksa)\/?$/.test(pathname)) return;
     this.currentLanguage = language;
     const seoData = getCurrentPageSEO(pathname, language);
 

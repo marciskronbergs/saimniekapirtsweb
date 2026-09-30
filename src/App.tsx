@@ -21,6 +21,7 @@ import FaqPage from './pages/FaqPage';
 import RekinsPage from './pages/RekinsPage';
 import BirojsPage from './pages/BirojsPage';
 import PirtnieksPage from './pages/PirtnieksPage';
+import ApmaksaPage from './pages/ApmaksaPage';
 
 // Create a global popup context
 export const PopupContext = React.createContext<{
@@ -90,6 +91,7 @@ function App() {
         <Route path="/rekins" element={<RekinsPage />} />
         <Route path="/birojs" element={<BirojsPage />} />
         <Route path="/pirtnieks" element={<PirtnieksPage />} />
+        <Route path="/apmaksa" element={<ApmaksaPage />} />
       </Routes>
     </PopupContext.Provider>
   );

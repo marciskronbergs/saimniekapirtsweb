@@ -50,7 +50,8 @@ export interface PriceCatalog {
   extras: CatalogExtra[];
   transport: CatalogTransport[];
   giftCard: {
-    rituals: { value: string; price: number; label: Named }[];
+    // `card` is what the gift card itself says the card is for.
+    rituals: { value: string; price: number; label: Named; card: Named }[];
     custom: { min: number; max: number; step: number };
   };
 }
