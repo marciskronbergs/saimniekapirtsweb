@@ -46,5 +46,72 @@
     "legalAddress": "Ķekavas nov., Baldones pag., \"Kroņmeži\", LV-2125",
     "bank": "A/S Swedbank",
     "iban": "LV72HABA0551066360107"
+  },
+  "cookies": {
+    "title": "Šī vietne izmanto sīkdatnes",
+    "text": "Mēs izmantojam sīkdatnes, lai vietne darbotos, lai saprastu, kā to lietojat, un lai rādītu jums atbilstošas reklāmas Facebook, Instagram, TikTok un Google. Nepieciešamās sīkdatnes darbojas vienmēr, pārējās tikai ar jūsu piekrišanu. Izvēli varat mainīt jebkurā laikā.",
+    "settingsTitle": "Sīkdatņu iestatījumi",
+    "deny": "Noraidīt",
+    "customize": "Pielāgot",
+    "acceptAll": "Atļaut visas",
+    "save": "Saglabāt izvēli",
+    "close": "Aizvērt",
+    "privacyLink": "Privātuma politika",
+    "tabs": {
+      "consent": "Piekrišana",
+      "details": "Sīkdatņu saraksts",
+      "about": "Par sīkdatnēm"
+    },
+    "alwaysOn": "Vienmēr aktīvas",
+    "count": "Sīkdatnes: {{count}}",
+    "showCookies": "Rādīt sīkdatnes",
+    "hideCookies": "Paslēpt sīkdatnes",
+    "none": "Pašlaik šāda veida sīkdatnes neizmantojam.",
+    "categories": {
+      "necessary": {
+        "title": "Nepieciešamās",
+        "description": "Nodrošina vietnes pamatfunkcijas, piemēram, jūsu sīkdatņu izvēles saglabāšanu un rezervēšanu. Bez tām vietne nedarbojas pareizi, tāpēc tās nevar atslēgt."
+      },
+      "preferences": {
+        "title": "Iestatījumu",
+        "description": "Ļauj vietnei atcerēties izvēles, kas maina tās izskatu vai darbību."
+      },
+      "statistics": {
+        "title": "Statistikas",
+        "description": "Palīdz mums saprast, kā apmeklētāji lieto vietni, apkopojot informāciju, kas jūs personīgi neidentificē."
+      },
+      "marketing": {
+        "title": "Mārketinga",
+        "description": "Ļauj mērīt mūsu reklāmu rezultātus un rādīt jums atbilstošas reklāmas citās vietnēs un sociālajos tīklos. Tās izmanto arī iegultā Google karte."
+      }
+    },
+    "table": {
+      "name": "Nosaukums",
+      "provider": "Nodrošinātājs",
+      "purpose": "Mērķis",
+      "expiry": "Glabāšanas ilgums",
+      "type": "Veids"
+    },
+    "about": [
+      "Sīkdatnes ir nelieli teksta faili, ko vietne saglabā jūsu ierīcē. Likums ļauj bez jūsu atļaujas izmantot tikai tās sīkdatnes, kas nepieciešamas vietnes darbībai. Visām pārējām vajadzīga jūsu piekrišana.",
+      "Daļu sīkdatņu izvieto trešās puses, kuru pakalpojumi ir iekļauti mūsu lapās: Google, Meta (Facebook, Instagram) un TikTok. Šie uzņēmumi var apstrādāt datus arī ārpus Eiropas Savienības.",
+      "Piekrišanu varat mainīt vai atsaukt jebkurā laikā, izmantojot sīkdatņu ikonu lapas stūrī vai saiti “Sīkdatņu iestatījumi” lapas kājenē. Pēc gada mēs jums pajautāsim vēlreiz."
+    ],
+    "yourConsent": "Jūsu piekrišana",
+    "consentId": "Piekrišanas ID",
+    "consentDate": "Datums",
+    "consentState": "Atļautās kategorijas",
+    "onlyNecessary": "Tikai nepieciešamās",
+    "reopen": "Mainīt sīkdatņu iestatījumus",
+    "footerLink": "Sīkdatņu iestatījumi",
+    "on": "Ieslēgts",
+    "off": "Izslēgts",
+    "embed": {
+      "title": "Karte ir paslēpta",
+      "text": "Google karte saglabā mārketinga sīkdatnes. Lai to redzētu, atļaujiet mārketinga sīkdatnes vai ielādējiet karti tikai šoreiz.",
+      "loadOnce": "Rādīt karti šoreiz",
+      "allow": "Atļaut mārketinga sīkdatnes",
+      "openInMaps": "Atvērt Google Maps"
+    }
   }
 }

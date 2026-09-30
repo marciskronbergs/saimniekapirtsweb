@@ -1,6 +1,46 @@
 <!doctype html>
 <html lang="lv">
   <head>
+    <meta charset="UTF-8" />
+    <!-- Consent Mode v2: everything but strictly necessary storage stays denied
+         until the visitor chooses in the cookie dialog
+         (src/components/shared/CookieConsent.tsx). A choice made on an earlier
+         visit is restored here, before Tag Manager loads, so returning
+         visitors' tags fire on the first page. The key, version, one-year
+         lifetime and fields must match src/lib/consent.ts. -->
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('consent', 'default', {
+    ad_storage: 'denied',
+    ad_user_data: 'denied',
+    ad_personalization: 'denied',
+    analytics_storage: 'denied',
+    functionality_storage: 'denied',
+    personalization_storage: 'denied',
+    security_storage: 'granted',
+    wait_for_update: 500
+  });
+  gtag('set', 'ads_data_redaction', true);
+  try {
+    var saved = JSON.parse(localStorage.getItem('sp_cookie_consent') || 'null');
+    var age = saved ? Date.now() - new Date(saved.at).getTime() : -1;
+    if (saved && saved.v === 1 && age >= 0 && age < 365 * 86400000) {
+      var ads = saved.marketing ? 'granted' : 'denied';
+      var stats = saved.statistics ? 'granted' : 'denied';
+      var prefs = saved.preferences ? 'granted' : 'denied';
+      gtag('consent', 'update', {
+        ad_storage: ads, ad_user_data: ads, ad_personalization: ads,
+        analytics_storage: stats,
+        functionality_storage: prefs, personalization_storage: prefs
+      });
+      dataLayer.push({
+        event: 'cookie_consent_update',
+        consent_preferences: prefs, consent_statistics: stats, consent_marketing: ads
+      });
+    }
+  } catch (e) {}
+</script>
     <!-- Google Tag Manager -->
 <script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
 new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
@@ -8,7 +48,6 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
 'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
 })(window,document,'script','dataLayer','GTM-T4WM3GVM');</script>
 <!-- End Google Tag Manager -->
-    <meta charset="UTF-8" />
 
     <!-- Google tag (gtag.js) -->
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-46HJJ959K8"></script>
@@ -62,8 +101,8 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
     
     <!-- ✅ Updated favicon -->
     <link rel="icon" type="image/png" href="https://wigoyeorqnssgbrgexku.supabase.co/storage/v1/object/public/websiteassets/logo/Saimnieka%20(2).png" />
-    <script type="module" crossorigin src="/assets/index-D0fJHbl7.js"></script>
-    <link rel="stylesheet" crossorigin href="/assets/index-xh7X_0gq.css">
+    <script type="module" crossorigin src="/assets/index-Bg_T2aMe.js"></script>
+    <link rel="stylesheet" crossorigin href="/assets/index-C9lV_SuC.css">
     <link rel="alternate" hreflang="lv" href="https://saimniekapirts.lv/privatuma-politika" />
     <link rel="alternate" hreflang="en" href="https://saimniekapirts.lv/en/privatuma-politika" />
     <link rel="alternate" hreflang="x-default" href="https://saimniekapirts.lv/privatuma-politika" />
@@ -127,14 +166,8 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
       <p>Saziņai ar datu subjektu mēs izmantojam datu subjekta norādīto tālruņa numuru, e-pasta adresi vai pasta adresi.</p>
       <h3>Sīkdatnes</h3>
       <p>Sīkdatnes ir nelieli teksta faili, kas tiek izveidoti un saglabāti interneta lietotāja ierīcē (datorā, planšetdatorā, mobilajā tālrunī u.c.), apmeklējot vietni. Sīkdatnes palīdz lietotājam atcerēties pieteikšanās vārdu un iestatījumus (piemēram, valodu, fonta lielumu u.c. papildu informāciju), lai tie nebūtu katru reizi jānorāda, tādējādi uzlabojot vietnes lietošanas ērtumu.</p>
-      <h4>Analītiskās sīkdatnes</h4>
-      <p>Analītiskās sīkdatnes (piemēram, Google Analytics un Microsoft Clarity) apkopo informāciju par vietnes apmeklētāja uzvedību, piemēram, kuras sadaļas tiek apmeklētas visbiežāk. Šī informācija palīdz mums attīstīt un uzlabot mūsu vietni, padarīt to ērtāku. Šīs sīkdatnes tiek glabātas lietotāja ierīcē ne ilgāk kā divus gadus.</p>
-      <h4>Tehniskās sīkdatnes</h4>
-      <p>Tehniskās jeb obligātās sīkdatnes (Google Chrome, Internet Explorer u.c.) palīdz atcerēties lietotāja pieprasījumus un to, kurām sīkdatnēm lietotājs ir piekritis. Šīs sīkdatnes tiek glabātas lietotāja ierīcē līdz pārlūkprogrammas aizvēršanai, bet ne ilgāk kā divus gadus.</p>
-      <h4>Mērķa sīkdatnes</h4>
-      <p>Mērķa vai reklāmas sīkfaili (piemēram, Google Adwords) nodrošina lietotāja vēlmēm pielāgotu reklāmu. Šīs sīkdatnes tiek pastāvīgi saglabātas apmeklētāju ierīcēs.</p>
       <p>Turklāt vietnē var tikt izmantoti tādi pakalpojumi kā YouTube, lai nodrošinātu video saturu vai saites uz citām vietnēm, Facebook, Instagram, TripAdvisor, lai piedāvātu iespēju skatīt saturu no šiem sociālajiem kontiem vai kopīgot tajos vietnes saturu. Visi šie pakalpojumi izmanto sīkfailus, lai iegūtu statistikas datus un noskaidrotu populārākās meklēšanas tendences. Šīs trešās puses sīkfailus mēs nevaram kontrolēt.</p>
-      <p>Apmeklējot mūsu vietni, lietotājs tiek informēts, ka mēs izmantojam sīkdatnes. Aizverot šo paziņojumu, lietotājs apstiprina, ka ir izlasījis informāciju par sīkdatnēm un piekrīt tai. Ja lietotājs nevēlas, lai viņa ierīcē tiktu izmantotas sīkdatnes, viņš var atspējot sīkdatņu izmantošanu savā pārlūkprogrammas iestatījumos, taču jāņem vērā, ka daži pakalpojumi un vietnes funkcijas var nedarboties, kā arī nav iespējams atteikt izmantošanu obligātajām un funkcionālajām sīkdatnēm, jo bez tām nav iespējama pilna vietnes funkcionalitāte.</p>
+      <p>Nepieciešamās sīkdatnes darbojas vienmēr. Iestatījumu, statistikas un mārketinga sīkdatnes tiek izmantotas tikai tad, ja jūs tām piekrītat sīkdatņu paziņojumā, kas parādās, pirmo reizi atverot vietni. Līdz izvēlei šīs sīkdatnes netiek saglabātas, un Google rīki darbojas ierobežotā režīmā bez sīkdatnēm (Google Consent Mode). Jūsu izvēli, tās datumu un anonīmu piekrišanas ID mēs saglabājam kā pierādījumu par piekrišanu. Piekrišanu varat mainīt vai atsaukt jebkurā laikā, izmantojot sīkdatņu ikonu lapas stūrī vai saiti “Sīkdatņu iestatījumi” lapas kājenē. Pēc gada mēs jums pajautāsim vēlreiz.</p>
       <p>Informācija, kas saistīta ar sīkdatnēm, netiek izmantota, lai personīgi identificētu lietotāju.</p>
       <h3>Izmaiņas Privātuma politikā</h3>
       <p>SIA &quot;KMR Business&quot; privātuma politika var tikt mainīta vai labota atbilstoši spēkā esošo normatīvo aktu prasībām. Mūsu esošie un potenciālie klienti var iepazīties ar izmaiņām privātuma politikā, regulāri apmeklējot mūsu vietni.</p>

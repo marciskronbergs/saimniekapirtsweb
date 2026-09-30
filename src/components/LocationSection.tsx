@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { MapPin, Phone, Mail, Building } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import ConsentGatedMap from './shared/ConsentGatedMap';
 
 const LocationSection = () => {
   const [isVisible, setIsVisible] = useState(false);
@@ -56,16 +57,7 @@ const LocationSection = () => {
           }`}>
             {/* Google Map Embed */}
             <div className="rounded-xl shadow-md overflow-hidden h-[250px] sm:h-[300px] lg:h-[350px] mb-4 sm:mb-6">
-              <iframe
-                src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d2175.8234567890123!2d24.2903839!3d56.6841314!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x46e8d7c87772959d:0xdc371260f63bdc6b!2sSaimniekapirts%20%26%20SarmaSpa%20-%20pirts%20un%20pirtnieka%20pakalpojumi!5e0!3m2!1sen!2slv!4v1234567890123!5m2!1sen!2slv"
-                width="100%"
-                height="100%"
-                style={{ border: 0 }}
-                allowFullScreen
-                loading="lazy"
-                referrerPolicy="no-referrer-when-downgrade"
-                title="SaimniekaPirts Location"
-              ></iframe>
+              <ConsentGatedMap height="100%" />
             </div>
 
             {/* Transport Info */}

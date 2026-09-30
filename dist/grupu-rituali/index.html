@@ -1,6 +1,46 @@
 <!doctype html>
 <html lang="lv">
   <head>
+    <meta charset="UTF-8" />
+    <!-- Consent Mode v2: everything but strictly necessary storage stays denied
+         until the visitor chooses in the cookie dialog
+         (src/components/shared/CookieConsent.tsx). A choice made on an earlier
+         visit is restored here, before Tag Manager loads, so returning
+         visitors' tags fire on the first page. The key, version, one-year
+         lifetime and fields must match src/lib/consent.ts. -->
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('consent', 'default', {
+    ad_storage: 'denied',
+    ad_user_data: 'denied',
+    ad_personalization: 'denied',
+    analytics_storage: 'denied',
+    functionality_storage: 'denied',
+    personalization_storage: 'denied',
+    security_storage: 'granted',
+    wait_for_update: 500
+  });
+  gtag('set', 'ads_data_redaction', true);
+  try {
+    var saved = JSON.parse(localStorage.getItem('sp_cookie_consent') || 'null');
+    var age = saved ? Date.now() - new Date(saved.at).getTime() : -1;
+    if (saved && saved.v === 1 && age >= 0 && age < 365 * 86400000) {
+      var ads = saved.marketing ? 'granted' : 'denied';
+      var stats = saved.statistics ? 'granted' : 'denied';
+      var prefs = saved.preferences ? 'granted' : 'denied';
+      gtag('consent', 'update', {
+        ad_storage: ads, ad_user_data: ads, ad_personalization: ads,
+        analytics_storage: stats,
+        functionality_storage: prefs, personalization_storage: prefs
+      });
+      dataLayer.push({
+        event: 'cookie_consent_update',
+        consent_preferences: prefs, consent_statistics: stats, consent_marketing: ads
+      });
+    }
+  } catch (e) {}
+</script>
     <!-- Google Tag Manager -->
 <script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
 new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
@@ -8,7 +48,6 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
 'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
 })(window,document,'script','dataLayer','GTM-T4WM3GVM');</script>
 <!-- End Google Tag Manager -->
-    <meta charset="UTF-8" />
 
     <!-- Google tag (gtag.js) -->
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-46HJJ959K8"></script>
@@ -62,8 +101,8 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
     
     <!-- ✅ Updated favicon -->
     <link rel="icon" type="image/png" href="https://wigoyeorqnssgbrgexku.supabase.co/storage/v1/object/public/websiteassets/logo/Saimnieka%20(2).png" />
-    <script type="module" crossorigin src="/assets/index-D0fJHbl7.js"></script>
-    <link rel="stylesheet" crossorigin href="/assets/index-xh7X_0gq.css">
+    <script type="module" crossorigin src="/assets/index-Bg_T2aMe.js"></script>
+    <link rel="stylesheet" crossorigin href="/assets/index-C9lV_SuC.css">
     <link rel="alternate" hreflang="lv" href="https://saimniekapirts.lv/grupu-rituali" />
     <link rel="alternate" hreflang="en" href="https://saimniekapirts.lv/en/grupu-rituali" />
     <link rel="alternate" hreflang="x-default" href="https://saimniekapirts.lv/grupu-rituali" />

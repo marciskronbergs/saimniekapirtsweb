@@ -1,6 +1,46 @@
 <!doctype html>
 <html lang="en">
   <head>
+    <meta charset="UTF-8" />
+    <!-- Consent Mode v2: everything but strictly necessary storage stays denied
+         until the visitor chooses in the cookie dialog
+         (src/components/shared/CookieConsent.tsx). A choice made on an earlier
+         visit is restored here, before Tag Manager loads, so returning
+         visitors' tags fire on the first page. The key, version, one-year
+         lifetime and fields must match src/lib/consent.ts. -->
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('consent', 'default', {
+    ad_storage: 'denied',
+    ad_user_data: 'denied',
+    ad_personalization: 'denied',
+    analytics_storage: 'denied',
+    functionality_storage: 'denied',
+    personalization_storage: 'denied',
+    security_storage: 'granted',
+    wait_for_update: 500
+  });
+  gtag('set', 'ads_data_redaction', true);
+  try {
+    var saved = JSON.parse(localStorage.getItem('sp_cookie_consent') || 'null');
+    var age = saved ? Date.now() - new Date(saved.at).getTime() : -1;
+    if (saved && saved.v === 1 && age >= 0 && age < 365 * 86400000) {
+      var ads = saved.marketing ? 'granted' : 'denied';
+      var stats = saved.statistics ? 'granted' : 'denied';
+      var prefs = saved.preferences ? 'granted' : 'denied';
+      gtag('consent', 'update', {
+        ad_storage: ads, ad_user_data: ads, ad_personalization: ads,
+        analytics_storage: stats,
+        functionality_storage: prefs, personalization_storage: prefs
+      });
+      dataLayer.push({
+        event: 'cookie_consent_update',
+        consent_preferences: prefs, consent_statistics: stats, consent_marketing: ads
+      });
+    }
+  } catch (e) {}
+</script>
     <!-- Google Tag Manager -->
 <script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
 new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
@@ -8,7 +48,6 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
 'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
 })(window,document,'script','dataLayer','GTM-T4WM3GVM');</script>
 <!-- End Google Tag Manager -->
-    <meta charset="UTF-8" />
 
     <!-- Google tag (gtag.js) -->
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-46HJJ959K8"></script>
@@ -62,8 +101,8 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
     
     <!-- ✅ Updated favicon -->
     <link rel="icon" type="image/png" href="https://wigoyeorqnssgbrgexku.supabase.co/storage/v1/object/public/websiteassets/logo/Saimnieka%20(2).png" />
-    <script type="module" crossorigin src="/assets/index-D0fJHbl7.js"></script>
-    <link rel="stylesheet" crossorigin href="/assets/index-xh7X_0gq.css">
+    <script type="module" crossorigin src="/assets/index-Bg_T2aMe.js"></script>
+    <link rel="stylesheet" crossorigin href="/assets/index-C9lV_SuC.css">
     <link rel="alternate" hreflang="lv" href="https://saimniekapirts.lv/privatuma-politika" />
     <link rel="alternate" hreflang="en" href="https://saimniekapirts.lv/en/privatuma-politika" />
     <link rel="alternate" hreflang="x-default" href="https://saimniekapirts.lv/privatuma-politika" />
@@ -127,14 +166,8 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
       <p>For communication with the data subject, we use the phone number, email address or postal address specified by the data subject.</p>
       <h3>Cookies</h3>
       <p>Cookies are small text files that are created and stored on the internet user's device (computer, tablet, mobile phone, etc.) when visiting a website. Cookies help the user remember login name and settings (for example, language, font size, etc. additional information) so they don't have to be specified each time, thus improving website usability.</p>
-      <h4>Analytical Cookies</h4>
-      <p>Analytical cookies (for example, Google Analytics and Microsoft Clarity) collect information about website visitor behavior, such as which sections are visited most frequently. This information helps us develop and improve our website, make it more convenient. These cookies are stored on the user's device for no longer than two years.</p>
-      <h4>Technical Cookies</h4>
-      <p>Technical or mandatory cookies (Google Chrome, Internet Explorer, etc.) help remember user requests and which cookies the user has agreed to. These cookies are stored on the user's device until the browser is closed, but no longer than two years.</p>
-      <h4>Targeting Cookies</h4>
-      <p>Targeting or advertising cookies (for example, Google Adwords) provide advertising tailored to user preferences. These cookies are permanently stored on visitors' devices.</p>
       <p>Additionally, the website may use services such as YouTube to provide video content or links to other websites, Facebook, Instagram, TripAdvisor to offer the opportunity to view content from these social accounts or share website content on them. All these services use cookies to obtain statistical data and determine the most popular search trends. We cannot control these third-party cookies.</p>
-      <p>When visiting our website, the user is informed that we use cookies. By closing this notification, the user confirms that they have read the information about cookies and agree to it. If the user does not want cookies to be used on their device, they can disable cookie use in their browser settings, but it should be noted that some services and website functions may not work, and it is not possible to refuse the use of mandatory and functional cookies, as full website functionality is not possible without them.</p>
+      <p>Necessary cookies are always on. Preference, statistics and marketing cookies are used only if you agree to them in the cookie notice shown when you first open the site. Until you choose, these cookies are not stored and Google tools run in a limited, cookieless mode (Google Consent Mode). We keep your choice, its date and an anonymous consent ID as proof of consent. You can change or withdraw your consent at any time with the cookie icon in the corner of the page or the “Cookie settings” link in the footer. We will ask you again after a year.</p>
       <p>Information related to cookies is not used to personally identify the user.</p>
       <h3>Changes to Privacy Policy</h3>
       <p>SIA &quot;KMR Business&quot; privacy policy may be changed or amended in accordance with the requirements of applicable regulatory acts. Our existing and potential clients can familiarize themselves with changes to the privacy policy by regularly visiting our website.</p>

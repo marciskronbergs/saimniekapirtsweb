@@ -5,6 +5,7 @@ import { useSEO } from './hooks/useSEO';
 import { useCustomPopup } from './hooks/useCustomPopup';
 import PopupWrapper from './components/popup/PopupWrapper';
 import StickyRezervetButton from './components/shared/StickyRezervetButton';
+import CookieConsent from './components/shared/CookieConsent';
 import HomePage from './components/HomePage';
 import PirtsRitualiPage from './pages/PirtsRitualiPage';
 import PirtsNomaPage from './pages/PirtsNomaPage';
@@ -69,6 +70,7 @@ function App() {
     <PopupContext.Provider value={{ openCustomPopup, closeCustomPopup, isPopupOpen: isOpen }}>
       <ScrollToTop />
       <StickyRezervetButton openCustomPopup={openCustomPopup} />
+      <CookieConsent />
       <PopupWrapper 
         isOpen={isOpen} 
         onClose={closeCustomPopup} 
