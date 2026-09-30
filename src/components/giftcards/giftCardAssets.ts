@@ -21,7 +21,7 @@ const PHOTOS = {
     ...CARDS,
     // The A4 version.
     '/giftcard/a4_tub.jpg', '/giftcard/a4_whisk.jpg', '/giftcard/a4_scrub.jpg',
-    '/giftcard/a4_swim.jpg', '/giftcard/a4_douse.jpg', '/giftcard/a4_rest.jpg',
+    '/giftcard/a4_swim.jpg', '/giftcard/a4_douse.jpg', '/giftcard/a4_wrap.jpg',
   ],
 };
 const preloaded = new Set<string>();

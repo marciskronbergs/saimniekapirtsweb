@@ -45,7 +45,7 @@ const FILES = {
   a4Scrub: 'giftcard/a4_scrub.jpg',
   a4Swim: 'giftcard/a4_swim.jpg',
   a4Douse: 'giftcard/a4_douse.jpg',
-  a4Rest: 'giftcard/a4_rest.jpg',
+  a4Wrap: 'giftcard/a4_wrap.jpg',
 } as const;
 export type GiftCardAsset = keyof typeof FILES;
 type Asset = GiftCardAsset;

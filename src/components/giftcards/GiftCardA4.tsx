@@ -27,7 +27,7 @@ const sans = "'GC Sans', Helvetica, Arial, sans-serif";
 // swim, the dousing and the rest in blankets.
 const PHOTOS = {
   info: ['/giftcard/a4_tub.jpg', '/giftcard/a4_whisk.jpg', '/giftcard/a4_scrub.jpg'],
-  details: ['/giftcard/a4_swim.jpg', '/giftcard/a4_douse.jpg', '/giftcard/a4_rest.jpg'],
+  details: ['/giftcard/a4_swim.jpg', '/giftcard/a4_douse.jpg', '/giftcard/a4_wrap.jpg'],
 };
 
 // Lucide icons, 24 × 24, drawn with a stroke.

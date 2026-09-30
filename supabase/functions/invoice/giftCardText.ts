@@ -200,7 +200,7 @@ export const giftCardA4Words: Record<Locale, GiftCardA4Words> = {
     codeLine: (code) => `kods online rezervācijai: ${code}`,
     photos: {
       info: ['Zāļu kubls un zāļu tēja', 'Slotu pēriens pirtī', 'Zāļu skrubja iestrādāšana'],
-      details: ['Pelde dīķī', 'Apliešana ar ūdeni pēc kubla', 'Ietīšana siltā pledā'],
+      details: ['Pelde dīķī', 'Apliešana ar ūdeni pēc kubla', 'Ietīšana pledos ar ozola slotām'],
     },
   },
   en: {
@@ -236,7 +236,7 @@ export const giftCardA4Words: Record<Locale, GiftCardA4Words> = {
     codeLine: (code) => `code for booking online: ${code}`,
     photos: {
       info: ['The herbal hot tub and herbal tea', 'A whisk massage in the sauna', 'An herbal scrub'],
-      details: ['A swim in the pond', 'A cold douse after the tub', 'Wrapped in a warm blanket'],
+      details: ['A swim in the pond', 'A cold douse after the tub', 'Wrapped in blankets with oak whisks'],
     },
   },
 };

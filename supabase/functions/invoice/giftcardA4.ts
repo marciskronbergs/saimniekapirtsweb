@@ -275,7 +275,7 @@ export async function renderGiftCardA4Pdf(card: GiftCardA4Data): Promise<Uint8Ar
   // The header photos tell the ritual in order, three on each page.
   const [serifItalic, serifBold, sans, sansBold, logo, ...pictures] = await Promise.all([
     load('serifItalic'), load('serifBold'), load('sans'), load('sansBold'), load('logoOnLight'),
-    load('a4Tub'), load('a4Whisk'), load('a4Scrub'), load('a4Swim'), load('a4Douse'), load('a4Rest'),
+    load('a4Tub'), load('a4Whisk'), load('a4Scrub'), load('a4Swim'), load('a4Douse'), load('a4Wrap'),
   ]);
   const f: Fonts = {
     serifItalic: await doc.embedFont(serifItalic, { subset: true }),

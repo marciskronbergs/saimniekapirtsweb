@@ -152,7 +152,7 @@ for (const file of [
   'giftcard/light_back.jpg',
   'giftcard/a4_swim.jpg',
   'giftcard/a4_douse.jpg',
-  'giftcard/a4_rest.jpg',
+  'giftcard/a4_wrap.jpg',
   'giftcard/logo_on_light.png',
   'giftcard/a4_tub.jpg',
   'giftcard/a4_whisk.jpg',
