@@ -61,7 +61,7 @@ interface GiftCard extends InvoiceInfo {
   // The gift card's number and the code it is booked online with, once it
   // exists; locked after too many wrong codes.
   gift_card: { code: string; pin: string; valid_until: string; locked: boolean } | null;
-  // A ritual card comes as a card and as an A4 page too.
+  // Every card comes as the ribbon card and the light card; a ritual also on A4.
   kind?: 'ritual' | 'value';
   cancelled: boolean;
   // The booking the card was used for.
@@ -241,13 +241,13 @@ const BirojsPage = () => {
     setError(null);
   };
 
-  // The card itself, or a ritual card's A4 version.
-  const downloadGiftCard = async (g: GiftCard, a4 = false) => {
-    setBusyId(a4 ? `${g.id}:second` : g.id);
+  // One version of the card: the ribbon card, the light card, or a ritual's A4.
+  const downloadGiftCard = async (g: GiftCard, kind: 'ribbon' | 'light' | 'a4') => {
+    setBusyId(`${g.id}:${kind}`);
     setError(null);
     try {
       const r = await callInvoiceFunction<{ code: string; filename: string; pdf_base64: string }>({
-        office: { pin, action: 'gift_card_pdf', order: g.id, a4 },
+        office: { pin, action: 'gift_card_pdf', order: g.id, a4: kind === 'a4', light: kind === 'light' },
       });
       const bytes = Uint8Array.from(atob(r.pdf_base64), (c) => c.charCodeAt(0));
       const url = URL.createObjectURL(new Blob([bytes], { type: 'application/pdf' }));
@@ -726,24 +726,17 @@ const BirojsPage = () => {
                 )}
                 {!g.cancelled && (
                   <>
-                    <button
-                      onClick={() => downloadGiftCard(g)}
-                      disabled={busyId !== null}
-                      className="inline-flex items-center gap-1 rounded-lg bg-gray-800 hover:bg-gray-700 disabled:opacity-50 px-3 py-1.5"
-                    >
-                      <Download className="w-4 h-4" />
-                      {busyId === g.id ? 'Sagatavo…' : 'Dāvanu karte (PDF)'}
-                    </button>
-                    {g.kind === 'ritual' && (
+                    {(g.kind === 'ritual' ? ['ribbon', 'light', 'a4'] as const : ['ribbon', 'light'] as const).map((kind) => (
                       <button
-                        onClick={() => downloadGiftCard(g, true)}
+                        key={kind}
+                        onClick={() => downloadGiftCard(g, kind)}
                         disabled={busyId !== null}
                         className="inline-flex items-center gap-1 rounded-lg bg-gray-800 hover:bg-gray-700 disabled:opacity-50 px-3 py-1.5"
                       >
                         <Download className="w-4 h-4" />
-                        {busyId === `${g.id}:second` ? 'Sagatavo…' : 'A4 (PDF)'}
+                        {busyId === `${g.id}:${kind}` ? 'Sagatavo…' : kind === 'a4' ? 'A4 (PDF)' : kind === 'light' ? 'Gaišā (PDF)' : 'Pirts priekiem (PDF)'}
                       </button>
-                    )}
+                    ))}
                     {!g.used_for && (
                       <button
                         onClick={() => cancelGiftCard(g)}
@@ -761,7 +754,7 @@ const BirojsPage = () => {
           <p className="text-xs text-gray-500">
             Ar karti apmaksātām dāvanu kartēm rēķins un dāvanu karte klientam aiziet automātiski. Ar pārskaitījumu:
             kad nauda saņemta, atveriet avansa rēķina saiti un nospiediet “Apmaksāts – izrakstīt gala rēķinu tagad” –
-            klientam aizies rēķins kopā ar dāvanu karti (PDF). Rituāla kartei ir arī A4 variants. Kartes numurs ir avansa
+            klientam aizies rēķins kopā ar dāvanu karti (PDF). Katrai kartei ir divi varianti ar summu (“Pirts priekiem” un gaišā), rituālam arī A4 bez summas. Kartes numurs ir avansa
             rēķina numurs; ar numuru un kodu klients var rezervēt online, un karte tiek ieskaitīta automātiski. Biroja
             e-pastā ar avansa rēķinu pielikumā ir arī dāvanu karte – to var pārsūtīt klientam. Atlaide pēc rēķina
             izsūtīšanas to aizstāj ar jaunu rēķinu.

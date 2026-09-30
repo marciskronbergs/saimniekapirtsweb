@@ -3,155 +3,66 @@ import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
 import { X } from 'lucide-react';
 import type { GiftCardRitual, Locale } from '../../lib/pricing';
-import {
-  formatCardDate,
-  giftCardWords,
-  ritualLine,
-  type GiftCardWords,
-} from '../../lib/giftCardText';
+import { formatCardDate, giftCardWords } from '../../lib/giftCardText';
 import { fontFaces } from './giftCardAssets';
 import GiftCardA4Page, { A4_H, A4_W } from './GiftCardA4';
+import { LIGHT_H, LIGHT_W, LightCardSide, type Sample } from './LightCard';
 
 // A preview of the gift card a buyer will get, for the gift card page: the
-// same design as the PDF the invoice function draws (giftcard.ts), with the
-// same fonts, photos and words, drawn here in HTML at the design's own size
-// (850 × 370 px) and scaled to fit; a ritual card also as its A4 pages
-// (GiftCardA4). The number and date are a sample until the card is paid for.
+// owner's "Dāvanu karte – PIRTS PRIEKIEM" as the PDF the invoice function
+// draws it (giftcard.ts), the same pictures with the same words laid over
+// them, at the pictures' own size (2000 × 873 px) and scaled to fit; a ritual
+// card also as its A4 pages (GiftCardA4). The number and date are a sample
+// until the card is paid for.
 
-const W = 850;
-const H = 370;
+const W = 2000;
+const H = 873;
 
-const INK = '#1D2A22';
-const SOFT = '#55615A';
-const LABEL = '#5E665F';
-const HONEY = '#8A5A22';
-const RULE = '#C9BDA5';
-const LINEN = '#F4EFE6';
-const PAPER = '#F7F3EC';
-const TAGLINE = '#3B5443';
-
-const serif = "'GC Serif', Georgia, serif";
+const GOLD = '#FEDD58';
+const GOLD_SOFT = '#AE9C47';
 const sans = "'GC Sans', Helvetica, Arial, sans-serif";
 
-
-// A line that shrinks, from its size down to `min`, until it fits `max` px,
-// as the PDF's lines do.
-const FitLine: React.FC<{ max: number; min: number; style: React.CSSProperties; children: string }> = ({ max, min, style, children }) => {
-  const ref = useRef<HTMLDivElement>(null);
-  const start = Number(style.fontSize);
-  const [size, setSize] = useState(start);
+// A line placed by its baseline, as the PDF places it (Montserrat sits 0.8585
+// of its size below the top of a line box of height 1). It shrinks, from its
+// size down to `min`, until it fits `max` px.
+const Line: React.FC<{
+  x: number; y: number; size: number; min?: number; max?: number; bold?: boolean; color?: string; spacing?: number;
+  align?: 'left' | 'center'; children: string;
+}> = ({ x, y, size, min, max, bold, color = GOLD, spacing = 0, align = 'left', children }) => {
+  const ref = useRef<HTMLSpanElement>(null);
+  const [fit, setFit] = useState(size);
   useLayoutEffect(() => {
-    const fit = () => {
-      const el = ref.current;
-      if (!el) return;
-      let s = start;
+    const el = ref.current;
+    if (!el || !max) return;
+    const measure = () => {
+      let s = size;
       el.style.fontSize = `${s}px`;
-      while (s > min && el.scrollWidth > max) {
-        s -= 0.25;
+      while (min && s > min && el.offsetWidth > max) {
+        s -= 0.5;
         el.style.fontSize = `${s}px`;
       }
-      setSize(s);
+      setFit(s);
     };
-    fit();
+    measure();
     let live = true;
-    document.fonts?.ready.then(() => live && fit());
+    document.fonts?.ready.then(() => live && measure());
     return () => {
       live = false;
     };
-  }, [children, max, min, start]);
+  }, [children, size, min, max]);
   return (
-    <div ref={ref} style={{ ...style, fontSize: size, whiteSpace: 'nowrap', maxWidth: max }}>
+    <span
+      ref={ref}
+      style={{
+        position: 'absolute', top: y - 0.8585 * fit, left: x, transform: align === 'center' ? 'translateX(-50%)' : undefined,
+        fontFamily: sans, fontWeight: bold ? 600 : 400, fontSize: fit, lineHeight: 1, letterSpacing: spacing, color, whiteSpace: 'nowrap',
+      }}
+    >
       {children}
-    </div>
+    </span>
   );
 };
 
-const Eyebrow: React.FC<{ color: string; center?: boolean; children: string }> = ({ color, center = true, children }) => (
-  <div
-    style={{
-      fontFamily: sans, fontWeight: 600, fontSize: 11, lineHeight: 1.2, letterSpacing: '0.32em',
-      paddingLeft: center ? '0.32em' : 0, textTransform: 'uppercase', color,
-    }}
-  >
-    {children}
-  </div>
-);
-
-interface Sample {
-  code: string;
-  pin: string;
-  validUntil: string;
-}
-
-// The rule, the number and date, and the footer, at the same height on every front.
-const FrontBottom: React.FC<{ w: GiftCardWords; sample: Sample; rule: string; label: string; value: string; footer: string }> = ({
-  w, sample, rule, label, value, footer,
-}) => {
-  const cell = (l: string, v: string, extra: React.CSSProperties = {}) => (
-    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4, ...extra }}>
-      <span style={{ fontFamily: sans, fontWeight: 600, fontSize: 10.5, lineHeight: 1.2, letterSpacing: '0.24em', paddingLeft: '0.24em', textTransform: 'uppercase', color: label }}>
-        {l}
-      </span>
-      <span style={{ fontFamily: sans, fontWeight: 600, fontSize: 14, lineHeight: 1.2, letterSpacing: '0.04em', color: value }}>{v}</span>
-    </div>
-  );
-  return (
-    <div style={{ marginTop: 'auto', width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-      <div style={{ width: '100%', height: 1, background: rule }} />
-      <div style={{ marginTop: 12, width: '100%', display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))' }}>
-        {cell(w.no, sample.code)}
-        {cell(w.validUntil, formatCardDate(sample.validUntil), { borderLeft: `1px solid ${rule}` })}
-      </div>
-      <div style={{ marginTop: 30, fontFamily: sans, fontSize: 11.5, lineHeight: 1.2, letterSpacing: '0.06em', color: footer }}>{w.contact}</div>
-    </div>
-  );
-};
-
-// A title, a line in italics and a line of facts: the ritual card.
-const TitleBlock: React.FC<{ lines: [string, string, string]; max: number; colors: [string, string, string] }> = ({ lines, max, colors }) => (
-  <>
-    <FitLine max={max} min={36} style={{ marginTop: 8, fontFamily: serif, fontWeight: 600, fontSize: 46, lineHeight: 1, color: colors[0] }}>
-      {lines[0]}
-    </FitLine>
-    <FitLine max={max} min={19} style={{ marginTop: 5, fontFamily: serif, fontStyle: 'italic', fontWeight: 500, fontSize: 24, lineHeight: 1.15, color: colors[1] }}>
-      {lines[1]}
-    </FitLine>
-    <FitLine max={max} min={10} style={{ marginTop: 11, fontFamily: sans, fontSize: 12, lineHeight: 1.2, letterSpacing: '0.05em', color: colors[2] }}>
-      {lines[2]}
-    </FitLine>
-  </>
-);
-
-const Photo: React.FC<{ src: string; alt: string; width: number }> = ({ src, alt, width }) => (
-  <img src={src} alt={alt} style={{ width, height: H, objectFit: 'cover', display: 'block', flexShrink: 0 }} />
-);
-
-const Step: React.FC<{ n: number; bold?: boolean; size?: number; fit?: number; children: string }> = ({ n, bold, size = 13, fit, children }) => {
-  const text: React.CSSProperties = { fontFamily: sans, fontWeight: bold ? 600 : 400, fontSize: size, lineHeight: 1.45, color: INK };
-  return (
-    <li style={{ display: 'flex', gap: 12, alignItems: 'baseline' }}>
-      <span style={{ fontFamily: serif, fontWeight: 600, fontSize: 21, lineHeight: 1, color: HONEY, width: 12, flexShrink: 0, textAlign: 'center' }}>{n}</span>
-      {fit ? <FitLine max={fit} min={10.5} style={text}>{children}</FitLine> : <span style={text}>{children}</span>}
-    </li>
-  );
-};
-
-const BackHeader: React.FC<{ w: GiftCardWords; text: string }> = ({ w, text }) => (
-  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 16 }}>
-    <Eyebrow color={HONEY} center={false}>{w.giftCard}</Eyebrow>
-    <span style={{ fontFamily: sans, fontWeight: 600, fontSize: 12, lineHeight: 1.2, letterSpacing: '0.04em', color: INK }}>{text}</span>
-  </div>
-);
-
-const BackFooter: React.FC<{ w: GiftCardWords; sample: Sample }> = ({ w, sample }) => (
-  <div style={{ marginTop: 'auto', borderTop: `1px solid ${RULE}`, paddingTop: 10, display: 'flex', flexDirection: 'column', gap: 3, fontFamily: sans, fontSize: 11, lineHeight: 1.35, color: LABEL }}>
-    <div style={{ display: 'flex', justifyContent: 'space-between', gap: 16 }}>
-      <span>{w.validity(formatCardDate(sample.validUntil))}</span>
-      <span style={{ fontWeight: 600, color: INK }}>saimniekapirts.lv</span>
-    </div>
-    <div>{w.address}</div>
-  </div>
-);
 
 interface CardProps {
   side: 'front' | 'back';
@@ -161,64 +72,34 @@ interface CardProps {
   sample: Sample;
 }
 
-// One side of a card at the design's size: a value card shows its amount, a
-// ritual card names the ritual in its place.
+// One side of the ribbon card. It always shows the amount (a ritual card: the
+// ritual's price); a ritual card names the ritual in the line under it.
 const CardSide: React.FC<CardProps> = ({ side, locale, value, ritual, sample }) => {
   const w = giftCardWords[locale];
-  // When the words on the back run long, the gaps close up, as in the PDF.
-  const backRef = useRef<HTMLDivElement>(null);
-  const [tight, setTight] = useState(false);
-  useLayoutEffect(() => {
-    const el = backRef.current;
-    if (!el) return;
-    const fit = () => setTight(el.scrollHeight > el.clientHeight);
-    setTight(false);
-    requestAnimationFrame(fit);
-    document.fonts?.ready.then(() => requestAnimationFrame(fit));
-  }, [locale, value, ritual, side]);
-  const root: React.CSSProperties = { width: W, height: H, display: 'flex', overflow: 'hidden', fontFamily: sans };
-
-  if (side === 'front') {
+  const root: React.CSSProperties = { position: 'relative', width: W, height: H, overflow: 'hidden' };
+  if (side === 'back') {
     return (
-      <div style={{ ...root, background: LINEN, color: INK }}>
-        <Photo src="/giftcard/value_front.jpg" alt={w.photos.valueFront} width={490} />
-        <div style={{ width: 360, height: H, boxSizing: 'border-box', padding: '30px 34px 24px', display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center' }}>
-          <img src="/giftcard/logo_on_light.png" alt="Saimnieka Pirts" style={{ height: 64, width: 'auto', display: 'block' }} />
-          <div style={{ marginTop: 17 }}><Eyebrow color={HONEY}>{w.giftCard}</Eyebrow></div>
-          {ritual ? (
-            <TitleBlock lines={[w.ritual, ritualLine(ritual, locale), w.facts(ritual)]} max={292} colors={[INK, TAGLINE, LABEL]} />
-          ) : (
-            <>
-              <div style={{ marginTop: 4, width: '100%', display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) auto minmax(0, 1fr)', alignItems: 'baseline' }}>
-                <span />
-                <span style={{ position: 'relative', left: -4, fontFamily: serif, fontWeight: 600, fontSize: 86, lineHeight: 0.95, color: INK }}>{value}</span>
-                <span style={{ position: 'relative', left: -4, justifySelf: 'start', marginLeft: 9, fontFamily: sans, fontWeight: 600, fontSize: 15, letterSpacing: '0.16em', color: HONEY }}>
-                  EUR
-                </span>
-              </div>
-              <div style={{ fontFamily: serif, fontStyle: 'italic', fontWeight: 500, fontSize: 25, lineHeight: 1.1, color: TAGLINE }}>{w.tagline}</div>
-            </>
-          )}
-          <FrontBottom w={w} sample={sample} rule={RULE} label={LABEL} value={INK} footer={LABEL} />
-        </div>
+      <div style={root}>
+        <img src="/giftcard/card_back.jpg" alt={w.photos.ribbonBack} style={{ width: W, height: H, display: 'block' }} />
       </div>
     );
   }
-  const header = `${w.no} ${sample.code} · ${w.code} ${sample.pin}${ritual ? '' : ` · ${value} EUR`}`;
+  const usage = ritual ? w.ritualUsage(ritual) : w.usage;
   return (
-    <div style={{ ...root, background: PAPER, color: INK }}>
-      <div ref={backRef} style={{ width: 594, height: H, boxSizing: 'border-box', padding: '34px 40px 26px 44px', display: 'flex', flexDirection: 'column' }}>
-        <BackHeader w={w} text={header} />
-        <div style={{ marginTop: 10, fontFamily: serif, fontStyle: 'italic', fontWeight: 500, fontSize: 32, lineHeight: 1.05 }}>{w.howTo}</div>
-        <ol style={{ margin: '18px 0 0', padding: 0, listStyle: 'none', display: 'flex', flexDirection: 'column', gap: tight ? 5 : 11 }}>
-          {w.steps.map((step, i) => (
-            <Step key={step} n={i + 1}>{step}</Step>
-          ))}
-        </ol>
-        <p style={{ margin: `${tight ? 10 : 18}px 0 0`, fontFamily: sans, fontSize: 12.5, lineHeight: 1.45, color: SOFT }}>{ritual ? w.ritualService(ritual) : w.anyService}</p>
-        <BackFooter w={w} sample={sample} />
-      </div>
-      <Photo src="/giftcard/value_back.jpg" alt={w.photos.valueBack} width={256} />
+    <div style={root}>
+      <img src="/giftcard/card_front.jpg" alt={w.photos.ribbonFront} style={{ width: W, height: H, display: 'block' }} />
+      <Line x={1524} y={243} size={50} min={34} max={336} bold>{sample.code}</Line>
+      <span style={{ position: 'absolute', top: 322 - 0.8585 * 22, left: 1524, fontFamily: sans, fontSize: 22, lineHeight: 1, color: GOLD, whiteSpace: 'nowrap' }}>
+        {w.codeLine}{' '}
+        <strong style={{ fontWeight: 600, fontSize: 28, letterSpacing: 2, marginLeft: 6 }}>{sample.pin}</strong>
+      </span>
+      <Line x={955} y={510} size={68} bold align="center">{`${value} EUR`}</Line>
+      <Line x={1280} y={516} size={36} bold>{w.valueWord}</Line>
+      <Line x={1418} y={607} size={50} bold>{formatCardDate(sample.validUntil)}</Line>
+      <Line x={1040} y={680} size={26} min={18} max={960} spacing={0.5} align="center">{usage}</Line>
+      <Line x={1040} y={714} size={20} min={15} max={960} spacing={0.5} color={GOLD_SOFT} align="center">{w.payMore}</Line>
+      <Line x={1040} y={766} size={20} min={14} max={1120} spacing={5} color={GOLD_SOFT} align="center">{w.ribbonAddress}</Line>
+      <Line x={1040} y={798} size={20} min={14} max={1120} spacing={5} color={GOLD_SOFT} align="center">{w.book}</Line>
     </div>
   );
 };
@@ -263,6 +144,7 @@ function sampleCard(): Sample {
 }
 
 interface GiftCardPreviewProps {
+  // The card's value (a ritual: its price), shown on both cards.
   // A value card, or a ritual card (as a card and as an A4 page).
   value?: number;
   ritual?: GiftCardRitual | null;
@@ -272,15 +154,15 @@ interface GiftCardPreviewProps {
 const GiftCardPreview: React.FC<GiftCardPreviewProps> = ({ value = 0, ritual = null, onClose }) => {
   const { t, i18n } = useTranslation('giftcards');
   const locale: Locale = i18n.language === 'en' ? 'en' : 'lv';
-  // A ritual card's A4 version.
-  const [second, setSecond] = useState(false);
+  // Which card is shown: the ribbon card, the light card, or a ritual's A4.
+  const [view, setView] = useState<'ribbon' | 'light' | 'a4'>('ribbon');
   // On a phone the card is small; enlarged, it scrolls sideways at a readable size.
   const [enlarged, setEnlarged] = useState(false);
   const [sample] = useState(sampleCard);
   const closeRef = useRef<HTMLButtonElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
   const pressedOutside = useRef(false);
-  const a4 = !!ritual && second;
+  const a4 = !!ritual && view === 'a4';
 
   useEffect(() => {
     const opener = document.activeElement as HTMLElement | null;
@@ -310,13 +192,13 @@ const GiftCardPreview: React.FC<GiftCardPreviewProps> = ({ value = 0, ritual = n
     };
   }, [onClose]);
 
-  const tab = (isSecond: boolean, label: string) => (
+  const tab = (which: typeof view, label: string) => (
     <button
       type="button"
-      aria-pressed={second === isSecond}
-      onClick={() => setSecond(isSecond)}
+      aria-pressed={view === which}
+      onClick={() => setView(which)}
       className={`rounded-full px-4 py-2 text-sm font-semibold transition-colors ${
-        second === isSecond ? 'bg-amber-600 text-white' : 'bg-white/10 text-gray-200 hover:bg-white/20'
+        view === which ? 'bg-amber-600 text-white' : 'bg-white/10 text-gray-200 hover:bg-white/20'
       }`}
     >
       {label}
@@ -348,18 +230,17 @@ const GiftCardPreview: React.FC<GiftCardPreviewProps> = ({ value = 0, ritual = n
         <div className="flex items-start justify-between gap-4">
           <div>
             <h2 id="gift-card-preview-title" className="text-xl sm:text-2xl font-bold">{t('preview.title')}</h2>
-            {ritual && <p className="mt-1 text-sm sm:text-base text-gray-300">{t('preview.bothVersionsRitual')}</p>}
+            <p className="mt-1 text-sm sm:text-base text-gray-300">{t(ritual ? 'preview.versionsRitual' : 'preview.versions')}</p>
           </div>
           <button ref={closeRef} type="button" onClick={onClose} aria-label={t('preview.close')} className="rounded-lg p-2 hover:bg-white/10 shrink-0">
             <X className="w-6 h-6" />
           </button>
         </div>
-        {ritual && (
-          <div className="flex flex-wrap gap-2" role="group" aria-label={t('preview.title')}>
-            {tab(false, t('preview.card'))}
-            {tab(true, t('preview.a4'))}
-          </div>
-        )}
+        <div className="flex flex-wrap gap-2" role="group" aria-label={t('preview.title')}>
+          {tab('ribbon', t('preview.ribbon'))}
+          {tab('light', t('preview.light'))}
+          {ritual && tab('a4', t('preview.a4'))}
+        </div>
         <button
           type="button"
           aria-pressed={enlarged}
@@ -376,8 +257,12 @@ const GiftCardPreview: React.FC<GiftCardPreviewProps> = ({ value = 0, ritual = n
                 <GiftCardA4Page page={page} locale={locale} ritual={ritual} code={sample.code} pin={sample.pin} validUntil={sample.validUntil} />
               </Scaled>
             ))
-            : (['front', 'back'] as const).map((side) => (
-              <Scaled key={side} w={W} h={H} label={t(side === 'front' ? 'preview.front' : 'preview.back')} width={enlarged ? 760 : undefined}>
+            : (['front', 'back'] as const).map((side) => view === 'light' ? (
+              <Scaled key={`light-${side}`} w={LIGHT_W} h={LIGHT_H} label={t(side === 'front' ? 'preview.front' : 'preview.back')} width={enlarged ? 760 : undefined}>
+                <LightCardSide side={side} locale={locale} value={value} ritual={ritual} sample={sample} />
+              </Scaled>
+            ) : (
+              <Scaled key={side} w={W} h={H} label={t(side === 'front' ? 'preview.front' : 'preview.back')} width={enlarged ? 900 : undefined}>
                 <CardSide side={side} locale={locale} value={value} ritual={ritual} sample={sample} />
               </Scaled>
             ))}

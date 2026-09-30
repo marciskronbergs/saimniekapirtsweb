@@ -14,12 +14,14 @@ export const fontFaces = FONTS
     `@font-face{font-family:'${family}';src:url('${fontUrl(file)}') format('truetype');font-weight:${weight};font-style:${style};font-display:swap}`)
   .join('');
 
+const CARDS = ['/giftcard/card_front.jpg', '/giftcard/card_back.jpg', '/giftcard/value_front.jpg', '/giftcard/light_back.jpg', '/giftcard/logo_on_light.png'];
 const PHOTOS = {
-  value: ['/giftcard/value_front.jpg', '/giftcard/value_back.jpg', '/giftcard/logo_on_light.png'],
+  value: CARDS,
   ritual: [
-    '/giftcard/value_front.jpg', '/giftcard/value_back.jpg', '/giftcard/logo_on_light.png',
+    ...CARDS,
     // The A4 version.
     '/giftcard/a4_tub.jpg', '/giftcard/a4_whisk.jpg', '/giftcard/a4_scrub.jpg',
+    '/giftcard/a4_swim.jpg', '/giftcard/a4_douse.jpg', '/giftcard/a4_wrap.jpg',
   ],
 };
 const preloaded = new Set<string>();

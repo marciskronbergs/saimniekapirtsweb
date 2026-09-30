@@ -23,7 +23,12 @@ const WHITE = '#FFFFFF';
 const serif = "'GC Serif', Georgia, serif";
 const sans = "'GC Sans', Helvetica, Arial, sans-serif";
 
-const PHOTOS = ['/giftcard/a4_tub.jpg', '/giftcard/a4_whisk.jpg', '/giftcard/a4_scrub.jpg'];
+// The ritual in order: page 1 the tub, the whisks and the scrub; page 2 the
+// swim, the dousing and the rest in blankets.
+const PHOTOS = {
+  info: ['/giftcard/a4_tub.jpg', '/giftcard/a4_whisk.jpg', '/giftcard/a4_scrub.jpg'],
+  details: ['/giftcard/a4_swim.jpg', '/giftcard/a4_douse.jpg', '/giftcard/a4_wrap.jpg'],
+};
 
 // Lucide icons, 24 × 24, drawn with a stroke.
 const ICONS: Record<string, React.ReactNode> = {
@@ -79,7 +84,7 @@ interface A4Props {
 }
 
 // The logo, the title, three photos cut as chevrons and the grey band.
-const Header: React.FC<{ locale: Locale; ritual: GiftCardRitual; band: string }> = ({ locale, ritual, band }) => {
+const Header: React.FC<{ locale: Locale; ritual: GiftCardRitual; band: string; page: 'info' | 'details' }> = ({ locale, ritual, band, page }) => {
   const w = giftCardA4Words[locale];
   return (
     <>
@@ -93,11 +98,11 @@ const Header: React.FC<{ locale: Locale; ritual: GiftCardRitual; band: string }>
           {ritualLine(ritual, locale)}
         </div>
       </div>
-      {PHOTOS.map((src, i) => (
+      {PHOTOS[page].map((src, i) => (
         <img
           key={src}
           src={src}
-          alt={w.photos[i]}
+          alt={w.photos[page][i]}
           style={{
             position: 'absolute', left: 36 + i * 245, top: 170, width: 232, height: 206, objectFit: 'cover', display: 'block',
             clipPath: 'polygon(0 0,100% 0,100% 72%,50% 100%,0 72%)',
@@ -163,7 +168,7 @@ const GiftCardA4Page: React.FC<A4Props> = ({ page, locale, ritual, code, pin, va
   if (page === 1) {
     return (
       <div style={root}>
-        <Header locale={locale} ritual={ritual} band={w.giftCard} />
+        <Header locale={locale} ritual={ritual} band={w.giftCard} page="info" />
         <div
           style={{
             position: 'absolute', left: 48, top: 462, width: 698, minHeight: 560, boxSizing: 'border-box', padding: '30px 44px 32px',
@@ -205,7 +210,7 @@ const GiftCardA4Page: React.FC<A4Props> = ({ page, locale, ritual, code, pin, va
   ];
   return (
     <div style={root}>
-      <Header locale={locale} ritual={ritual} band={w.web} />
+      <Header locale={locale} ritual={ritual} band={w.web} page="details" />
       {rows.map((row, i) => (
         <Row key={row.icon} top={486 + i * 100} {...row} />
       ))}
