@@ -4,11 +4,12 @@
 // gift card page shows a preview of it with them. The function keeps a copy of
 // this file (the build fails if the copy drifts), so it imports only a type.
 //
-// A value card shows its amount. A ritual card names the ritual instead, in
-// the same design, and comes with an A4 version too (the owner's own
-// two-page layout); the buyer gives whichever they like. Every card carries
-// its number (its advance invoice's) and a short code: with both, the card
-// can be used when booking online.
+// The card is the owner's own "Dāvanu karte – PIRTS PRIEKIEM" (the gold
+// ribbon on navy, its title set in the picture); the words here fill in the
+// rest. A value card shows its amount; a ritual card names the ritual in its
+// place, and comes with an A4 version too (the owner's two-page layout).
+// Every card carries its number (its advance invoice's) and a short code:
+// with both, the card can be used when booking online.
 
 import type { GiftCardRitual, Locale } from './pricing.ts';
 
@@ -25,78 +26,57 @@ const PAY_MORE_EN = `If you choose a dearer service, ${nb('you can pay the diffe
 
 export interface GiftCardWords {
   giftCard: string;
-  no: string;
-  // The card's code, asked for with its number when booking online.
-  code: string;
-  validUntil: string;
-  contact: string;
-  // The value card: the amount, then this line under it.
-  tagline: string;
-  // The ritual card: its title, a line naming the ritual, and its facts.
+  // The value card's amount line: "300 EUR vērtībā".
+  valueWord: string;
+  // Beside the number: the code, asked for when booking online.
+  codeLine: string;
   ritual: string;
   tub: (tub: boolean) => string;
   facts: (r: GiftCardRitual) => string;
-  howTo: string;
-  steps: string[];
-  anyService: string;
-  ritualService: (r: GiftCardRitual) => string;
-  validity: (date: string) => string;
+  // Under the amount (or the ritual): what the card is for.
+  usage: string;
+  ritualUsage: (r: GiftCardRitual) => string;
+  // A card may go towards a dearer service: the rest is paid on the day.
+  payMore: string;
+  // The footer: the address, and how to book (online, or by phone).
   address: string;
-  photos: { valueFront: string; valueBack: string };
+  book: string;
+  photos: { front: string; back: string };
 }
 
 export const giftCardWords: Record<Locale, GiftCardWords> = {
   lv: {
     giftCard: 'Dāvanu karte',
-    no: 'Nr.',
-    code: 'Kods',
-    validUntil: 'Derīga līdz',
-    contact: `saimniekapirts.lv · ${PHONE}`,
-    tagline: 'pirts priekiem',
+    valueWord: 'vērtībā',
+    codeLine: 'Kods online rezervācijai:',
     ritual: 'Pirts rituāls',
     tub: (tub: boolean) => (tub ? 'ar zāļu kublu' : 'bez zāļu kubla'),
     facts: (r: GiftCardRitual) => `${r.people.lv} · līdz ${r.hours} stundām`,
-    howTo: 'Kā izmantot dāvanu karti',
-    steps: [
-      `Rezervējiet online ${nb('saimniekapirts.lv/rezervet')}${DASH}ievadiet kartes numuru un kodu, un karte tiks ieskaitīta automātiski.`,
-      `Vai rezervējiet pa tālruni ${PHONE} vai e-pastu info@saimniekapirts.lv, nosaucot kartes numuru.`,
-      `Ierodoties uzrādiet dāvanu karti${DASH}izdrukātu vai telefonā.`,
-    ],
-    anyService: `Kartes vērtību var izmantot jebkuram mūsu pakalpojumam${DASH}${nb('pirts rituālam')}, ${nb('pirts nomai')} vai nakšņošanai. ${PAY_MORE_LV}`,
-    ritualService: (r: GiftCardRitual) =>
-      `Karte der ${nb('pirts rituālam')} ${nb(`${r.who.lv} ${giftCardWords.lv.tub(r.tub)}`)} sertificēta pirtnieka vadībā. ${PAY_MORE_LV}`,
-    validity: (date: string) => `Derīga līdz ${date}`,
-    address: '„Sarma Nr. 123“, Baldones pagasts, Ķekavas novads, LV-2125',
-    // What the photos show, for the preview on the site.
+    usage: 'Izmantojama pirts rituālam, pirts nomai vai nakšņošanai',
+    ritualUsage: (r: GiftCardRitual) => `${r.people.lv} · līdz ${r.hours} stundām · sertificēta pirtnieka vadībā`,
+    payMore: PAY_MORE_LV,
+    address: '„SARMA NR. 123“, BALDONES PAGASTS, ĶEKAVAS NOVADS, LV-2125',
+    book: `REZERVĀCIJA: SAIMNIEKAPIRTS.LV/REZERVET (NR. + KODS) | TĀLR. ${nb('+371 26 752 661')}`,
     photos: {
-      valueFront: 'Viesi zāļu kublā, saimnieks lej zāļu tēju',
-      valueBack: 'Peldēšana dīķī starp ūdensrozēm',
+      front: 'Dāvanu karte – zelta lente uz tumša fona',
+      back: 'Zāļu kubls, pirts slotas, pēriens un dīķis pie pirts',
     },
   },
   en: {
     giftCard: 'Gift card',
-    no: 'No.',
-    code: 'Code',
-    validUntil: 'Valid until',
-    contact: `saimniekapirts.lv · ${PHONE}`,
-    tagline: 'a sauna treat',
+    valueWord: 'value',
+    codeLine: 'Code for booking online:',
     ritual: 'Sauna ritual',
     tub: (tub: boolean) => (tub ? 'with herbal hot tub' : 'without herbal hot tub'),
     facts: (r: GiftCardRitual) => `${r.people.en} · up to ${r.hours} hours`,
-    howTo: 'How to use your gift card',
-    steps: [
-      `Book online at ${nb('saimniekapirts.lv/rezervet')}${DASH}enter the card number and code, and the card is applied automatically.`,
-      `Or book by phone ${PHONE} or email info@saimniekapirts.lv, quoting the ${nb('card number')}.`,
-      `When you arrive, show the gift card${DASH}printed or on your phone.`,
-    ],
-    anyService: `The value can be used for any of our services${DASH}${nb('a sauna ritual')}, ${nb('sauna rental')} or ${nb('an overnight stay')}. ${PAY_MORE_EN}`,
-    ritualService: (r: GiftCardRitual) =>
-      `The card is for ${nb('a sauna ritual')} ${nb(`${r.who.en} ${giftCardWords.en.tub(r.tub)}`)}, led by a certified sauna master. ${PAY_MORE_EN}`,
-    validity: (date: string) => `Valid until ${date}`,
-    address: '“Sarma Nr. 123”, Baldone parish, Ķekava municipality, LV-2125, Latvia',
+    usage: 'For a sauna ritual, sauna rental or an overnight stay',
+    ritualUsage: (r: GiftCardRitual) => `${r.people.en} · up to ${r.hours} hours · led by a certified sauna master`,
+    payMore: PAY_MORE_EN,
+    address: '“SARMA NR. 123”, BALDONE PARISH, ĶEKAVA MUNICIPALITY, LV-2125, LATVIA',
+    book: `BOOKING: SAIMNIEKAPIRTS.LV/REZERVET (NO. + CODE) | TEL. ${nb('+371 26 752 661')}`,
     photos: {
-      valueFront: 'Guests in the herbal hot tub, the host pouring herbal tea',
-      valueBack: 'Floating in the pond among water lilies',
+      front: 'Gift card – a gold ribbon on navy',
+      back: 'The herbal hot tub, sauna whisks, a whisk massage and the pond by the sauna',
     },
   },
 };

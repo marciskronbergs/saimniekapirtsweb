@@ -15,11 +15,11 @@ export const fontFaces = FONTS
   .join('');
 
 const PHOTOS = {
-  value: ['/giftcard/value_front.jpg', '/giftcard/value_back.jpg', '/giftcard/logo_on_light.png'],
+  value: ['/giftcard/card_front.jpg', '/giftcard/card_back.jpg'],
   ritual: [
-    '/giftcard/value_front.jpg', '/giftcard/value_back.jpg', '/giftcard/logo_on_light.png',
+    '/giftcard/card_front.jpg', '/giftcard/card_back.jpg',
     // The A4 version.
-    '/giftcard/a4_tub.jpg', '/giftcard/a4_whisk.jpg', '/giftcard/a4_scrub.jpg',
+    '/giftcard/logo_on_light.png', '/giftcard/a4_tub.jpg', '/giftcard/a4_whisk.jpg', '/giftcard/a4_scrub.jpg',
   ],
 };
 const preloaded = new Set<string>();
