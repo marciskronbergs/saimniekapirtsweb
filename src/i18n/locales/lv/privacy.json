@@ -93,20 +93,8 @@
   "cookies": {
     "title": "Sīkdatnes",
     "description": "Sīkdatnes ir nelieli teksta faili, kas tiek izveidoti un saglabāti interneta lietotāja ierīcē (datorā, planšetdatorā, mobilajā tālrunī u.c.), apmeklējot vietni. Sīkdatnes palīdz lietotājam atcerēties pieteikšanās vārdu un iestatījumus (piemēram, valodu, fonta lielumu u.c. papildu informāciju), lai tie nebūtu katru reizi jānorāda, tādējādi uzlabojot vietnes lietošanas ērtumu.",
-    "analytical": {
-      "title": "Analītiskās sīkdatnes",
-      "description": "Analītiskās sīkdatnes (piemēram, Google Analytics un Microsoft Clarity) apkopo informāciju par vietnes apmeklētāja uzvedību, piemēram, kuras sadaļas tiek apmeklētas visbiežāk. Šī informācija palīdz mums attīstīt un uzlabot mūsu vietni, padarīt to ērtāku. Šīs sīkdatnes tiek glabātas lietotāja ierīcē ne ilgāk kā divus gadus."
-    },
-    "technical": {
-      "title": "Tehniskās sīkdatnes",
-      "description": "Tehniskās jeb obligātās sīkdatnes (Google Chrome, Internet Explorer u.c.) palīdz atcerēties lietotāja pieprasījumus un to, kurām sīkdatnēm lietotājs ir piekritis. Šīs sīkdatnes tiek glabātas lietotāja ierīcē līdz pārlūkprogrammas aizvēršanai, bet ne ilgāk kā divus gadus."
-    },
-    "advertising": {
-      "title": "Mērķa sīkdatnes",
-      "description": "Mērķa vai reklāmas sīkfaili (piemēram, Google Adwords) nodrošina lietotāja vēlmēm pielāgotu reklāmu. Šīs sīkdatnes tiek pastāvīgi saglabātas apmeklētāju ierīcēs."
-    },
     "thirdParty": "Turklāt vietnē var tikt izmantoti tādi pakalpojumi kā YouTube, lai nodrošinātu video saturu vai saites uz citām vietnēm, Facebook, Instagram, TripAdvisor, lai piedāvātu iespēju skatīt saturu no šiem sociālajiem kontiem vai kopīgot tajos vietnes saturu. Visi šie pakalpojumi izmanto sīkfailus, lai iegūtu statistikas datus un noskaidrotu populārākās meklēšanas tendences. Šīs trešās puses sīkfailus mēs nevaram kontrolēt.",
-    "consent": "Apmeklējot mūsu vietni, lietotājs tiek informēts, ka mēs izmantojam sīkdatnes. Aizverot šo paziņojumu, lietotājs apstiprina, ka ir izlasījis informāciju par sīkdatnēm un piekrīt tai. Ja lietotājs nevēlas, lai viņa ierīcē tiktu izmantotas sīkdatnes, viņš var atspējot sīkdatņu izmantošanu savā pārlūkprogrammas iestatījumos, taču jāņem vērā, ka daži pakalpojumi un vietnes funkcijas var nedarboties, kā arī nav iespējams atteikt izmantošanu obligātajām un funkcionālajām sīkdatnēm, jo bez tām nav iespējama pilna vietnes funkcionalitāte.",
+    "consent": "Nepieciešamās sīkdatnes darbojas vienmēr. Iestatījumu, statistikas un mārketinga sīkdatnes tiek izmantotas tikai tad, ja jūs tām piekrītat sīkdatņu paziņojumā, kas parādās, pirmo reizi atverot vietni. Līdz izvēlei šīs sīkdatnes netiek saglabātas, un Google rīki darbojas ierobežotā režīmā bez sīkdatnēm (Google Consent Mode). Jūsu izvēli, tās datumu un anonīmu piekrišanas ID mēs saglabājam kā pierādījumu par piekrišanu. Piekrišanu varat mainīt vai atsaukt jebkurā laikā, izmantojot sīkdatņu ikonu lapas stūrī vai saiti “Sīkdatņu iestatījumi” lapas kājenē. Pēc gada mēs jums pajautāsim vēlreiz.",
     "identification": "Informācija, kas saistīta ar sīkdatnēm, netiek izmantota, lai personīgi identificētu lietotāju."
   },
   "policyChanges": {

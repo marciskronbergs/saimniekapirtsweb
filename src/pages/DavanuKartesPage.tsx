@@ -9,6 +9,7 @@ import PaymentChoice from '../components/popup/PaymentChoice';
 import { goToCardPayment, useCardPayments } from '../lib/cardPayments';
 import GiftCardPreview from '../components/giftcards/GiftCardPreview';
 import { preloadGiftCard } from '../components/giftcards/giftCardAssets';
+import { trackGiftCardOrdered, trackGiftCardStart } from '../lib/analytics';
 
 const DavanuKartesPage = () => {
   const [isVisible, setIsVisible] = useState(false);
@@ -123,6 +124,7 @@ const DavanuKartesPage = () => {
     } else {
       setActiveSection(section);
       setShowSuccess(false); // Reset success state when switching sections
+      trackGiftCardStart(section);
     }
   };
 
@@ -181,6 +183,9 @@ const DavanuKartesPage = () => {
         console.error('Error submitting form:', error);
         alert('Radās kļūda. Lūdzu mēģiniet vēlreiz.');
       } else {
+        // Counted as soon as the order is saved, whatever happens after.
+        trackGiftCardOrdered(submissionData);
+
         // Send webhook to Make.com
         try {
           await fetch('https://hook.eu2.make.com/unq7hlav49pj5tw8q8r4kqj6p98tsrw0', {

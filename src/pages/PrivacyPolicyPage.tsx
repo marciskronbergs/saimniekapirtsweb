@@ -3,6 +3,11 @@ import HeaderSection from '../components/HeaderSection';
 import FooterSection from '../components/FooterSection';
 import { Shield, AlertTriangle } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import CookieDeclarationList from '../components/shared/CookieDeclarationList';
+import { openCookieSettings } from '../lib/consent';
+import type { DeclarationCategory } from '../data/cookieDeclaration';
+
+const DECLARATION_CATEGORIES: DeclarationCategory[] = ['necessary', 'preferences', 'statistics', 'marketing'];
 
 const PrivacyPolicyPage = () => {
   const { t } = useTranslation('privacy');
@@ -166,22 +171,28 @@ const PrivacyPolicyPage = () => {
                   {t('cookies.description')}
                 </p>
                 
-                <div className="space-y-6">
-                  <div>
-                    <h4 className="text-xl font-semibold text-green-400 mb-3">{t('cookies.analytical.title')}</h4>
-                    <p className="text-gray-300 leading-relaxed">{t('cookies.analytical.description')}</p>
-                  </div>
-                  
-                  <div>
-                    <h4 className="text-xl font-semibold text-green-400 mb-3">{t('cookies.technical.title')}</h4>
-                    <p className="text-gray-300 leading-relaxed">{t('cookies.technical.description')}</p>
-                  </div>
-                  
-                  <div>
-                    <h4 className="text-xl font-semibold text-green-400 mb-3">{t('cookies.advertising.title')}</h4>
-                    <p className="text-gray-300 leading-relaxed">{t('cookies.advertising.description')}</p>
-                  </div>
+                {/* The same declaration the consent dialog shows, from src/data/cookieDeclaration.ts */}
+                <div className="space-y-8">
+                  {DECLARATION_CATEGORIES.map((category) => (
+                    <div key={category}>
+                      <h4 className="text-xl font-semibold text-green-400 mb-3">
+                        {tCommon(`cookies.categories.${category}.title`)}
+                      </h4>
+                      <p className="text-gray-300 leading-relaxed mb-4">
+                        {tCommon(`cookies.categories.${category}.description`)}
+                      </p>
+                      <CookieDeclarationList category={category} />
+                    </div>
+                  ))}
                 </div>
+
+                <button
+                  type="button"
+                  onClick={openCookieSettings}
+                  className="mt-8 min-h-[44px] rounded-full bg-gradient-to-r from-green-500 to-lime-500 px-6 py-2.5 font-semibold text-black hover:from-green-400 hover:to-lime-400"
+                >
+                  {tCommon('cookies.footerLink')}
+                </button>
 
                 <p className="text-lg text-gray-300 leading-relaxed mt-6">
                   {t('cookies.thirdParty')}

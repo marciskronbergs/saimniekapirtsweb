@@ -3,6 +3,7 @@ import HeaderSection from '../components/HeaderSection';
 import FooterSection from '../components/FooterSection';
 import { MapPin, Phone, Mail, ExternalLink } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import ConsentGatedMap from '../components/shared/ConsentGatedMap';
 
 const RezervetPage = () => {
   const [isVisible, setIsVisible] = useState(false);
@@ -191,16 +192,7 @@ const RezervetPage = () => {
               isVisible ? 'translate-x-0 opacity-100' : 'translate-x-12 opacity-0'
             }`} style={{ transitionDelay: '1000ms' }}>
               <div className="rounded-2xl overflow-hidden shadow-2xl shadow-green-500/10">
-                <iframe
-                  src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d2175.8234567890123!2d24.2903839!3d56.6841314!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x46e8d7c87772959d:0xdc371260f63bdc6b!2sSaimniekapirts%20%26%20SarmaSpa%20-%20pirts%20un%20pirtnieka%20pakalpojumi!5e0!3m2!1sen!2slv!4v1234567890123!5m2!1sen!2slv"
-                  width="100%"
-                  height="400"
-                  style={{ border: 0 }}
-                  allowFullScreen
-                  loading="lazy"
-                  referrerPolicy="no-referrer-when-downgrade"
-                  title="SaimniekaPirts Location"
-                ></iframe>
+                <ConsentGatedMap height={400} />
               </div>
             </div>
           </div>

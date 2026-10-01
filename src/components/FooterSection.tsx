@@ -2,6 +2,7 @@ import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Facebook, Instagram, Youtube } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import { openCookieSettings } from '../lib/consent';
 
 // Custom TikTok Icon Component
 const TikTokIcon = ({ className }: { className?: string }) => (
@@ -158,6 +159,15 @@ const FooterSection = () => {
                   )}
                 </li>
               ))}
+              <li>
+                <button
+                  type="button"
+                  onClick={openCookieSettings}
+                  className="text-gray-300 hover:text-green-400 transition-colors duration-300 text-sm sm:text-base text-left"
+                >
+                  {t('cookies.footerLink', { ns: 'common' })}
+                </button>
+              </li>
             </ul>
           </div>
 

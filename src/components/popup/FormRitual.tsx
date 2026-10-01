@@ -20,6 +20,7 @@ import { emptyGiftCard, type GiftCardEntry } from './giftCardEntry';
 import { goToCardPayment, paymentLabel, useCardPayments } from '../../lib/cardPayments';
 import { scrollIntoPopup } from './scrollIntoPopup';
 import { cancelUrl } from './cancelUrl';
+import { trackBookingSaved } from '../../lib/analytics';
 
 // The labels come from the shared price list, the same one the invoice function
 // prices bookings from. They are stored verbatim, so they must not be reworded
@@ -185,6 +186,9 @@ const reservationData = {
       if (error) {
         throw new Error(`Supabase error: ${error.message}`);
       }
+
+      // Counted as soon as the booking is saved, whatever happens after.
+      trackBookingSaved(reservationData);
 
       // Prepare data for Make.com webhook
       const webhookData = {

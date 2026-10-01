@@ -46,5 +46,72 @@
     "legalAddress": "\"Kroņmeži\", Baldone parish, Ķekava municipality, LV-2125, Latvia",
     "bank": "A/S Swedbank",
     "iban": "LV72HABA0551066360107"
+  },
+  "cookies": {
+    "title": "This website uses cookies",
+    "text": "We use cookies to make the site work, to understand how you use it and to show you relevant ads on Facebook, Instagram, TikTok and Google. Necessary cookies are always on; the others only with your consent. You can change your choice at any time.",
+    "settingsTitle": "Cookie settings",
+    "deny": "Deny",
+    "customize": "Customize",
+    "acceptAll": "Allow all",
+    "save": "Save my choice",
+    "close": "Close",
+    "privacyLink": "Privacy policy",
+    "tabs": {
+      "consent": "Consent",
+      "details": "Cookie list",
+      "about": "About cookies"
+    },
+    "alwaysOn": "Always on",
+    "count": "Cookies: {{count}}",
+    "showCookies": "Show cookies",
+    "hideCookies": "Hide cookies",
+    "none": "We do not use cookies of this type at the moment.",
+    "categories": {
+      "necessary": {
+        "title": "Necessary",
+        "description": "Make the basic functions of the site work, such as remembering your cookie choice and booking. The site does not work properly without them, so they cannot be switched off."
+      },
+      "preferences": {
+        "title": "Preferences",
+        "description": "Let the site remember choices that change how it looks or behaves."
+      },
+      "statistics": {
+        "title": "Statistics",
+        "description": "Help us understand how visitors use the site by collecting information that does not identify you personally."
+      },
+      "marketing": {
+        "title": "Marketing",
+        "description": "Let us measure the results of our ads and show you relevant ads on other sites and social networks. The embedded Google map uses them too."
+      }
+    },
+    "table": {
+      "name": "Name",
+      "provider": "Provider",
+      "purpose": "Purpose",
+      "expiry": "Expiry",
+      "type": "Type"
+    },
+    "about": [
+      "Cookies are small text files a website stores on your device. The law allows us to use only the cookies the site needs to work without your permission. All others need your consent.",
+      "Some cookies are placed by third parties whose services appear on our pages: Google, Meta (Facebook, Instagram) and TikTok. These companies may also process data outside the European Union.",
+      "You can change or withdraw your consent at any time with the cookie icon in the corner of the page or the “Cookie settings” link in the footer. We will ask you again after a year."
+    ],
+    "yourConsent": "Your consent",
+    "consentId": "Consent ID",
+    "consentDate": "Date",
+    "consentState": "Allowed categories",
+    "onlyNecessary": "Necessary only",
+    "reopen": "Change cookie settings",
+    "footerLink": "Cookie settings",
+    "on": "On",
+    "off": "Off",
+    "embed": {
+      "title": "The map is hidden",
+      "text": "The Google map stores marketing cookies. To see it, allow marketing cookies or load the map just this once.",
+      "loadOnce": "Show the map this once",
+      "allow": "Allow marketing cookies",
+      "openInMaps": "Open in Google Maps"
+    }
   }
 }

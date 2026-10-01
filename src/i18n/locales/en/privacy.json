@@ -93,20 +93,8 @@
   "cookies": {
     "title": "Cookies",
     "description": "Cookies are small text files that are created and stored on the internet user's device (computer, tablet, mobile phone, etc.) when visiting a website. Cookies help the user remember login name and settings (for example, language, font size, etc. additional information) so they don't have to be specified each time, thus improving website usability.",
-    "analytical": {
-      "title": "Analytical Cookies",
-      "description": "Analytical cookies (for example, Google Analytics and Microsoft Clarity) collect information about website visitor behavior, such as which sections are visited most frequently. This information helps us develop and improve our website, make it more convenient. These cookies are stored on the user's device for no longer than two years."
-    },
-    "technical": {
-      "title": "Technical Cookies",
-      "description": "Technical or mandatory cookies (Google Chrome, Internet Explorer, etc.) help remember user requests and which cookies the user has agreed to. These cookies are stored on the user's device until the browser is closed, but no longer than two years."
-    },
-    "advertising": {
-      "title": "Targeting Cookies",
-      "description": "Targeting or advertising cookies (for example, Google Adwords) provide advertising tailored to user preferences. These cookies are permanently stored on visitors' devices."
-    },
     "thirdParty": "Additionally, the website may use services such as YouTube to provide video content or links to other websites, Facebook, Instagram, TripAdvisor to offer the opportunity to view content from these social accounts or share website content on them. All these services use cookies to obtain statistical data and determine the most popular search trends. We cannot control these third-party cookies.",
-    "consent": "When visiting our website, the user is informed that we use cookies. By closing this notification, the user confirms that they have read the information about cookies and agree to it. If the user does not want cookies to be used on their device, they can disable cookie use in their browser settings, but it should be noted that some services and website functions may not work, and it is not possible to refuse the use of mandatory and functional cookies, as full website functionality is not possible without them.",
+    "consent": "Necessary cookies are always on. Preference, statistics and marketing cookies are used only if you agree to them in the cookie notice shown when you first open the site. Until you choose, these cookies are not stored and Google tools run in a limited, cookieless mode (Google Consent Mode). We keep your choice, its date and an anonymous consent ID as proof of consent. You can change or withdraw your consent at any time with the cookie icon in the corner of the page or the “Cookie settings” link in the footer. We will ask you again after a year.",
     "identification": "Information related to cookies is not used to personally identify the user."
   },
   "policyChanges": {

@@ -11,6 +11,7 @@ import { emptyGiftCard, type GiftCardEntry } from './giftCardEntry';
 import { goToCardPayment, paymentLabel, useCardPayments } from '../../lib/cardPayments';
 import { scrollIntoPopup } from './scrollIntoPopup';
 import { cancelUrl } from './cancelUrl';
+import { trackBookingSaved } from '../../lib/analytics';
 
 const allSaunaTypes = ['Baltā pirts', 'Pelēkā pirts'];
 
@@ -183,6 +184,9 @@ const FormNoma: React.FC<FormNomaProps> = ({ selectedDate, selectedTime, onClose
         return;
       }
       if (error) throw new Error(`Supabase error: ${error.message}`);
+
+      // Counted as soon as the booking is saved, whatever happens after.
+      trackBookingSaved(reservationData);
 
       // The booking is saved at this point. If the notification fails the guest
       // must still see it confirmed, or they would try again and book twice.
