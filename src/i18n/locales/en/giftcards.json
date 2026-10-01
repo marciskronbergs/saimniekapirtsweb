@@ -31,7 +31,7 @@
   "preview": {
     "open": "See the gift card",
     "title": "Your gift card",
-    "sample": "Sample: the card number will be the number of your advance invoice, with a code beside it for booking online. The card is valid for one year.",
+    "sample": "Sample: the card number will be the number of your advance invoice, with a code beside it for booking online. The card is valid until the 1st of the month after the order month, a year on (ordered 2 October 2026, valid until 1 November 2027).",
     "front": "Front",
     "back": "Back",
     "close": "Close",

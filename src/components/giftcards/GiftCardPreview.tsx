@@ -134,12 +134,12 @@ const Scaled: React.FC<{ w: number; h: number; label: string; width?: number; ch
 };
 
 // A sample number in the card's own form, that of its advance invoice
-// (AR-YYYY-NNNN), and a year's validity.
+// (AR-YYYY-NNNN), and its validity: the 1st of the month after the order
+// month, a year on (as gift_card_for sets it).
 function sampleCard(): Sample {
   const now = new Date();
-  const until = new Date(now);
-  until.setFullYear(now.getFullYear() + 1);
-  const iso = `${until.getFullYear()}-${String(until.getMonth() + 1).padStart(2, '0')}-${String(until.getDate()).padStart(2, '0')}`;
+  const until = new Date(now.getFullYear() + 1, now.getMonth() + 1, 1);
+  const iso = `${until.getFullYear()}-${String(until.getMonth() + 1).padStart(2, '0')}-01`;
   return { code: `AR-${now.getFullYear()}-0000`, pin: 'ABCD', validUntil: iso };
 }
 

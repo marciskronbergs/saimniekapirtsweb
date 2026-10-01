@@ -31,7 +31,7 @@
   "preview": {
     "open": "Apskatīt dāvanu karti",
     "title": "Jūsu dāvanu karte",
-    "sample": "Paraugs: kartes numurs būs Jūsu avansa rēķina numurs, un blakus tam būs kods online rezervācijai. Karte ir derīga vienu gadu.",
+    "sample": "Paraugs: kartes numurs būs Jūsu avansa rēķina numurs, un blakus tam būs kods online rezervācijai. Karte ir derīga līdz nākamā mēneša 1. datumam gadu pēc pasūtījuma (pasūtot 02.10.2026, derīga līdz 01.11.2027).",
     "front": "Priekšpuse",
     "back": "Aizmugure",
     "close": "Aizvērt",
