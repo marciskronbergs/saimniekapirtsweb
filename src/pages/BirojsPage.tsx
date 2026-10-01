@@ -71,6 +71,9 @@ interface GiftCard extends InvoiceInfo {
 interface OfficeList {
   today: string;
   bookings: Booking[];
+  // Visits that happened, paid by card or transfer, whose final invoice waits
+  // for the office: it goes to the guest only when issued here.
+  awaiting_final?: Booking[];
   gift_cards: GiftCard[];
   masters: Master[];
   // Whether guests can be sent a link to pay by card.
@@ -390,6 +393,23 @@ const BirojsPage = () => {
     }
   };
 
+  const issueFinal = async (b: Booking) => {
+    const when = `${longDate(b.date)} ${b.time}`;
+    if (!window.confirm(`Izrakstīt ${b.name} gala rēķinu (${when})?\n\nRēķins tiks atzīmēts kā apmaksāts un nosūtīts klientam kopā ar paldies un lūgumu atstāt atsauksmi. Pārliecinieties, ka maksājums ir saņemts.`)) return;
+    setBusyId(b.id);
+    setError(null);
+    setNotice(null);
+    try {
+      const r = await callInvoiceFunction<{ number?: string }>({ office: { pin, action: 'final', reservation: b.id } });
+      setNotice(`Gala rēķins ${r.number ?? ''} izrakstīts un nosūtīts ${b.name}.`);
+      await load(pin);
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setBusyId(null);
+    }
+  };
+
   // Assigning a master saves at once; the list is updated in place.
   const assign = async (b: Booking, masterId: string) => {
     setError(null);
@@ -522,6 +542,47 @@ const BirojsPage = () => {
           <DiscountDialog target={discountFor} busy={busyId !== null} error={error} onApply={applyDiscount} onClose={() => { setDiscountFor(null); setError(null); }} />
         )}
         {error && <p className="rounded-lg bg-red-900/40 border border-red-600 p-3 text-red-300">{error}</p>}
+
+        {(list.awaiting_final?.length ?? 0) > 0 && (
+          <section className="rounded-xl border border-amber-500/40 bg-amber-500/5 p-4 space-y-3">
+            <h2 className="text-lg font-bold text-amber-300">
+              Gaida gala rēķinu <span className="text-gray-400 font-normal">· {list.awaiting_final!.length}</span>
+            </h2>
+            <p className="text-sm text-gray-400">
+              Apmeklējums ir noticis, apmaksa ar karti vai pārskaitījumu. Gala rēķins klientam aizies tikai pēc Jūsu
+              apstiprinājuma, kopā ar paldies un lūgumu atstāt atsauksmi.
+            </p>
+            {list.awaiting_final!.map((b) => (
+              <article key={b.id} className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-gray-800 bg-[#0d0d0d] p-3">
+                <div className="space-y-1">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="font-semibold text-white">{b.name}</span>
+                    <span className="text-sm text-gray-400">{longDate(b.date)} {b.time} · {b.sauna}</span>
+                  </div>
+                  <div className="flex flex-wrap items-center gap-2 text-sm text-gray-300">
+                    {b.service && <span>{b.service}</span>}
+                    {b.total !== null && <span className="text-gray-400">{eur(b.total)}</span>}
+                    {b.payment === 'card'
+                      ? <Badge tone={b.card_paid ? 'green' : 'amber'}>{b.card_paid ? 'Karte · samaksāts' : 'Karte · nav samaksāts'}</Badge>
+                      : <Badge tone={b.advance?.paid ? 'green' : 'amber'}>{b.advance?.paid ? 'Samaksāts' : 'Pārskaitījums'}</Badge>}
+                    {b.advance && (
+                      <a href={b.advance.link} target="_blank" rel="noopener" className="text-green-400 hover:text-green-300 underline">
+                        {b.advance.number}
+                      </a>
+                    )}
+                  </div>
+                </div>
+                <button
+                  onClick={() => issueFinal(b)}
+                  disabled={busyId !== null}
+                  className="rounded-lg bg-green-600 hover:bg-green-500 disabled:opacity-50 px-3 py-2 text-sm font-semibold text-black"
+                >
+                  {busyId === b.id ? 'Izraksta…' : 'Izrakstīt gala rēķinu'}
+                </button>
+              </article>
+            ))}
+          </section>
+        )}
 
         <section className="space-y-3">
           <div className="flex flex-wrap items-center justify-between gap-2">

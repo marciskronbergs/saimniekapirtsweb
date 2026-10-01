@@ -553,3 +553,41 @@ Lūdzu, izrakstiet rēķinu pašrocīgi. Rēķina numurs netika izmantots.
   ].join('\n');
   return { subject, html, text };
 }
+
+// ---------------------------------------------------------------------------
+// The notice, the morning after a visit paid by card or bank transfer, that
+// its final invoice waits for the office: it goes to the guest only when the
+// office issues it, from this link or the office's page.
+
+export function finalPendingEmail(invoice: InvoiceRow, link: string, paidBy: string) {
+  const d = invoice.details;
+  const visit = d?.date ? [formatDate(d.date), d.time, d.sauna].filter(Boolean).join(', ') : '';
+  const subject = `Gala rēķins gaida apstiprinājumu · ${invoice.customer_name} · ${visit}`;
+  const rows: [string, string][] = [
+    ['Klients', invoice.customer_name],
+    ['E-pasts', invoice.customer_email],
+    ['Apmeklējums', visit],
+    ['Avansa rēķins', invoice.number],
+    ['Summa', eur(invoice.total)],
+    ['Apmaksa', paidBy],
+  ];
+  const table = rows
+    .filter(([, v]) => v)
+    .map(([k, v]) => `<tr><td style="padding:3px 14px 3px 0;color:#555">${escapeHtml(k)}</td><td style="padding:3px 0">${escapeHtml(v)}</td></tr>`)
+    .join('');
+  const html = `<!doctype html><html><body style="font-family:Arial,sans-serif;font-size:14px;color:#1a1a1a;line-height:1.5">
+<p style="margin:0 0 14px">Apmeklējums ir noticis. <strong>Gala rēķins klientam vēl nav nosūtīts</strong> – tas aizies tikai pēc Jūsu apstiprinājuma.
+Pārliecinieties, ka maksājums ir saņemts, un izrakstiet gala rēķinu (vajadzīgs biroja PIN). Klients to saņems kopā ar paldies un lūgumu atstāt atsauksmi.</p>
+<table style="border-collapse:collapse;margin-bottom:18px">${table}</table>
+<p><a href="${escapeHtml(link)}" style="display:inline-block;background:#3F9B38;color:#fff;text-decoration:none;padding:10px 18px;border-radius:6px;font-weight:bold">Izrakstīt gala rēķinu</a></p>
+<p style="color:#555">Ja gala rēķins nav vajadzīgs, šo e-pastu var ignorēt. To pašu var izdarīt arī biroja lapā (saimniekapirts.lv/birojs).</p>
+</body></html>`;
+  const text = [
+    'Apmeklējums ir noticis. Gala rēķins klientam vēl nav nosūtīts – tas aizies tikai pēc Jūsu apstiprinājuma.',
+    '',
+    ...rows.filter(([, v]) => v).map(([k, v]) => `${k}: ${v}`),
+    '',
+    `Izrakstīt gala rēķinu (vajadzīgs PIN): ${link}`,
+  ].join('\n');
+  return { subject, html, text };
+}

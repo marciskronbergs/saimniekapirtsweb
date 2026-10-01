@@ -10,16 +10,18 @@
 //     Make scenario "Klientu e-pasti + rēķinu arhīvs", which also carries every
 //     email to guests.
 //
-// The morning after a visit, unless its advance invoice was annulled, the
-// invoice proper (SP-<year>-<nnnn>, marked paid) is issued, sent to the guest
-// with thanks and a request for a review, and filed. A gift card's invoice is
-// issued when the office confirms payment. Official numbers are therefore only
+// The morning after a visit paid by card or bank transfer, the office is asked
+// to issue the invoice proper (SP-<year>-<nnnn>, marked paid); once it does,
+// the invoice is sent to the guest with thanks and a request for a review, and
+// filed. A guest who paid in cash gets the thanks and review request alone. A
+// gift card's invoice is issued when it is paid. Official numbers are therefore only
 // used for visits that happened and sales that were paid, and run without gaps.
 //
 // Called by the database, with the secret kept in Vault as invoice_hook_secret:
 //   { source_type, source_id }              after a booking or order is saved
 //   { sweep: true }                         every 15 minutes: anything left undone
-//   { finals: true }                        every morning: final invoices
+//   { finals: true }                        every morning: final invoices to
+//                                           approve, and thanks
 //   { source_type, source_id, dry_run }     a preview; no number is used
 //   { source_type, source_id, preview_to_office }
 //                                           what the guest would get, sent to
@@ -59,7 +61,7 @@ import { priceReservation, priceGiftCard, type PriceCatalog } from './pricing.ts
 import seller from './seller.json' with { type: 'json' };
 import { renderInvoicePdf, formatDate, type InvoiceRow, type InvoiceDetails } from './pdf.ts';
 import {
-  invoiceEmail, holdEmail, confirmationEmail, reminderEmail, advanceInvoiceGuestEmail, finalInvoiceGuestEmail, thanksEmail,
+  invoiceEmail, holdEmail, finalPendingEmail, confirmationEmail, reminderEmail, advanceInvoiceGuestEmail, finalInvoiceGuestEmail, thanksEmail,
   manageLink,
   type ConfirmationInput,
 } from './email.ts';
@@ -917,47 +919,88 @@ async function annul(invoice: Invoice, replaced = false) {
 // The morning run: bookings whose visit was yesterday or earlier (up to two
 // weeks back, in case a run was missed). A booking that has since been deleted
 // is taken as cancelled and its advance annulled.
+//
+// A visit paid by card or bank transfer gets its final invoice only when the
+// office issues it: the office is told once that it waits (finalPendingEmail),
+// and issues it from that link or the office's page. Every other guest (paid
+// in cash, or booked before invoices were issued) gets the thanks and review
+// request alone.
 async function finals() {
   if (!(await guestUrl())) return { status: 'finals_off' };
   const today = rigaToday();
   const earliest = addDays(today, -14);
   const results: unknown[] = [];
 
+  for (const advance of await awaitingFinal(earliest, today)) {
+    results.push({
+      advance: advance.number,
+      ...(await attempt(async () => {
+        const { data: booking } = await db.from('reservations').select('id').eq('id', advance.source_id).maybeSingle();
+        if (!booking) return await annul(advance);
+        return await askForFinal(advance);
+      })),
+    });
+  }
+
+  results.push({ thanks: await attempt(() => thankGuestsWithoutInvoice(earliest, today)) });
+  return { status: 'finals', results };
+}
+
+// Advances of visits between `from` and `today` (not included) that have no
+// final invoice yet, leaving out bookings paid in cash, which get none.
+async function awaitingFinal(from: string, today: string): Promise<Invoice[]> {
   const { data: advances, error } = await db.from('invoices').select('*')
     .eq('kind', 'advance').eq('status', 'issued').eq('source_type', 'reservation');
   if (error) throw error;
   const due = (advances ?? []).filter((a) => {
     const date = a.details?.date as string | undefined;
-    return date && date < today && date >= earliest;
+    return date && date < today && date >= from;
   });
-  if (due.length > 0) {
-    const { data: existing } = await db.from('invoices').select('advance_id').eq('kind', 'final')
-      .in('advance_id', due.map((a) => a.id));
-    const done = new Set((existing ?? []).map((f) => f.advance_id));
-    for (const advance of due.filter((a) => !done.has(a.id))) {
-      results.push({
-        advance: advance.number,
-        ...(await attempt(async () => {
-          const { data: booking } = await db.from('reservations').select('id').eq('id', advance.source_id).maybeSingle();
-          if (!booking) return await annul(advance);
-          return await issueFinal(advance);
-        })),
-      });
-    }
-  }
-
-  // Guests who paid in cash get the same thanks and review request, without
-  // an invoice.
-  results.push({ thanks: await attempt(() => thankCashGuests(earliest, today)) });
-  return { status: 'finals', results };
+  if (due.length === 0) return [];
+  const ids = due.map((a) => a.source_id as string);
+  const [{ data: existing }, { data: cash }] = await Promise.all([
+    db.from('invoices').select('advance_id').eq('kind', 'final').in('advance_id', due.map((a) => a.id)),
+    db.from('reservations').select('id').eq('payment_method', 'cash').in('id', ids),
+  ]);
+  const done = new Set((existing ?? []).map((f) => f.advance_id));
+  const paidInCash = new Set((cash ?? []).map((r) => r.id));
+  return due.filter((a) => !done.has(a.id) && !paidInCash.has(a.source_id));
 }
 
-async function thankCashGuests(earliest: string, today: string) {
-  if ((await setting('guest_confirmations')) !== 'on') return { status: 'confirmations_off' };
-  const { data: rows, error } = await db.from('reservations').select('id')
-    .eq('payment_method', 'cash').gte('reservation_date', earliest).lt('reservation_date', today);
+const paidByText = (advance: Invoice) =>
+  advance.details?.payment === 'card' ? 'Karte (samaksāts)'
+  : advance.details?.payment === 'gift_card' ? 'Dāvanu karte'
+  : advance.paid ? 'Samaksāts' : 'Bankas pārskaitījums';
+
+async function askForFinal(advance: Invoice) {
+  const { data: claimed, error } = await db.rpc('claim_guest_email', {
+    p_source_type: 'reservation', p_source_id: advance.source_id, p_kind: 'final_pending',
+  });
   if (error) throw error;
-  const ids = (rows ?? []).map((r) => r.id as string);
+  if (!claimed) return { status: 'awaiting_office' };
+  await sendToOffice(finalPendingEmail(advance, manageLink(advance), paidByText(advance)));
+  await db.from('guest_emails').update({ sent_at: new Date().toISOString() })
+    .eq('source_type', 'reservation').eq('source_id', advance.source_id).eq('kind', 'final_pending');
+  return { status: 'office_asked' };
+}
+
+// Thanks go to visits from this day on: guests who visited before the rule
+// came in are not written to weeks later.
+const THANKS_FROM = '2026-10-02';
+
+async function thankGuestsWithoutInvoice(earliest: string, today: string) {
+  if ((await setting('guest_confirmations')) !== 'on') return { status: 'confirmations_off' };
+  const from = earliest > THANKS_FROM ? earliest : THANKS_FROM;
+  const { data: rows, error } = await db.from('reservations').select('id, payment_method')
+    .gte('reservation_date', from).lt('reservation_date', today);
+  if (error) throw error;
+  const all = (rows ?? []).map((r) => r.id as string);
+  if (all.length === 0) return { status: 'none' };
+  // A guest whose final invoice is to come is thanked in it.
+  const { data: advances } = await db.from('invoices').select('source_id')
+    .eq('source_type', 'reservation').eq('kind', 'advance').eq('status', 'issued').in('source_id', all);
+  const invoiced = new Set((advances ?? []).map((a) => a.source_id));
+  const ids = (rows ?? []).filter((r) => r.payment_method === 'cash' || !invoiced.has(r.id)).map((r) => r.id as string);
   if (ids.length === 0) return { status: 'none' };
   const { data: done } = await db.from('guest_emails').select('source_id')
     .eq('source_type', 'reservation').eq('kind', 'thanks').not('sent_at', 'is', null).in('source_id', ids);
@@ -1851,6 +1894,20 @@ async function removeFromCalendar(r: any) {
 // gift card orders, with their prices and advance invoices. Every call needs
 // the PIN, since the list holds guests' names, emails and phone numbers.
 // deno-lint-ignore no-explicit-any
+// The office issues a visit's final invoice: it goes to the guest with the
+// thanks and review request, and is filed.
+async function officeFinal(id?: string) {
+  if (!id || !uuidPattern.test(id)) return json({ error: 'not_found' }, 404);
+  const { data: advance } = await db.from('invoices').select('*')
+    .eq('source_type', 'reservation').eq('source_id', id).eq('kind', 'advance').eq('status', 'issued').maybeSingle();
+  if (!advance) return json({ error: 'no_advance' }, 404);
+  const { data: final } = await db.from('invoices').select('number').eq('advance_id', advance.id).maybeSingle();
+  if (final) return json({ error: 'final_exists', number: final.number }, 409);
+  if (!(await guestUrl())) return json({ error: 'guest_mail_off' }, 409);
+  const result = await issueFinal(advance);
+  return json({ status: 'issued', ...result });
+}
+
 async function office(body: {
   pin?: string; action?: string; reservation?: string; order?: string; a4?: boolean; light?: boolean; master_id?: string | null; master?: any;
   type?: string; id?: string; pay_link?: boolean; percent?: number; reason?: string;
@@ -1883,6 +1940,14 @@ async function office(body: {
       return json({ error: describe(e) }, 500);
     }
   }
+  if (body.action === 'final') {
+    try {
+      return await officeFinal(body.reservation);
+    } catch (e) {
+      console.error(e);
+      return json({ error: describe(e) }, 500);
+    }
+  }
   if (body.action === 'gift_card_pdf') {
     if (!body.order || !uuidPattern.test(body.order)) return json({ error: 'not_found' }, 404);
     try {
@@ -1897,17 +1962,21 @@ async function office(body: {
   if (body.action !== 'list') return json({ error: 'unknown_action' }, 400);
 
   const today = rigaToday();
-  const [bookings, cards] = await Promise.all([
+  const pending = await awaitingFinal(addDays(today, -60), today);
+  const [bookings, cards, past] = await Promise.all([
     db.from('reservations').select('*')
       .gte('reservation_date', today).lte('reservation_date', addDays(today, 90))
       .order('reservation_date').order('reservation_time'),
     db.from('davanu_kartes_pasutijumi').select('*')
       .gte('created_at', minutesAgo(90 * 24 * 60)).order('created_at', { ascending: false }),
+    db.from('reservations').select('*').in('id', pending.length ? pending.map((a) => a.source_id) : [crypto.randomUUID()])
+      .order('reservation_date').order('reservation_time'),
   ]);
   if (bookings.error) return json({ error: describe(bookings.error) }, 500);
   if (cards.error) return json({ error: describe(cards.error) }, 500);
+  if (past.error) return json({ error: describe(past.error) }, 500);
 
-  const ids = [...(bookings.data ?? []), ...(cards.data ?? [])].map((r) => r.id as string);
+  const ids = [...(bookings.data ?? []), ...(cards.data ?? []), ...(past.data ?? [])].map((r) => r.id as string);
   const cardIds = (cards.data ?? []).map((g) => g.id as string);
   const [{ data: invoices, error }, { data: paidByCard }, { data: codes }, { data: discounts }] = ids.length
     ? await Promise.all([
@@ -1964,9 +2033,8 @@ async function office(body: {
     };
   };
 
-  return json({
-    today,
-    bookings: (bookings.data ?? []).map((r) => ({
+  // deno-lint-ignore no-explicit-any
+  const bookingView = (r: any) => ({
       id: r.id,
       type: r.form_type === 'noma' ? 'noma' : 'ritual',
       date: r.reservation_date,
@@ -1987,7 +2055,14 @@ async function office(body: {
       locale: r.locale === 'en' ? 'en' : 'lv',
       created_at: r.created_at,
       ...invoiceView(r.id, priceReservation(prices, r)),
-    })),
+  });
+
+  return json({
+    today,
+    bookings: (bookings.data ?? []).map(bookingView),
+    // Visits that happened, paid by card or transfer, whose final invoice
+    // waits for the office.
+    awaiting_final: (past.data ?? []).map(bookingView),
     gift_cards: (cards.data ?? []).map((g) => ({
       id: g.id,
       name: g.vards_uzvards,
