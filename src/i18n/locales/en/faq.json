@@ -99,7 +99,7 @@
       "items": [
         {
           "question": "How long is a gift card valid?",
-          "answer": "A gift card is valid for one year from the date of purchase."
+          "answer": "A gift card is valid for a year: until the 1st of the month after the purchase month, a year on (bought on 2 October 2026, valid until 1 November 2027)."
         },
         {
           "question": "Can a gift card be extended?",
