@@ -1,0 +1,9 @@
+# Read by the Supabase GitHub integration. Edge Functions are deployed to a
+# branch -- and, on merge to main, to production -- only when declared here.
+project_id = "wigoyeorqnssgbrgexku"
+
+# Called by the database (pg_net, with the invoice hook secret), by Stripe and
+# by links in emails, none of which carries a Supabase JWT. The function checks
+# its own secrets, so the gateway must not require one -- as in production.
+[functions.invoice]
+verify_jwt = false
