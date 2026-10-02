@@ -19,9 +19,10 @@ export type GiftCardKind = 'ribbon' | 'light' | 'a4';
 
 // Lines on the backs wrap, so the phone number and a few word pairs are held
 // together with no-break spaces, and a dash never starts a line.
-const nb = (text: string) => text.replace(/ /g, '\u00a0');
+const NBSP = String.fromCharCode(0xa0);
+const nb = (text: string) => text.replace(/ /g, NBSP);
 const PHONE = nb('+371 26 752 661');
-const DASH = '\u00a0– ';
+const DASH = `${NBSP}– `;
 // A value card may go towards a dearer service: the rest is paid on the day.
 const PAY_MORE_LV = `Ja izvēlaties dārgāku pakalpojumu, ${nb('starpību var piemaksāt uz vietas')}.`;
 const PAY_MORE_EN = `If you choose a dearer service, ${nb('you can pay the difference on site')}.`;

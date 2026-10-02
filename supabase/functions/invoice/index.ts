@@ -1890,10 +1890,6 @@ async function removeFromCalendar(r: any) {
   return { status: 'sent' };
 }
 
-// The office's page on the website (/birojs): upcoming bookings and recent
-// gift card orders, with their prices and advance invoices. Every call needs
-// the PIN, since the list holds guests' names, emails and phone numbers.
-// deno-lint-ignore no-explicit-any
 // The office issues a visit's final invoice: it goes to the guest with the
 // thanks and review request, and is filed.
 async function officeFinal(id?: string) {
@@ -1908,6 +1904,10 @@ async function officeFinal(id?: string) {
   return json({ status: 'issued', ...result });
 }
 
+// The office's page on the website (/birojs): upcoming bookings and recent
+// gift card orders, with their prices and advance invoices. Every call needs
+// the PIN, since the list holds guests' names, emails and phone numbers.
+// deno-lint-ignore no-explicit-any
 async function office(body: {
   pin?: string; action?: string; reservation?: string; order?: string; a4?: boolean; light?: boolean; master_id?: string | null; master?: any;
   type?: string; id?: string; pay_link?: boolean; percent?: number; reason?: string;
