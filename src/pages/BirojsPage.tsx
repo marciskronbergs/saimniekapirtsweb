@@ -1,5 +1,5 @@
 import { useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
-import { CalendarDays, Download, ExternalLink, LogOut, Mail, Phone, RefreshCw, Search } from 'lucide-react';
+import { CalendarDays, Download, ExternalLink, LogOut, Mail, Phone, RefreshCw, Search, Send } from 'lucide-react';
 import { PopupContext } from '../App';
 import { OfficeError, callInvoiceFunction, eur, useOfficePage } from '../lib/officeApi';
 import MastersSection, { type Master, type MasterDraft } from './birojs/MastersSection';
@@ -352,6 +352,24 @@ const BirojsPage = () => {
 
   // A gift card order cancelled: the card no longer holds, and an unpaid
   // advance invoice is annulled.
+  // A gift card paid by bank transfer: its final invoice and the card itself
+  // go to the buyer.
+  const sendGiftCard = async (g: GiftCard) => {
+    if (!window.confirm(`Vai ${g.name} dāvanu karte ir apmaksāta?\n\nKlientam aizies gala rēķins (apmaksāts) kopā ar dāvanu karti (PDF), un karti varēs izmantot rezervācijām.`)) return;
+    setBusyId(`${g.id}:final`);
+    setError(null);
+    setNotice(null);
+    try {
+      const r = await callInvoiceFunction<{ number?: string }>({ office: { pin, action: 'final', order: g.id } });
+      setNotice(`${g.name}: gala rēķins ${r.number ?? ''} un dāvanu karte nosūtīti uz ${g.email}.`);
+      await load(pin);
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setBusyId(null);
+    }
+  };
+
   const cancelGiftCard = async (g: GiftCard) => {
     const paid = !!g.final || g.card_paid || !!g.advance?.paid;
     const note = paid
@@ -787,6 +805,16 @@ const BirojsPage = () => {
                 )}
                 {!g.cancelled && (
                   <>
+                    {!g.final && g.advance?.status === 'issued' && (
+                      <button
+                        onClick={() => sendGiftCard(g)}
+                        disabled={busyId !== null}
+                        className="inline-flex items-center gap-1 rounded-lg bg-green-600 hover:bg-green-500 disabled:opacity-50 px-3 py-1.5 font-semibold text-black"
+                      >
+                        <Send className="w-4 h-4" />
+                        {busyId === `${g.id}:final` ? 'Sūta…' : 'Apmaksāta – nosūtīt dāvanu karti'}
+                      </button>
+                    )}
                     {(g.kind === 'ritual' ? ['ribbon', 'light', 'a4'] as const : ['ribbon', 'light'] as const).map((kind) => (
                       <button
                         key={kind}
@@ -814,8 +842,8 @@ const BirojsPage = () => {
           ))}
           <p className="text-xs text-gray-500">
             Ar karti apmaksātām dāvanu kartēm rēķins un dāvanu karte klientam aiziet automātiski. Ar pārskaitījumu:
-            kad nauda saņemta, atveriet avansa rēķina saiti un nospiediet “Apmaksāts – izrakstīt gala rēķinu tagad” –
-            klientam aizies rēķins kopā ar dāvanu karti (PDF). Katrai kartei ir divi varianti ar summu (“Pirts priekiem” un gaišā), rituālam arī A4 bez summas. Kartes numurs ir avansa
+            kad nauda saņemta, nospiediet “Apmaksāta – nosūtīt dāvanu karti” – klientam aizies gala rēķins kopā ar
+            dāvanu karti (PDF). Katrai kartei ir divi varianti ar summu (“Pirts priekiem” un gaišā), rituālam arī A4 bez summas. Kartes numurs ir avansa
             rēķina numurs; ar numuru un kodu klients var rezervēt online, un karte tiek ieskaitīta automātiski. Biroja
             e-pastā ar avansa rēķinu pielikumā ir arī dāvanu karte – to var pārsūtīt klientam. Atlaide pēc rēķina
             izsūtīšanas to aizstāj ar jaunu rēķinu.

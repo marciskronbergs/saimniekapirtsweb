@@ -1855,9 +1855,14 @@ async function manageReservation(body: { reservation?: string; pin?: string; act
     // the annulled invoice is filed.
     const { error } = await db.rpc('cancel_reservation', { p_id: id });
     if (error) return json({ error: describe(error) }, 409);
+    // Without an invoice, only a cash booking has a row in the list to mark.
+    const { data: listed } = advance
+      ? { data: null }
+      : await db.from('guest_emails').select('source_id').eq('source_type', 'reservation').eq('source_id', id)
+        .eq('kind', 'sheet_row').not('sent_at', 'is', null).maybeSingle();
     const annulled = advance
       ? await attempt(() => annul(advance))
-      : await attempt(() => markCancelledInList(id));
+      : listed ? await attempt(() => markCancelledInList(id)) : { status: 'not_listed' };
     const calendar = await attempt(() => removeFromCalendar(row));
     return json({ status: 'cancelled', annulled, calendar, ...view(true, advance ? 'annulled' : null) });
   }
@@ -1890,12 +1895,14 @@ async function removeFromCalendar(r: any) {
   return { status: 'sent' };
 }
 
-// The office issues a visit's final invoice: it goes to the guest with the
-// thanks and review request, and is filed.
-async function officeFinal(id?: string) {
+// The office issues a final invoice. A visit's goes to the guest with the
+// thanks and review request; a gift card's, once it is paid by transfer, goes
+// with the gift card itself. Either is filed.
+async function officeFinal(type: SourceType, id?: string) {
   if (!id || !uuidPattern.test(id)) return json({ error: 'not_found' }, 404);
+  if (type === 'gift_card' && (await giftCardCancelled(id))) return json({ error: 'cancelled' }, 409);
   const { data: advance } = await db.from('invoices').select('*')
-    .eq('source_type', 'reservation').eq('source_id', id).eq('kind', 'advance').eq('status', 'issued').maybeSingle();
+    .eq('source_type', type).eq('source_id', id).eq('kind', 'advance').eq('status', 'issued').maybeSingle();
   if (!advance) return json({ error: 'no_advance' }, 404);
   const { data: final } = await db.from('invoices').select('number').eq('advance_id', advance.id).maybeSingle();
   if (final) return json({ error: 'final_exists', number: final.number }, 409);
@@ -1942,7 +1949,7 @@ async function office(body: {
   }
   if (body.action === 'final') {
     try {
-      return await officeFinal(body.reservation);
+      return body.order ? await officeFinal('gift_card', body.order) : await officeFinal('reservation', body.reservation);
     } catch (e) {
       console.error(e);
       return json({ error: describe(e) }, 500);
