@@ -19,8 +19,12 @@ export class SEOManager {
     // for search engines.
     if (/^\/(rekins|birojs|pirtnieks|apmaksa)\/?$/.test(pathname)) return;
     // Nor does the not-found view, which an unknown address would otherwise
-    // dress in the homepage's title and a canonical pointing at itself.
-    if (!hasPageSEO(pathname)) return;
+    // dress in the homepage's title and a canonical pointing at itself. It
+    // still speaks the visitor's language.
+    if (!hasPageSEO(pathname)) {
+      document.documentElement.lang = language;
+      return;
+    }
     this.currentLanguage = language;
     const seoData = getCurrentPageSEO(pathname, language);
 
