@@ -7,8 +7,8 @@
 # linked.
 #
 # Redirects are intentionally not declared here: public/_redirects already
-# holds the full redirect list plus the SPA fallback, and rules in this file
-# would take precedence over that file.
+# holds the full redirect list plus the rewrites for the office's pages, and
+# rules in this file would take precedence over that file.
 
 [build]
   # The verification step fails the build when the Supabase variables were
