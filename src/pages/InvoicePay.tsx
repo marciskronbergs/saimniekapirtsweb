@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Check, CreditCard, Loader2 } from 'lucide-react';
 import { callInvoiceFunction } from '../lib/officeApi';
+import { asLanguage, type Language } from '../utils/locale';
 
 // An invoice's payment link (/apmaksa?i=<invoice>&t=<token>), from the email
 // the office sent or a QR code shown on site: what the invoice is for, a
@@ -13,7 +14,7 @@ interface InvoiceView {
   status: 'issued' | 'annulled';
   paid: boolean;
   type: 'reservation' | 'gift_card';
-  locale: 'lv' | 'en';
+  locale: Language;
   name: string;
   date: string | null;
   time: string | null;
@@ -69,11 +70,33 @@ const texts = {
     failed: 'We could not open the payment. Please try again or call +371 26 752 661.',
     home: 'Back to the home page',
   },
+  ru: {
+    loading: 'Загружаем счёт…',
+    notFound: 'Счёт не найден. Проверьте ссылку или позвоните по телефону +371 26 752 661.',
+    title: (n: string) => `Счёт № ${n}`,
+    hello: (n: string) => `Здравствуйте, ${n}!`,
+    visit: (d: string, t: string) => `Визит ${d} в ${t}`,
+    giftCard: 'Подарочная карта',
+    total: 'Итого',
+    pay: (sum: string) => `Оплатить картой ${sum}`,
+    secure: 'Оплата проходит на защищённой странице Stripe.',
+    transfer: 'Или банковским переводом',
+    payee: 'Получатель',
+    account: 'Счёт (IBAN)',
+    bankName: 'Банк',
+    reference: 'Назначение платежа',
+    due: 'Оплатить до',
+    paid: 'Счёт оплачен. Спасибо!',
+    annulled: 'Этот счёт аннулирован. Если есть вопросы, позвоните по телефону +371 26 752 661.',
+    cancelled: 'Оплата не завершена. Можно попробовать ещё раз.',
+    failed: 'Не удалось открыть оплату. Попробуйте ещё раз или позвоните по телефону +371 26 752 661.',
+    home: 'На главную',
+  },
 };
 
 const formatDate = (iso: string) => iso.split('-').reverse().join('.');
-const money = (n: number, locale: 'lv' | 'en') =>
-  locale === 'lv' ? `${n.toFixed(2).replace('.', ',')} €` : `€${n.toFixed(2)}`;
+const money = (n: number, locale: Language) =>
+  locale === 'en' ? `€${n.toFixed(2)}` : `${n.toFixed(2).replace('.', ',')} €`;
 
 const InvoicePay = ({ id, token, cancelled }: { id: string; token: string; cancelled: boolean }) => {
   const { i18n } = useTranslation();
@@ -88,7 +111,7 @@ const InvoicePay = ({ id, token, cancelled }: { id: string; token: string; cance
       .catch(() => setMissing(true));
   }, [id, token]);
 
-  const locale: 'lv' | 'en' = view?.locale ?? (i18n.language === 'en' ? 'en' : 'lv');
+  const locale: Language = asLanguage(view?.locale ?? i18n.language);
   const tx = texts[locale];
 
   const pay = async () => {

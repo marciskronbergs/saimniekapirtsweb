@@ -1,11 +1,12 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { COOKIE_DECLARATION, type DeclarationCategory } from '../../data/cookieDeclaration';
+import { asLanguage } from '../../utils/locale';
 
 /** The cookies of one category, as cards: they stay readable on a phone. */
 const CookieDeclarationList: React.FC<{ category: DeclarationCategory }> = ({ category }) => {
   const { t, i18n } = useTranslation('common');
-  const lang = i18n.language?.startsWith('en') ? 'en' : 'lv';
+  const lang = asLanguage(i18n.language);
   const cookies = COOKIE_DECLARATION[category];
 
   if (cookies.length === 0) {

@@ -25,6 +25,7 @@ const PopupWrapper: React.FC<PopupWrapperProps> = ({ isOpen, onClose, formType }
     // A missing translation must not take the booking popup down with it.
     const month = Array.isArray(monthNames) ? monthNames[date.getMonth()] : undefined;
     if (!month) return date.toLocaleDateString();
+    if (i18n.language === 'ru') return date.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long' });
     return i18n.language === 'lv'
       ? `${date.getDate()}. ${month.toLowerCase()}`
       : `${month} ${date.getDate()}`;

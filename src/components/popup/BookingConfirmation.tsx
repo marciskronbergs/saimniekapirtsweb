@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import priceCatalog from '../../data/priceCatalog.json';
 import { scrollIntoPopup } from './scrollIntoPopup';
 import { priceReservation, formatEuro, type ReservationForPricing, type Locale } from '../../lib/pricing';
+import { asLanguage } from '../../utils/locale';
 
 export interface ConfirmedBooking extends ReservationForPricing {
   name: string;
@@ -24,7 +25,7 @@ interface BookingConfirmationProps {
 // is nothing left to press twice, and the guest sees plainly what they booked.
 const BookingConfirmation: React.FC<BookingConfirmationProps> = ({ booking, onClose }) => {
   const { t, i18n } = useTranslation('forms');
-  const locale: Locale = i18n.language === 'en' ? 'en' : 'lv';
+  const locale: Locale = asLanguage(i18n.language);
   const ref = useRef<HTMLDivElement>(null);
 
   // The form was taller than this; bring the confirmation into view within the
@@ -33,7 +34,7 @@ const BookingConfirmation: React.FC<BookingConfirmationProps> = ({ booking, onCl
 
   const priced = priceReservation(priceCatalog, booking);
   const date = new Date(`${booking.reservation_date}T12:00:00`).toLocaleDateString(
-    locale === 'lv' ? 'lv-LV' : 'en-GB',
+    locale === 'lv' ? 'lv-LV' : locale === 'ru' ? 'ru-RU' : 'en-GB',
     { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }
   );
   // A free pick-up, or a transfer priced by agreement, is no price line, so it

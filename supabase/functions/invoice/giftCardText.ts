@@ -26,6 +26,7 @@ const DASH = `${NBSP}– `;
 // A value card may go towards a dearer service: the rest is paid on the day.
 const PAY_MORE_LV = `Ja izvēlaties dārgāku pakalpojumu, ${nb('starpību var piemaksāt uz vietas')}.`;
 const PAY_MORE_EN = `If you choose a dearer service, ${nb('you can pay the difference on site')}.`;
+const PAY_MORE_RU = `Если вы выберете услугу дороже, ${nb('разницу можно доплатить на месте')}.`;
 
 export interface GiftCardWords {
   giftCard: string;
@@ -129,6 +130,42 @@ export const giftCardWords: Record<Locale, GiftCardWords> = {
       ribbonBack: 'The herbal hot tub, sauna whisks, a whisk massage and the pond by the sauna',
       lightFront: 'Guests in the herbal hot tub, the host pouring herbal tea',
       lightBack: 'A swim in the pond',
+    },
+  },
+  ru: {
+    giftCard: 'Подарочная карта',
+    no: '№',
+    code: 'Код',
+    validUntil: 'Действительна до',
+    ritual: 'Банный ритуал',
+    tub: (tub: boolean) => (tub ? 'с травяным чаном' : 'без травяного чана'),
+    facts: (r: GiftCardRitual) => `${r.people.ru} · до ${r.hours} часов`,
+    valueWord: 'номинал',
+    codeLine: 'Код для онлайн-бронирования:',
+    usage: 'Для банного ритуала, аренды бани или ночёвки',
+    ritualUsage: (r: GiftCardRitual) =>
+      `Банный ритуал ${r.who.ru} ${giftCardWords.ru.tub(r.tub)} · ${r.people.ru} · до ${r.hours} часов`,
+    payMore: PAY_MORE_RU,
+    ribbonAddress: '«SARMA NR. 123», БАЛДОНСКАЯ ВОЛОСТЬ, КЕКАВСКИЙ КРАЙ, LV-2125',
+    book: `БРОНИРОВАНИЕ: SAIMNIEKAPIRTS.LV/REZERVET (№ + КОД) | ТЕЛ. ${PHONE}`,
+    contact: `saimniekapirts.lv · ${PHONE}`,
+    tagline: 'банное удовольствие',
+    howTo: 'Как воспользоваться картой',
+    steps: [
+      `Забронируйте онлайн на ${nb('saimniekapirts.lv/rezervet')}${DASH}введите номер и код карты, и она будет учтена автоматически.`,
+      `Или забронируйте по телефону ${PHONE} или по e-mail info@saimniekapirts.lv, назвав ${nb('номер карты')}.`,
+      `При визите покажите подарочную карту${DASH}распечатанную или в телефоне.`,
+    ],
+    anyService: `Номинал карты можно использовать для любой нашей услуги${DASH}${nb('банного ритуала')}, ${nb('аренды бани')} или ночёвки. ${PAY_MORE_RU}`,
+    ritualService: (r: GiftCardRitual) =>
+      `Карта подарена на ${nb('банный ритуал')} ${nb(`${r.who.ru} ${giftCardWords.ru.tub(r.tub)}`)} под руководством сертифицированного пармастера. ${PAY_MORE_RU}`,
+    validity: (date: string) => `Действительна до ${date}`,
+    address: '«Sarma Nr. 123», Балдонская волость, Кекавский край, LV-2125, Латвия',
+    photos: {
+      ribbonFront: 'Подарочная карта – золотая лента на тёмно-синем фоне',
+      ribbonBack: 'Травяной чан, банные веники, парение и пруд у бани',
+      lightFront: 'Гости в травяном чане, хозяин наливает травяной чай',
+      lightBack: 'Окунание в пруд',
     },
   },
 };
@@ -238,6 +275,42 @@ export const giftCardA4Words: Record<Locale, GiftCardA4Words> = {
     photos: {
       info: ['The herbal hot tub and herbal tea', 'A whisk massage in the sauna', 'An herbal scrub'],
       details: ['A swim in the pond', 'A cold douse after the tub', 'Wrapped in blankets with oak whisks'],
+    },
+  },
+  ru: {
+    title: 'Латышский банный ритуал',
+    giftCard: 'Подарочная карта',
+    web: 'www.saimniekapirts.lv',
+    more: 'О ритуале',
+    belief: 'Поверье:',
+    beliefText: `Париться в бане нужно молодым берёзовым веником${DASH}тогда тело останется белым.`,
+    invite: 'Доверьтесь расслабляющему банному ритуалу в нашей уютной тёплой бане. От вас нужны только хорошие мысли и понимание, что это время – только для вас. Обо всём остальном позаботимся мы.',
+    important: 'Важно знать',
+    water: `За день до ритуала и в день ритуала пейте достаточно воды${DASH}с потом организм теряет много жидкости. Советуем не есть мясо и всё, что вызывает тяжесть.`,
+    health: 'Убедитесь, что здоровье позволяет вам посещать баню. Если сомневаетесь, перед ритуалом посоветуйтесь с врачом.',
+    included: 'Что входит',
+    steps: [
+      ['Прогрев в травяном чане', 'тёплый чан с ароматными травами помогает расслабиться'],
+      ['Травяной чай', 'тёплый чай из лечебных трав между этапами'],
+      ['Парение вениками', 'берёзовые или дубовые веники расслабляют и очищают тело'],
+      ['Травяной скраб', 'скраб из трав и соли мягко обновляет кожу'],
+      ['Тёплый медовый массаж', 'мёд глубоко увлажняет кожу и успокаивает ум'],
+      ['Окунание в прохладный пруд', 'контраст бодрит и разгоняет кровь'],
+      ['Отдых в пледах', 'отдых в тёплых пледах на свежем воздухе завершает ритуал'],
+    ],
+    place: 'Место',
+    placeLines: [`SaimniekaPirts, «Sarma ${nb('Nr. 123')}»`, 'Балдонская волость, Кекавский край, LV-2125'],
+    book: 'Бронирование',
+    bookLines: [`Онлайн: ${nb('saimniekapirts.lv/rezervet')}${DASH}№ и код карты`, `По телефону: ${PHONE} · info@saimniekapirts.lv`],
+    people: 'Количество человек',
+    duration: 'Длительность',
+    hours: (hours) => `до ${hours} часов`,
+    cardNo: 'Карта №',
+    valid: 'Действительна до',
+    codeLine: (code) => `код для онлайн-бронирования: ${code}`,
+    photos: {
+      info: ['Травяной чан и травяной чай', 'Парение вениками в бане', 'Травяной скраб'],
+      details: ['Окунание в пруд', 'Обливание водой после чана', 'Укутывание в пледы с дубовыми вениками'],
     },
   },
 };

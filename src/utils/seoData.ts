@@ -1,4 +1,4 @@
-// SEO data for all pages in both languages
+// SEO data for all pages in every language
 export interface SEOData {
   title: string;
   description: string;
@@ -12,6 +12,7 @@ export interface SEOData {
 export interface PageSEO {
   lv: SEOData;
   en: SEOData;
+  ru: SEOData;
 }
 
 export const seoData: Record<string, PageSEO> = {
@@ -33,6 +34,15 @@ export const seoData: Record<string, PageSEO> = {
       ogDescription: 'Experience authentic Latvian sauna rituals with certified sauna masters. Private sauna rental, herbal hot tubs & special events.',
       twitterTitle: 'SaimniekaPirts - Traditional Sauna Rituals',
       twitterDescription: 'Experience authentic Latvian sauna rituals with certified sauna masters. Private sauna rental & herbal hot tubs.'
+    },
+    ru: {
+      title: 'SaimniekaPirts – банные ритуалы с пармастером и аренда бани под Ригой',
+      description: 'Настоящие латышские банные ритуалы с сертифицированным пармастером: парение вениками, травяной чан, пруд. Аренда бани и ночёвка на природе под Ригой.',
+      keywords: 'баня рига, баня под ригой, банный ритуал, пармастер, парение вениками, аренда бани, травяной чан, латышская баня, saimniekapirts',
+      ogTitle: 'SaimniekaPirts – латышские банные ритуалы',
+      ogDescription: 'Банные ритуалы с сертифицированным пармастером, аренда бани, травяной чан и ночёвка на природе под Ригой.',
+      twitterTitle: 'SaimniekaPirts – латышские банные ритуалы',
+      twitterDescription: 'Банные ритуалы с пармастером, аренда бани и травяной чан под Ригой.'
     }
   },
   '/pirts-rituali': {
@@ -53,6 +63,15 @@ export const seoData: Record<string, PageSEO> = {
       ogDescription: 'Certified sauna master-led rituals for individuals, couples or families. Herbal hot tubs, sauna whisking and rejuvenating treatments.',
       twitterTitle: 'Sauna Rituals - Traditional Latvian Sauna',
       twitterDescription: 'Certified sauna master-led rituals with herbal hot tubs and sauna whisking. Authentic Latvian sauna experience.'
+    },
+    ru: {
+      title: 'Банный ритуал с пармастером – традиционная латышская баня',
+      description: 'Банные ритуалы с сертифицированным пармастером для одного, для двоих или для семьи: травяной чан, парение вениками, скраб, медовый массаж и пруд.',
+      keywords: 'банный ритуал, пармастер, парение вениками, баня с вениками, травяной чан, латышская баня, банные процедуры, баня рига',
+      ogTitle: 'Банный ритуал с пармастером',
+      ogDescription: 'Ритуал для одного, для двоих или для семьи: травяной чан, парение вениками, скраб, медовый массаж и пруд.',
+      twitterTitle: 'Банный ритуал с пармастером',
+      twitterDescription: 'Традиционная латышская баня: травяной чан, парение вениками и пруд.'
     }
   },
   '/grupu-rituali': {
@@ -73,6 +92,15 @@ export const seoData: Record<string, PageSEO> = {
       ogDescription: 'Sauna rituals for groups up to 10 people. Various service levels - from friends sauna to full master ritual experiences.',
       twitterTitle: 'Group Sauna Rituals - Friends Experiences',
       twitterDescription: 'Sauna rituals for groups with various service levels. Perfect for friends and corporate events.'
+    },
+    ru: {
+      title: 'Банные ритуалы для компании – баня с друзьями и коллегами',
+      description: 'Банные программы для компании с пармастером: от совместного скраба и травяного чана до индивидуального парения для каждого. От 70 € с человека.',
+      keywords: 'баня для компании, баня с друзьями, корпоратив в бане, групповой банный ритуал, пармастер, тимбилдинг',
+      ogTitle: 'Банные ритуалы для компании',
+      ogDescription: 'Банные программы для друзей и коллег с пармастером – от 70 € с человека.',
+      twitterTitle: 'Банные ритуалы для компании',
+      twitterDescription: 'Баня с друзьями и коллегами под руководством пармастера.'
     }
   },
   '/pirts-noma': {
@@ -93,6 +121,15 @@ export const seoData: Record<string, PageSEO> = {
       ogDescription: 'Rent the White or Grey sauna for private relaxation. Option to add herbal hot tub. Perfect for families and friend groups.',
       twitterTitle: 'Sauna Rental - Private Sauna Relaxation',
       twitterDescription: 'Private sauna rental with option to add herbal hot tub. Perfect for families and friend groups.'
+    },
+    ru: {
+      title: 'Аренда бани под Ригой – с травяным чаном или без',
+      description: 'Аренда Белой или Серой бани для отдыха с семьёй и друзьями. Травяной чан по желанию, веники и скрабы. От 80 € за 3 часа.',
+      keywords: 'аренда бани, баня в аренду, частная баня, баня с чаном, белая баня, серая баня, баня рига, баня на природе',
+      ogTitle: 'Аренда бани под Ригой',
+      ogDescription: 'Белая или Серая баня для отдыха с семьёй и друзьями, травяной чан по желанию.',
+      twitterTitle: 'Аренда бани под Ригой',
+      twitterDescription: 'Частная баня с травяным чаном по желанию – для семьи и друзей.'
     }
   },
   '/ipasiie-piedzivvojumi': {
@@ -113,6 +150,15 @@ export const seoData: Record<string, PageSEO> = {
       ogDescription: 'Unique sauna experiences for special events. Bachelorette sauna and bachelor pack with traditional rituals.',
       twitterTitle: 'Special Sauna Experiences - Celebration Events',
       twitterDescription: 'Unique sauna experiences for bachelorette and bachelor parties with traditional rituals.'
+    },
+    ru: {
+      title: 'Девичник и мальчишник в бане – особые банные программы',
+      description: 'Банные программы для праздников: девичник и мальчишник в бане с пармастером, традиционными обрядами и праздничной атмосферой.',
+      keywords: 'девичник в бане, мальчишник в бане, девичник рига, мальчишник рига, баня для праздника, свадебные традиции',
+      ogTitle: 'Девичник и мальчишник в бане',
+      ogDescription: 'Банные программы для девичника и мальчишника с пармастером и традиционными обрядами.',
+      twitterTitle: 'Девичник и мальчишник в бане',
+      twitterDescription: 'Праздничные банные программы с пармастером.'
     }
   },
   '/vecmeitas-purs': {
@@ -133,6 +179,15 @@ export const seoData: Record<string, PageSEO> = {
       ogDescription: 'Special sauna ritual for bachelorette parties with traditional elements. Bride beauty treatments and friends bonding.',
       twitterTitle: 'Bachelorette Sauna - Traditional Bachelorette Party',
       twitterDescription: 'Special sauna ritual for bachelorette parties with bride beauty treatments and traditional elements.'
+    },
+    ru: {
+      title: 'Девичник в бане – банный ритуал для невесты и подруг',
+      description: 'Девичник в бане с пармастером: обряд пожеланий, парение вениками и уход для невесты, скрабы и травяной чан для подруг. До 8 человек.',
+      keywords: 'девичник в бане, девичник рига, ритуал для невесты, банный девичник, спа девичник',
+      ogTitle: 'Девичник в бане',
+      ogDescription: 'Банный ритуал для невесты и подруг: парение вениками, скрабы и травяной чан.',
+      twitterTitle: 'Девичник в бане',
+      twitterDescription: 'Банный девичник с пармастером – до 8 человек.'
     }
   },
   '/viru-paka': {
@@ -153,6 +208,15 @@ export const seoData: Record<string, PageSEO> = {
       ogDescription: 'Masculine sauna experience for bachelor parties. Traditional rituals, sauna whisking and a friendly atmosphere.',
       twitterTitle: 'Bachelor Pack - Traditional Bachelor Party',
       twitterDescription: 'Masculine sauna experience for bachelor parties with traditional rituals and sauna whisking.'
+    },
+    ru: {
+      title: 'Мальчишник в бане – банный ритуал для жениха и друзей',
+      description: 'Мальчишник в бане с пармастером: обряд пожеланий, большое мужское парение вениками для жениха, пруд и травяной чан. До 8 человек.',
+      keywords: 'мальчишник в бане, мальчишник рига, ритуал для жениха, мужская баня, парение вениками',
+      ogTitle: 'Мальчишник в бане',
+      ogDescription: 'Банный ритуал для жениха и друзей: парение вениками, пруд и травяной чан.',
+      twitterTitle: 'Мальчишник в бане',
+      twitterDescription: 'Банный мальчишник с пармастером – до 8 человек.'
     }
   },
   '/naksnosana': {
@@ -173,6 +237,15 @@ export const seoData: Record<string, PageSEO> = {
       ogDescription: 'Stay overnight after sauna rituals. Warm and comfortable accommodation in White and Grey saunas.',
       twitterTitle: 'Accommodation - Comfortable Overnight Stay',
       twitterDescription: 'Warm and comfortable accommodation after sauna rituals. Extend your relaxation experience.'
+    },
+    ru: {
+      title: 'Ночёвка после бани – уютное проживание на природе',
+      description: 'Останьтесь на ночь после бани: тёплые и уютные комнаты в Белой и Серой бане. 19,99 € с человека.',
+      keywords: 'ночёвка после бани, проживание, баня с ночёвкой, гостевой дом рига, отдых на природе',
+      ogTitle: 'Ночёвка после бани',
+      ogDescription: 'Тёплые и уютные комнаты в Белой и Серой бане – продлите свой отдых.',
+      twitterTitle: 'Ночёвка после бани',
+      twitterDescription: 'Баня с ночёвкой – уютные комнаты на природе.'
     }
   },
   '/davanu-kartes': {
@@ -193,6 +266,15 @@ export const seoData: Record<string, PageSEO> = {
       ogDescription: 'Purchase gift cards for sauna rituals and rentals. Choose specific rituals or custom values.',
       twitterTitle: 'Gift Cards - Perfect Sauna Gift',
       twitterDescription: 'Gift cards for sauna rituals with instant email delivery. Perfect gift for loved ones.'
+    },
+    ru: {
+      title: 'Подарочная карта на банный ритуал – лучший подарок',
+      description: 'Подарочные карты на банные ритуалы и аренду бани: выберите ритуал или сумму. Оплата картой онлайн – подарочная карта сразу на e-mail.',
+      keywords: 'подарочная карта баня, подарочный сертификат баня, подарок банный ритуал, сертификат пармастер, подарок рига',
+      ogTitle: 'Подарочная карта на банный ритуал',
+      ogDescription: 'Подарочные карты на банные ритуалы и аренду бани – ритуал или сумма на выбор.',
+      twitterTitle: 'Подарочная карта на банный ритуал',
+      twitterDescription: 'Подарите незабываемый банный ритуал.'
     }
   },
   '/rezervet': {
@@ -213,6 +295,15 @@ export const seoData: Record<string, PageSEO> = {
       ogDescription: 'Book sauna rituals or sauna rentals. Convenient booking calendars and contact information.',
       twitterTitle: 'Reserve - Sauna Ritual Booking',
       twitterDescription: 'Book sauna rituals or sauna rentals with convenient booking calendars.'
+    },
+    ru: {
+      title: 'Бронирование – банный ритуал или аренда бани',
+      description: 'Забронируйте банный ритуал или аренду бани онлайн: удобный календарь свободного времени, контакты и как добраться.',
+      keywords: 'забронировать баню, бронирование бани, банный ритуал бронирование, аренда бани онлайн',
+      ogTitle: 'Бронирование банного ритуала',
+      ogDescription: 'Банный ритуал или аренда бани – бронирование онлайн по календарю.',
+      twitterTitle: 'Бронирование банного ритуала',
+      twitterDescription: 'Забронируйте банный ритуал или аренду бани онлайн.'
     }
   },
   '/biezak-uzdotie-jautajumi': {
@@ -233,6 +324,15 @@ export const seoData: Record<string, PageSEO> = {
       ogDescription: 'Ritual length and prices, what to bring, getting there from Riga, safety rules and gift card validity.',
       twitterTitle: 'Frequently Asked Questions',
       twitterDescription: 'Answers on sauna ritual length, prices, getting there and the rules.'
+    },
+    ru: {
+      title: 'Частые вопросы – банные ритуалы и аренда бани',
+      description: 'Сколько длится банный ритуал и сколько стоит, что взять с собой, как добраться из Риги и когда баню посещать нельзя.',
+      keywords: 'сколько стоит банный ритуал, сколько длится ритуал, что взять в баню, цена аренды бани, правила бани, срок подарочной карты',
+      ogTitle: 'Частые вопросы о банных ритуалах',
+      ogDescription: 'Длительность и цены ритуалов, что взять с собой, как добраться из Риги, правила и подарочные карты.',
+      twitterTitle: 'Частые вопросы',
+      twitterDescription: 'Ответы о длительности, ценах, дороге и правилах.'
     }
   },
   '/ieksejas-kartibas-noteikumi': {
@@ -253,6 +353,15 @@ export const seoData: Record<string, PageSEO> = {
       ogDescription: 'SaimniekaPirts house rules: safety, booking and cancellation terms.',
       twitterTitle: 'House Rules',
       twitterDescription: 'SaimniekaPirts visitor and safety rules.'
+    },
+    ru: {
+      title: 'Правила посещения – SaimniekaPirts',
+      description: 'Правила посещения SaimniekaPirts: безопасность в бане и травяном чане, бронирование и отмена, поведение на территории.',
+      keywords: 'правила бани, правила посещения, безопасность в бане, условия бронирования',
+      ogTitle: 'Правила посещения',
+      ogDescription: 'Правила SaimniekaPirts: безопасность, бронирование и отмена.',
+      twitterTitle: 'Правила посещения',
+      twitterDescription: 'Правила посещения и безопасности SaimniekaPirts.'
     }
   },
   '/privatuma-politika': {
@@ -273,12 +382,21 @@ export const seoData: Record<string, PageSEO> = {
       ogDescription: 'How SaimniekaPirts processes the personal data given when booking, and your rights.',
       twitterTitle: 'Privacy Policy',
       twitterDescription: 'SaimniekaPirts personal data processing principles.'
+    },
+    ru: {
+      title: 'Политика конфиденциальности – SaimniekaPirts',
+      description: 'Как SaimniekaPirts обрабатывает и хранит персональные данные, указанные при бронировании, и какие у вас есть права.',
+      keywords: 'политика конфиденциальности, обработка персональных данных, cookies, GDPR',
+      ogTitle: 'Политика конфиденциальности',
+      ogDescription: 'Как SaimniekaPirts обрабатывает персональные данные и ваши права.',
+      twitterTitle: 'Политика конфиденциальности',
+      twitterDescription: 'Принципы обработки персональных данных SaimniekaPirts.'
     }
   }
 };
 
 // Function to get current page SEO data
-export const getCurrentPageSEO = (pathname: string, language: 'lv' | 'en'): SEOData => {
+export const getCurrentPageSEO = (pathname: string, language: 'lv' | 'en' | 'ru'): SEOData => {
   // Since every route is prerendered to its own directory, the same page is
   // reachable as /pirts-rituali and /pirts-rituali/. Without trimming the
   // trailing slash the second form finds no entry above, and the page

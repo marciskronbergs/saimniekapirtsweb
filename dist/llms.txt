@@ -31,10 +31,24 @@ SaimniekaPirts ir tradicionāla latviskā pirts Baldonē, Ķekavas novadā. Pirt
 - [Reserve - Sauna Ritual Booking](https://saimniekapirts.lv/en/rezervet): Book sauna rituals or sauna rentals. Convenient booking calendars, contact information and location map.
 - [Frequently Asked Questions about Sauna Rituals](https://saimniekapirts.lv/en/biezak-uzdotie-jautajumi): How long a Latvian sauna ritual lasts, what it costs, what to bring, how to get there from Riga and when the sauna should not be visited.
 
+## Страницы на русском / Russian pages
+
+- [SaimniekaPirts – латышские банные ритуалы](https://saimniekapirts.lv/ru): Настоящие латышские банные ритуалы с сертифицированным пармастером: парение вениками, травяной чан, пруд. Аренда бани и ночёвка на природе под Ригой.
+- [Банный ритуал с пармастером](https://saimniekapirts.lv/ru/pirts-rituali): Банные ритуалы с сертифицированным пармастером для одного, для двоих или для семьи: травяной чан, парение вениками, скраб, медовый массаж и пруд.
+- [Банные ритуалы для компании](https://saimniekapirts.lv/ru/grupu-rituali): Банные программы для компании с пармастером: от совместного скраба и травяного чана до индивидуального парения для каждого. От 70 € с человека.
+- [Аренда бани под Ригой](https://saimniekapirts.lv/ru/pirts-noma): Аренда Белой или Серой бани для отдыха с семьёй и друзьями. Травяной чан по желанию, веники и скрабы. От 80 € за 3 часа.
+- [Девичник и мальчишник в бане](https://saimniekapirts.lv/ru/ipasiie-piedzivvojumi): Банные программы для праздников: девичник и мальчишник в бане с пармастером, традиционными обрядами и праздничной атмосферой.
+- [Девичник в бане](https://saimniekapirts.lv/ru/vecmeitas-purs): Девичник в бане с пармастером: обряд пожеланий, парение вениками и уход для невесты, скрабы и травяной чан для подруг. До 8 человек.
+- [Мальчишник в бане](https://saimniekapirts.lv/ru/viru-paka): Мальчишник в бане с пармастером: обряд пожеланий, большое мужское парение вениками для жениха, пруд и травяной чан. До 8 человек.
+- [Ночёвка после бани](https://saimniekapirts.lv/ru/naksnosana): Останьтесь на ночь после бани: тёплые и уютные комнаты в Белой и Серой бане. 19,99 € с человека.
+- [Подарочная карта на банный ритуал](https://saimniekapirts.lv/ru/davanu-kartes): Подарочные карты на банные ритуалы и аренду бани: выберите ритуал или сумму. Оплата картой онлайн – подарочная карта сразу на e-mail.
+- [Бронирование банного ритуала](https://saimniekapirts.lv/ru/rezervet): Забронируйте банный ритуал или аренду бани онлайн: удобный календарь свободного времени, контакты и как добраться.
+- [Частые вопросы о банных ритуалах](https://saimniekapirts.lv/ru/biezak-uzdotie-jautajumi): Сколько длится банный ритуал и сколько стоит, что взять с собой, как добраться из Риги и когда баню посещать нельзя.
+
 ## Kontakti
 
 - Adrese: Sarma Nr. 123, Baldones pagasts, Ķekavas novads, LV-2125, Latvija
 - Tālrunis: +371-26-752-661
 - E-pasts: info@saimniekapirts.lv
 - Darba laiks: Mo-Su 09:00-22:00
-- Valodas: latviešu, angļu
+- Valodas: latviešu, angļu, krievu

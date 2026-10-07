@@ -128,6 +128,14 @@ const HeaderSection = () => {
                   >
                     EN
                   </button>
+                  <button
+                    onClick={() => handleLanguageChange('ru')}
+                    className={`w-full px-4 py-3 text-left text-sm transition-all duration-200 hover:bg-green-600/20 hover:text-green-400 ${
+                      i18n.language === 'ru' ? 'text-green-400 bg-green-600/10' : 'text-white'
+                    }`}
+                  >
+                    RU
+                  </button>
                 </div>
               )}
             </div>
@@ -243,6 +251,14 @@ const HeaderSection = () => {
                         }`}
                       >
                         EN
+                      </button>
+                      <button
+                        onClick={() => handleLanguageChange('ru')}
+                        className={`w-full px-4 py-3 text-left text-sm transition-all duration-200 hover:bg-green-600/20 hover:text-green-400 ${
+                          i18n.language === 'ru' ? 'text-green-400 bg-green-600/10' : 'text-white'
+                        }`}
+                      >
+                        RU
                       </button>
                     </div>
                   )}

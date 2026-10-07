@@ -45,7 +45,7 @@ interface Booking extends InvoiceInfo {
   name: string;
   email: string;
   phone: string | null;
-  locale: 'lv' | 'en';
+  locale: 'lv' | 'en' | 'ru';
 }
 
 interface GiftCard extends InvoiceInfo {
@@ -54,7 +54,7 @@ interface GiftCard extends InvoiceInfo {
   email: string;
   phone: string | null;
   service: string | null;
-  locale: 'lv' | 'en';
+  locale: 'lv' | 'en' | 'ru';
   created_at: string;
   payment: 'transfer' | 'card';
   card_paid: boolean;
@@ -693,7 +693,7 @@ const BirojsPage = () => {
                       <span className="text-lg font-semibold">{b.name}</span>
                       <Badge tone={b.type === 'ritual' ? 'green' : 'blue'}>{b.type === 'ritual' ? 'Rituāls' : 'Noma'}</Badge>
                       {b.sauna && <Badge>{b.sauna}</Badge>}
-                      {b.locale === 'en' && <Badge tone="blue">EN</Badge>}
+                      {b.locale !== 'lv' && <Badge tone="blue">{b.locale.toUpperCase()}</Badge>}
                       {b.payment === 'cash' && <Badge tone="green">💶 Skaidrā naudā</Badge>}
                       <CardBadge payment={b.payment} paid={b.card_paid} />
                       {b.gift_card_code && <Badge tone="amber">🎁 Dāvanu karte {b.gift_card_code}</Badge>}
@@ -778,7 +778,7 @@ const BirojsPage = () => {
               <div className="flex flex-wrap items-center gap-2">
                 <span className="text-sm text-gray-400">{shortDate(g.created_at)}</span>
                 <span className="font-semibold">{g.name}</span>
-                {g.locale === 'en' && <Badge tone="blue">EN</Badge>}
+                {g.locale !== 'lv' && <Badge tone="blue">{g.locale.toUpperCase()}</Badge>}
                 {g.cancelled ? <Badge tone="red">Atcelta</Badge> : <CardBadge payment={g.payment} paid={g.card_paid} />}
                 {!g.cancelled && g.final && <Badge tone="green">Apmaksāta · karte nosūtīta</Badge>}
                 {g.used_for && <Badge tone="amber">Izmantota: {longDate(g.used_for.date)} {g.used_for.time}</Badge>}

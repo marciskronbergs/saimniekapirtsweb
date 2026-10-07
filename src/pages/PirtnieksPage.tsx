@@ -20,7 +20,7 @@ interface MasterBooking {
   message: string | null;
   name: string;
   phone: string | null;
-  locale: 'lv' | 'en';
+  locale: 'lv' | 'en' | 'ru';
   cash_due: number | null;
 }
 
@@ -106,7 +106,7 @@ const PirtnieksPage = () => {
                     <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
                       <span className="text-2xl font-bold text-green-400">{b.time}</span>
                       <span className="text-lg font-semibold">{b.name}</span>
-                      {b.locale === 'en' && <span className="text-xs rounded-full border border-sky-500/40 px-2 text-sky-300">EN</span>}
+                      {b.locale !== 'lv' && <span className="text-xs rounded-full border border-sky-500/40 px-2 text-sky-300">{b.locale.toUpperCase()}</span>}
                     </div>
                     {b.phone && (
                       <a href={`tel:${b.phone.replace(/\s+/g, '')}`} className="inline-flex items-center gap-1 text-gray-300 hover:text-white">

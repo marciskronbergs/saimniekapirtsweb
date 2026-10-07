@@ -21,6 +21,7 @@ import { goToCardPayment, paymentLabel, useCardPayments } from '../../lib/cardPa
 import { scrollIntoPopup } from './scrollIntoPopup';
 import { cancelUrl } from './cancelUrl';
 import { trackBookingSaved } from '../../lib/analytics';
+import { asLanguage } from '../../utils/locale';
 
 // The labels come from the shared price list, the same one the invoice function
 // prices bookings from. They are stored verbatim, so they must not be reworded
@@ -157,7 +158,7 @@ const reservationData = {
   reservation_date: selectedDate.toLocaleDateString('en-CA'),
   reservation_time: selectedTime,
   ritual_type: formData.ritualType,
-  locale: i18n.language === 'en' ? 'en' : 'lv',
+  locale: asLanguage(i18n.language),
   ritual_participants: formData.participants ? parseInt(formData.participants) : null,
   overnight_stay: formData.overnightStay,
   ritual_message: formData.message || '',
@@ -210,7 +211,7 @@ const reservationData = {
   payment_method: paymentMethod,
   payment_label: paymentLabel(paymentMethod),
   gift_card: withGiftCard ? giftCard.code.trim() : '',
-  locale: i18n.language === 'en' ? 'en' : 'lv', // lets Make answer in the guest's language
+  locale: asLanguage(i18n.language), // lets Make answer in the guest's language
   // For the office's calendar: cancels the booking, freeing the slot and
   // annulling its advance invoice.
   cancel_url: cancelUrl(id)

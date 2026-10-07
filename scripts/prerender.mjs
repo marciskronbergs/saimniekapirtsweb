@@ -21,20 +21,25 @@ import { build } from 'esbuild'
 
 const DIST = 'dist'
 const ORIGIN = 'https://saimniekapirts.lv'
-const LANGUAGES = ['lv', 'en']
+const LANGUAGES = ['lv', 'en', 'ru']
 const localeDir = (language) => `src/i18n/locales/${language}`
 
-/** Latvian at /pirts-noma, English at /en/pirts-noma. Mirrors src/utils/locale.ts. */
+/** Latvian at /pirts-noma, English at /en/pirts-noma, Russian at /ru/pirts-noma. Mirrors src/utils/locale.ts. */
+const PREFIX = { lv: '', en: '/en', ru: '/ru' }
 const pathForLanguage = (routePath, language) => {
   const clean = routePath === '/' ? '' : routePath.replace(/\/+$/, '')
-  if (language === 'en') return clean ? `/en${clean}` : '/en'
+  const prefix = PREFIX[language]
+  if (prefix) return clean ? `${prefix}${clean}` : prefix
   return clean || '/'
 }
+const OG_LOCALE = { lv: 'lv_LV', en: 'en_US', ru: 'ru_RU' }
+const HOME = { lv: 'Sākums', en: 'Home', ru: 'Главная' }
 const urlForLanguage = (routePath, language) => ORIGIN + pathForLanguage(routePath, language)
 
 const LABELS = {
   lv: { contact: 'Kontakti', pages: 'Lapas', phone: 'Tālrunis', email: 'E-pasts' },
   en: { contact: 'Contact', pages: 'Pages', phone: 'Phone', email: 'Email' },
+  ru: { contact: 'Контакты', pages: 'Страницы', phone: 'Телефон', email: 'E-mail' },
 }
 
 const BUSINESS = {
@@ -203,7 +208,7 @@ function localBusiness() {
       { '@type': 'City', name: 'Riga' },
       { '@type': 'City', name: 'Baldone' },
     ],
-    knowsLanguage: ['lv', 'en'],
+    knowsLanguage: LANGUAGES,
   }
 }
 
@@ -218,7 +223,7 @@ function schemaFor(route, seo, nsData, language) {
       '@id': `${ORIGIN}/#website`,
       url: ORIGIN,
       name: BUSINESS.name,
-      inLanguage: ['lv', 'en'],
+      inLanguage: LANGUAGES,
       publisher: { '@id': `${ORIGIN}/#business` },
     })
   } else {
@@ -229,7 +234,7 @@ function schemaFor(route, seo, nsData, language) {
         {
           '@type': 'ListItem',
           position: 1,
-          name: language === 'en' ? 'Home' : 'Sākums',
+          name: HOME[language],
           item: urlForLanguage('/', language),
         },
         {
@@ -295,8 +300,7 @@ function documentFor({ route, seo, head, body, schema, language }) {
     : 'index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1'
 
   const alternates = [
-    ['lv', urlForLanguage(route.path, 'lv')],
-    ['en', urlForLanguage(route.path, 'en')],
+    ...LANGUAGES.map((l) => [l, urlForLanguage(route.path, l)]),
     ['x-default', urlForLanguage(route.path, 'lv')],
   ]
     .map(([hl, href]) => `<link rel="alternate" hreflang="${hl}" href="${href}" />`)
@@ -304,7 +308,7 @@ function documentFor({ route, seo, head, body, schema, language }) {
 
   const tags = [
     alternates,
-    `<meta property="og:locale" content="${language === 'en' ? 'en_US' : 'lv_LV'}" />`,
+    `<meta property="og:locale" content="${OG_LOCALE[language]}" />`,
     `<title>${esc(seo.title)}</title>`,
     `<meta name="description" content="${esc(seo.description)}" />`,
     `<meta name="keywords" content="${esc(seo.keywords)}" />`,
@@ -416,7 +420,7 @@ const sitemap = [
       [
         '  <url>',
         `    <loc>${urlForLanguage(r.path, language)}</loc>`,
-        // Each entry names both languages, which is how the pair is declared
+        // Each entry names every language, which is how the pair is declared
         // to search engines from the sitemap side as well as from the markup.
         ...LANGUAGES.map(
           (alt) =>
@@ -460,13 +464,20 @@ const llms = [
       `- [${seoData[r.path].en.ogTitle}](${urlForLanguage(r.path, 'en')}): ${seoData[r.path].en.description}`
   ),
   '',
+  '## Страницы на русском / Russian pages',
+  '',
+  ...indexable.map(
+    (r) =>
+      `- [${seoData[r.path].ru.ogTitle}](${urlForLanguage(r.path, 'ru')}): ${seoData[r.path].ru.description}`
+  ),
+  '',
   '## Kontakti',
   '',
   `- Adrese: ${BUSINESS.street}, ${BUSINESS.locality}, ${BUSINESS.postal}, Latvija`,
   `- Tālrunis: ${BUSINESS.phone}`,
   `- E-pasts: ${BUSINESS.email}`,
   `- Darba laiks: ${BUSINESS.hours}`,
-  `- Valodas: latviešu, angļu`,
+  `- Valodas: latviešu, angļu, krievu`,
   '',
 ].join('\n')
 writeFileSync(join(DIST, 'llms.txt'), llms)

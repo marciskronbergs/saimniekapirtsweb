@@ -50,6 +50,30 @@ import enLocation from './locales/en/location.json';
 import lvLocation from './locales/lv/location.json';
 import enCommon from './locales/en/common.json';
 import lvCommon from './locales/lv/common.json';
+import ruHero from './locales/ru/hero.json';
+import ruNavbar from './locales/ru/navbar.json';
+import ruFooter from './locales/ru/footer.json';
+import ruServices from './locales/ru/services.json';
+import ruCards from './locales/ru/cards.json';
+import ruEvents from './locales/ru/events.json';
+import ruRental from './locales/ru/rental.json';
+import ruRituali from './locales/ru/rituali.json';
+import ruRitualiPreview from './locales/ru/rituali-preview.json';
+import ruNoma from './locales/ru/noma.json';
+import ruSpecial from './locales/ru/special.json';
+import ruVecmeitas from './locales/ru/vecmeitas.json';
+import ruViru from './locales/ru/viru.json';
+import ruAccommodation from './locales/ru/accommodation.json';
+import ruGiftcards from './locales/ru/giftcards.json';
+import ruForms from './locales/ru/forms.json';
+import ruReserve from './locales/ru/reserve.json';
+import ruFaq from './locales/ru/faq.json';
+import ruPrivacy from './locales/ru/privacy.json';
+import ruRules from './locales/ru/rules.json';
+import ruGroupRituals from './locales/ru/groupRituals.json';
+import ruReviews from './locales/ru/reviews.json';
+import ruLocation from './locales/ru/location.json';
+import ruCommon from './locales/ru/common.json';
 
 const resources = {
   en: {
@@ -103,6 +127,32 @@ const resources = {
     reviews: lvReviews,
     location: lvLocation,
     common: lvCommon
+  },
+  ru: {
+    hero: ruHero,
+    navbar: ruNavbar,
+    footer: ruFooter,
+    services: ruServices,
+    cards: ruCards,
+    events: ruEvents,
+    rental: ruRental,
+    rituali: ruRituali,
+    'rituali-preview': ruRitualiPreview,
+    noma: ruNoma,
+    special: ruSpecial,
+    vecmeitas: ruVecmeitas,
+    viru: ruViru,
+    accommodation: ruAccommodation,
+    giftcards: ruGiftcards,
+    forms: ruForms,
+    reserve: ruReserve,
+    rules: ruRules,
+    privacy: ruPrivacy,
+    faq: ruFaq,
+    groupRituals: ruGroupRituals,
+    reviews: ruReviews,
+    location: ruLocation,
+    common: ruCommon
   }
 };
 

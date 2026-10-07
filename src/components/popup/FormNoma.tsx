@@ -12,6 +12,7 @@ import { goToCardPayment, paymentLabel, useCardPayments } from '../../lib/cardPa
 import { scrollIntoPopup } from './scrollIntoPopup';
 import { cancelUrl } from './cancelUrl';
 import { trackBookingSaved } from '../../lib/analytics';
+import { asLanguage } from '../../utils/locale';
 
 const allSaunaTypes = ['Baltā pirts', 'Pelēkā pirts'];
 
@@ -168,7 +169,7 @@ const FormNoma: React.FC<FormNomaProps> = ({ selectedDate, selectedTime, onClose
           label,
           quantity: extraQuantities[label] ?? 1,
         })),
-        locale: i18n.language === 'en' ? 'en' : 'lv',
+        locale: asLanguage(i18n.language),
         rental_message: formData.message || '',
         transport: formData.transport || null,
         payment_method: paymentMethod,

@@ -10,6 +10,7 @@ import { goToCardPayment, useCardPayments } from '../lib/cardPayments';
 import GiftCardPreview from '../components/giftcards/GiftCardPreview';
 import { preloadGiftCard } from '../components/giftcards/giftCardAssets';
 import { trackGiftCardOrdered, trackGiftCardStart } from '../lib/analytics';
+import { asLanguage } from '../utils/locale';
 
 const DavanuKartesPage = () => {
   const [isVisible, setIsVisible] = useState(false);
@@ -29,7 +30,7 @@ const DavanuKartesPage = () => {
   const sectionRef = useRef<HTMLDivElement>(null);
   const formRef = useRef<HTMLDivElement>(null);
   const { t, i18n } = useTranslation('giftcards');
-  const locale = i18n.language === 'en' ? 'en' : 'lv';
+  const locale = asLanguage(i18n.language);
   // Paid by card, the gift card comes straight back as a PDF; by transfer, it
   // is sent once the invoice is paid. Card is the default while it is offered.
   const cardPayments = useCardPayments();

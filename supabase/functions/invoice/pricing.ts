@@ -9,11 +9,12 @@
 // found in the list. Anything that cannot be priced is reported in `problems`
 // rather than guessed, so an invoice is held for a person to check instead.
 
-export type Locale = 'lv' | 'en';
+export type Locale = 'lv' | 'en' | 'ru';
 
 interface Named {
   lv: string;
   en: string;
+  ru: string;
 }
 
 interface CatalogRitual extends Named {
@@ -117,6 +118,7 @@ const perPersonItem = (
     name: {
       lv: `${name.lv} (${people} pers., minimālā cena)`,
       en: `${name.en} (${people} ${people === 1 ? 'person' : 'people'}, minimum price)`,
+      ru: `${name.ru} (${people} чел., минимальная цена)`,
     },
     quantity: 1,
     unit: 'service',
@@ -140,7 +142,7 @@ const addTransport = (
     return;
   }
   if (option.price > 0 && !option.custom) {
-    items.push({ name: { lv: option.lv, en: option.en }, quantity: 1, unit: 'service', unitPrice: option.price, amount: option.price });
+    items.push({ name: { lv: option.lv, en: option.en, ru: option.ru }, quantity: 1, unit: 'service', unitPrice: option.price, amount: option.price });
   }
 };
 
@@ -164,7 +166,7 @@ export function priceReservation(
       problems.push(`Unknown ritual: ${booking.ritual_type ?? '(none)'}`);
       return finish(items, problems);
     }
-    const name = { lv: ritual.lv, en: ritual.en };
+    const name = { lv: ritual.lv, en: ritual.en, ru: ritual.ru };
     const participants = booking.ritual_participants;
 
     if (ritual.price !== undefined) {
@@ -181,7 +183,7 @@ export function priceReservation(
       const people = ritual.people ?? participants;
       if (isCount(people)) {
         items.push(
-          perPersonItem({ lv: overnight.lv, en: overnight.en }, people, overnight.unitPrice, overnight.minimum)
+          perPersonItem({ lv: overnight.lv, en: overnight.en, ru: overnight.ru }, people, overnight.unitPrice, overnight.minimum)
         );
       } else {
         problems.push('Overnight stay without a number of people');
@@ -194,7 +196,7 @@ export function priceReservation(
   if (booking.form_type === 'noma') {
     const rental = catalog.rental.find((entry) => entry.label === booking.rental_type);
     if (rental) {
-      const name = { lv: rental.lv, en: rental.en };
+      const name = { lv: rental.lv, en: rental.en, ru: rental.ru };
       items.push({ name, quantity: 1, unit: 'service', unitPrice: rental.price, amount: rental.price });
     } else {
       problems.push(`Unknown rental: ${booking.rental_type ?? '(none)'}`);
@@ -216,7 +218,7 @@ export function priceReservation(
         problems.push(`Bad quantity for ${label}: ${quantity}`);
         continue;
       }
-      const name = { lv: extra.lv, en: extra.en };
+      const name = { lv: extra.lv, en: extra.en, ru: extra.ru };
       if (extra.minimum !== undefined) {
         items.push(perPersonItem(name, quantity, extra.unitPrice, extra.minimum));
       } else {
@@ -243,13 +245,14 @@ export function priceGiftCard(catalog: PriceCatalog, order: GiftCardForPricing):
   const stripPrice = (label: string) => label.replace(/\s*–\s*[\d.,]+\s*€\s*$/, '');
 
   const ritual = catalog.giftCard.rituals.find(
-    (entry) => entry.label.lv === order.ritual_type || entry.label.en === order.ritual_type
+    (entry) => entry.label.lv === order.ritual_type || entry.label.en === order.ritual_type || entry.label.ru === order.ritual_type
   );
   if (ritual) {
     items.push({
       name: {
         lv: `Dāvanu karte: ${stripPrice(ritual.label.lv)}`,
         en: `Gift card: ${stripPrice(ritual.label.en)}`,
+        ru: `Подарочная карта: ${stripPrice(ritual.label.ru)}`,
       },
       quantity: 1,
       unit: 'pcs',
@@ -264,7 +267,7 @@ export function priceGiftCard(catalog: PriceCatalog, order: GiftCardForPricing):
   const value = match ? Number(match[1]) : NaN;
   if (Number.isInteger(value) && value >= min && value <= max && (value - min) % step === 0) {
     items.push({
-      name: { lv: `Dāvanu karte, vērtība ${value} €`, en: `Gift card, value €${value}` },
+      name: { lv: `Dāvanu karte, vērtība ${value} €`, en: `Gift card, value €${value}`, ru: `Подарочная карта на сумму ${value} €` },
       quantity: 1,
       unit: 'pcs',
       unitPrice: value,
@@ -279,7 +282,7 @@ export function priceGiftCard(catalog: PriceCatalog, order: GiftCardForPricing):
 }
 
 export const formatEuro = (amount: number, locale: Locale) =>
-  new Intl.NumberFormat(locale === 'lv' ? 'lv-LV' : 'en-IE', {
+  new Intl.NumberFormat(locale === 'lv' ? 'lv-LV' : locale === 'ru' ? 'ru-RU' : 'en-IE', {
     style: 'currency',
     currency: 'EUR',
   }).format(amount);

@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Gift, Star, Check } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import { asLanguage } from '../utils/locale';
 
 const GiftCardSection = () => {
   const [isVisible, setIsVisible] = useState(false);
@@ -47,7 +48,7 @@ const GiftCardSection = () => {
                     <div className="flex items-center gap-3">
                       <Gift className="w-8 h-8 text-white" />
                       <span className="text-white font-bold text-lg sm:text-xl">
-                        {i18n.language === 'en' ? 'Gift Card' : 'Dāvanu Karte'}
+                        {({ lv: 'Dāvanu Karte', en: 'Gift Card', ru: 'Подарочная карта' })[asLanguage(i18n.language)]}
                       </span>
                     </div>
                     <div className="flex items-center gap-1">
@@ -59,17 +60,17 @@ const GiftCardSection = () => {
                   
                   <div className="mb-6">
                     <h3 className="text-white text-xl sm:text-2xl font-bold mb-2">
-                      {i18n.language === 'en' ? 'SAUNA EXPERIENCES' : 'PIRTS PIEDZĪVOJUMI'}
+                      {({ lv: 'PIRTS PIEDZĪVOJUMI', en: 'SAUNA EXPERIENCES', ru: 'БАННЫЕ ВПЕЧАТЛЕНИЯ' })[asLanguage(i18n.language)]}
                     </h3>
                     <p className="text-amber-100 text-xs sm:text-sm">
-                      {i18n.language === 'en' ? 'Gift card valid for all services' : 'Dāvanu karte visiem pakalpojumiem'}
+                      {({ lv: 'Dāvanu karte visiem pakalpojumiem', en: 'Gift card valid for all services', ru: 'Карта на все услуги' })[asLanguage(i18n.language)]}
                     </p>
                   </div>
                   
                   <div className="border-t border-amber-400/30 pt-4">
                     <div className="flex justify-between items-center">
                       <span className="text-amber-100 text-xs sm:text-sm">
-                        {i18n.language === 'en' ? 'Value:' : 'Vērtība:'}
+                        {({ lv: 'Vērtība:', en: 'Value:', ru: 'Номинал:' })[asLanguage(i18n.language)]}
                       </span>
                       <span className="text-white font-bold text-lg sm:text-xl">€80 - €380</span>
                     </div>

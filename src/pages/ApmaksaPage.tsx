@@ -7,6 +7,7 @@ import FooterSection from '../components/FooterSection';
 import { callInvoiceFunction, useOfficePage } from '../lib/officeApi';
 import InvoicePay from './InvoicePay';
 import { trackPaid } from '../lib/analytics';
+import { asLanguage, type Language } from '../utils/locale';
 
 // Where Stripe sends a guest back after paying by card (/apmaksa?p=<payment>),
 // or after turning back without paying (&atcelts=1). It asks the invoice
@@ -18,7 +19,7 @@ interface PaymentView {
   status: 'open' | 'paid' | 'expired';
   method: 'card' | 'transfer';
   type: 'reservation' | 'gift_card';
-  locale: 'lv' | 'en';
+  locale: Language;
   name: string;
   email: string;
   date: string | null;
@@ -95,11 +96,43 @@ const texts = {
     home: 'Back to the home page',
     failed: 'Something went wrong. Please try again or call +371 26 752 661.',
   },
+  ru: {
+    title: 'Оплата',
+    loading: 'Проверяем оплату…',
+    notFound: 'Платёж не найден. Если вы оплатили, подтверждение придёт на e-mail; если есть вопросы, звоните +371 26 752 661.',
+    paidBooking: (n: string) => `Спасибо, ${n}! Оплата получена.`,
+    paidGift: (n: string) => `Спасибо, ${n}! Подарочная карта оплачена.`,
+    booked: (d: string, t: string) => `Ваше бронирование на ${d} в ${t} подтверждено.`,
+    sentBooking: (e: string) => `Подтверждение и счёт мы отправили на ${e}.`,
+    sentGift: (e: string) => `Подарочную карту и счёт мы также отправили на ${e}.`,
+    giftNumber: 'Подарочная карта №',
+    validUntil: 'действительна до',
+    code: 'код',
+    downloadRibbon: 'Pirts priekiem (PDF)',
+    downloadLight: 'Светлая карта (PDF)',
+    downloadA4: 'A4 (PDF)',
+    versions: 'Подарочная карта – в двух вариантах. Подарите тот, который вам больше нравится.',
+    versionsRitual: 'Подарочная карта – в трёх вариантах: две карты и формат A4. Подарите тот, который вам больше нравится.',
+    preparing: 'Мы ещё готовим подарочную карту – через минуту она появится здесь и придёт на e-mail.',
+    downloading: 'Готовим…',
+    total: 'Итого',
+    unpaidTitle: 'Оплата не завершена',
+    unpaidBooking: 'Ваше бронирование сохранено. Можно попробовать оплатить ещё раз или оплатить банковским переводом.',
+    unpaidGift: 'Ваш заказ сохранён. Можно попробовать оплатить ещё раз или оплатить банковским переводом.',
+    retry: 'Оплатить картой ещё раз',
+    transfer: 'Оплатить переводом',
+    waiting: 'Ждём подтверждения от банка…',
+    transferTitle: 'Оплата банковским переводом',
+    transferText: (e: string) => `Счёт для оплаты отправляем на ${e} – он придёт через несколько минут.`,
+    transferGift: 'После оплаты мы пришлём подарочную карту.',
+    home: 'На главную',
+    failed: 'Не получилось. Попробуйте ещё раз или позвоните по телефону +371 26 752 661.',
+  },
 };
 
 const formatDate = (iso: string) => iso.split('-').reverse().join('.');
-const money = (n: number, locale: 'lv' | 'en') =>
-  locale === 'lv' ? `${n.toFixed(2).replace('.', ',')} €` : `€${n.toFixed(2)}`;
+const money = (n: number, locale: Language) =>
+  locale === 'en' ? `€${n.toFixed(2)}` : `${n.toFixed(2).replace('.', ',')} €`;
 
 const ApmaksaPage = () => {
   useOfficePage('Apmaksa');
@@ -116,7 +149,7 @@ const ApmaksaPage = () => {
   const [failed, setFailed] = useState(false);
   const polls = useRef(0);
 
-  const locale: 'lv' | 'en' = view?.locale ?? (i18n.language === 'en' ? 'en' : 'lv');
+  const locale: Language = asLanguage(view?.locale ?? i18n.language);
   const tx = texts[locale];
 
   const load = async () => {

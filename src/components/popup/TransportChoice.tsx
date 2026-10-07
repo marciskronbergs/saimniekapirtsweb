@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { Bus } from 'lucide-react';
 import priceCatalog from '../../data/priceCatalog.json';
 import { busTimetableUrl } from './transport';
+import { asLanguage } from '../../utils/locale';
 
 // How the guest gets here. The value is the price list's label ('' when they
 // come on their own); the transfer is priced from the list like any extra.
@@ -18,13 +19,13 @@ const busPickup = priceCatalog.transport.find((option) => option.price === 0 && 
 
 const TransportChoice: React.FC<TransportChoiceProps> = ({ value, onChange }) => {
   const { t, i18n } = useTranslation('forms');
-  const en = i18n.language === 'en';
+  const locale = asLanguage(i18n.language);
   const byBus = !!busPickup && value === busPickup.label;
   const transfers = priceCatalog.transport
     .filter((option) => option !== busPickup)
     .map((option) => ({
       label: option.label,
-      text: `${en ? option.en : option.lv} – ${
+      text: `${option[locale]} – ${
         'custom' in option && option.custom ? t('transport.by_agreement') : `${option.price} €`
       }`,
     }));

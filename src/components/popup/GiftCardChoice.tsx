@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { AlertTriangle, Check, Gift, Loader2 } from 'lucide-react';
 import { callInvoiceFunction } from '../../lib/officeApi';
 import { emptyGiftCard, type GiftCardEntry } from './giftCardEntry';
+import { asLanguage } from '../../utils/locale';
 
 // A gift card given on the booking form: its number and the code printed
 // beside it. The card is checked as soon as both are in, so the guest knows
@@ -12,7 +13,7 @@ import { emptyGiftCard, type GiftCardEntry } from './giftCardEntry';
 
 interface Checked {
   status: string;
-  name?: { lv: string; en: string };
+  name?: { lv: string; en: string; ru?: string };
   value?: number;
   kind?: 'ritual' | 'value';
 }
@@ -26,7 +27,7 @@ interface GiftCardChoiceProps {
 
 const GiftCardChoice: React.FC<GiftCardChoiceProps> = ({ value, onChange, date }) => {
   const { t, i18n } = useTranslation('forms');
-  const locale = i18n.language === 'en' ? 'en' : 'lv';
+  const locale = asLanguage(i18n.language);
   const [open, setOpen] = useState(!!value.code);
   const [checking, setChecking] = useState(false);
   const [checked, setChecked] = useState<Checked | null>(null);
@@ -123,7 +124,7 @@ const GiftCardChoice: React.FC<GiftCardChoiceProps> = ({ value, onChange, date }
               <Check className="w-4 h-4 mt-0.5 shrink-0" />
               <span>
                 {checked.kind === 'ritual'
-                  ? t('giftCard.okRitual', { name: checked.name?.[locale] ?? '' })
+                  ? t('giftCard.okRitual', { name: checked.name?.[locale] ?? checked.name?.en ?? '' })
                   : t('giftCard.okValue', { value: checked.value ?? 0 })}
               </span>
             </p>

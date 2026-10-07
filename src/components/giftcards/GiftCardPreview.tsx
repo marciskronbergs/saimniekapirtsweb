@@ -7,6 +7,7 @@ import { formatCardDate, giftCardWords } from '../../lib/giftCardText';
 import { fontFaces } from './giftCardAssets';
 import GiftCardA4Page, { A4_H, A4_W } from './GiftCardA4';
 import { LIGHT_H, LIGHT_W, LightCardSide, type Sample } from './LightCard';
+import { asLanguage } from '../../utils/locale';
 
 // A preview of the gift card a buyer will get, for the gift card page: the
 // owner's "Dāvanu karte – PIRTS PRIEKIEM" as the PDF the invoice function
@@ -153,7 +154,7 @@ interface GiftCardPreviewProps {
 
 const GiftCardPreview: React.FC<GiftCardPreviewProps> = ({ value = 0, ritual = null, onClose }) => {
   const { t, i18n } = useTranslation('giftcards');
-  const locale: Locale = i18n.language === 'en' ? 'en' : 'lv';
+  const locale: Locale = asLanguage(i18n.language);
   // Which card is shown: the ribbon card, the light card, or a ritual's A4.
   const [view, setView] = useState<'ribbon' | 'light' | 'a4'>('ribbon');
   // On a phone the card is small; enlarged, it scrolls sideways at a readable size.

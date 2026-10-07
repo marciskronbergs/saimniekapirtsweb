@@ -1,9 +1,11 @@
 import { getCurrentPageSEO } from './seoData';
-import { routePathOf, urlForLanguage } from './locale';
+import { LANGUAGES, routePathOf, urlForLanguage, type Language } from './locale';
+
+const OG_LOCALE: Record<Language, string> = { lv: 'lv_LV', en: 'en_US', ru: 'ru_RU' };
 
 export class SEOManager {
   private static instance: SEOManager;
-  private currentLanguage: 'lv' | 'en' = 'lv';
+  private currentLanguage: Language = 'lv';
 
   private constructor() {}
 
@@ -14,7 +16,7 @@ export class SEOManager {
     return SEOManager.instance;
   }
 
-  public updateSEO(pathname: string, language: 'lv' | 'en'): void {
+  public updateSEO(pathname: string, language: Language): void {
     // The office's pages set their own title and noindex, and have nothing
     // for search engines.
     if (/^\/(rekins|birojs|pirtnieks|apmaksa)\/?$/.test(pathname)) return;
@@ -36,7 +38,7 @@ export class SEOManager {
     // Update Open Graph tags
     this.updateMetaTag('property', 'og:title', seoData.ogTitle);
     this.updateMetaTag('property', 'og:description', seoData.ogDescription);
-    this.updateMetaTag('property', 'og:locale', language === 'lv' ? 'lv_LV' : 'en_US');
+    this.updateMetaTag('property', 'og:locale', OG_LOCALE[language]);
 
     // Update Twitter Card tags
     this.updateMetaTag('name', 'twitter:title', seoData.twitterTitle);
@@ -58,8 +60,8 @@ export class SEOManager {
     metaTag.content = content;
   }
 
-  private updateCanonicalURL(pathname: string, language: 'lv' | 'en'): void {
-    // pathname comes from the router, so it never carries the /en basename --
+  private updateCanonicalURL(pathname: string, language: Language): void {
+    // pathname comes from the router, so it never carries the /en or /ru basename --
     // it is the route on its own, which is exactly what the URL helpers want.
     const routePath = routePathOf(pathname);
 
@@ -83,8 +85,7 @@ export class SEOManager {
    */
   private updateAlternates(routePath: string): void {
     const alternates: Array<[string, string]> = [
-      ['lv', urlForLanguage(routePath, 'lv')],
-      ['en', urlForLanguage(routePath, 'en')],
+      ...LANGUAGES.map((language): [string, string] => [language, urlForLanguage(routePath, language)]),
       ['x-default', urlForLanguage(routePath, 'lv')],
     ];
 
@@ -104,12 +105,12 @@ export class SEOManager {
     }
   }
 
-  public getCurrentLanguage(): 'lv' | 'en' {
+  public getCurrentLanguage(): Language {
     return this.currentLanguage;
   }
 
   // Initialize SEO on page load
-  public initializeSEO(pathname: string, initialLanguage: 'lv' | 'en' = 'lv'): void {
+  public initializeSEO(pathname: string, initialLanguage: Language = 'lv'): void {
     this.updateSEO(pathname, initialLanguage);
   }
 }

@@ -13,6 +13,7 @@ import {
 import { COOKIE_DECLARATION, type DeclarationCategory } from '../../data/cookieDeclaration';
 import { useCookieConsent } from '../../hooks/useCookieConsent';
 import CookieDeclarationList from './CookieDeclarationList';
+import { asLanguage } from '../../utils/locale';
 
 // The office and the sauna masters' page are staff tools, not for visitors.
 const STAFF_PATHS = ['/birojs', '/pirtnieks'];
@@ -120,7 +121,7 @@ const CookieConsent: React.FC = () => {
 
   if (STAFF_PATHS.some((path) => location.pathname.startsWith(path))) return null;
 
-  const lang = i18n.language?.startsWith('en') ? 'en' : 'lv';
+  const lang = asLanguage(i18n.language);
   const allowedList = (['preferences', 'statistics', 'marketing'] as ConsentCategory[])
     .filter((category) => saved?.[category])
     .map((category) => t(`cookies.categories.${category}.title`));
@@ -333,7 +334,7 @@ const CookieConsent: React.FC = () => {
                         <div className="flex flex-wrap gap-x-2">
                           <dt className="text-gray-400">{t('cookies.consentDate')}:</dt>
                           <dd>
-                            {new Date(saved.at).toLocaleString(lang === 'en' ? 'en-GB' : 'lv-LV')}
+                            {new Date(saved.at).toLocaleString(lang === 'en' ? 'en-GB' : lang === 'ru' ? 'ru-RU' : 'lv-LV')}
                           </dd>
                         </div>
                         <div className="flex flex-wrap gap-x-2">
