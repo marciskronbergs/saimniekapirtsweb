@@ -1,17 +1,17 @@
 {
   "title": "Sauna Rental (With or Without Herbal Hot Tub)",
-  "subtitle": "Discover the perfect sauna experience for you from our carefully crafted offers designed to suit a variety of tastes and needs.",
+  "subtitle": "Find the sauna that suits you – our offers are designed for a range of tastes and occasions.",
   "baltaPirts": {
-    "title": "Wet Sauna",
-    "description": "Perfect choice for larger events with ample seating space and nature enjoyment. Ideally suited for family or friends' celebrations."
+    "title": "White Sauna",
+    "description": "The right choice for larger groups, with plenty of seating and nature all around. Ideal for family and friends' celebrations."
   },
   "pelekaPirts": {
-    "title": "Gray Sauna",
-    "description": "This special sauna has been designed by the sauna master himself, ensuring optimal experience for sauna rituals. Perfect bench width and height for sauna sessions."
+    "title": "Grey Sauna",
+    "description": "Designed by the sauna master himself for sauna rituals, with benches of just the right width and height."
   },
   "herbTub": {
     "title": "Herbal Hot Tub",
-    "description": "Additional option to rent a herbal hot tub with aromatic and medicinal plants. In winter we add pine needles and in summer prepared birch & oak leaves."
+    "description": "Add a herbal hot tub with fragrant medicinal plants: pine needles in winter, birch and oak leaves in summer."
   },
   "cta": "Learn More"
 }

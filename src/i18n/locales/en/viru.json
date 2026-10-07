@@ -1,41 +1,41 @@
 {
-  "title": "SAUNA EXPERIENCE FOR BACHELOR PARTY \"BACHELOR PACK\"",
+  "title": "BACHELOR PARTY SAUNA EXPERIENCE \"BACHELOR PACK\"",
   "belief": {
-    "title": "Belief:",
-    "text": "The sauna is the farmer's doctor. If there were no sauna and turnips, then doctors would ride in golden carriages"
+    "title": "Folk belief:",
+    "text": "The sauna is the farmer's doctor. Were it not for the sauna and the radish, doctors would ride in golden carriages."
   },
-  "price": "360€, up to 8 people simultaneously",
-  "description1": "Bachelor parties are borrowed from abroad, whose growing number shows that bachelor parties are becoming increasingly popular and have become an integral pre-wedding tradition.",
-  "description2": "According to tradition, a bachelor party is a gathering of the groom-to-be's friends, where entertainment takes place in bachelor style, doing some unusual and exciting things.",
-  "description3": "At \"Saimnieka Pirts\" bachelor parties are organized by the groom's friends, as one of the bachelor party scenario elements, to relax together, enjoy something new and prepare for married life.",
+  "price": "360€, up to 8 people at once",
+  "description1": "Bachelor parties came to Latvia from abroad, and they have quickly become a firm part of the run-up to a wedding.",
+  "description2": "By tradition, a bachelor party is a gathering of the groom-to-be's friends – a day to celebrate in style and do something unusual and exciting together.",
+  "description3": "At SaimniekaPirts, the groom's friends book the sauna as part of the bachelor party: to relax together, try something new and send the groom off into married life.",
   "details": {
-    "duration": "Procedure Duration: 4 h",
-    "included": "Included: Herbal Hot Tub",
-    "master": "Operating: One Certified Sauna Master",
-    "availability": "Ritual available: All year round"
+    "duration": "Duration: 4 h",
+    "included": "Herbal hot tub included",
+    "master": "Led by one certified sauna master",
+    "availability": "Available all year round"
   },
-  "includedTitle": "BACHELOR SAUNA EXPERIENCE includes:",
+  "includedTitle": "THE BACHELOR SAUNA EXPERIENCE includes:",
   "includedItems": [
-    "Joint warming of friends with wish ritual;",
-    "Vibroacoustic massage with birch whisks for the groom;",
-    "Small whisk beating with snake skin removal for the groom;",
-    "Big men's whisk beating individually for the groom with bathing and wrapping;"
+    "Warming up together, with a wish-making ritual for the groom;",
+    "A vibroacoustic massage with willow whisks for the groom;",
+    "A short whisking for the groom with the \"shedding of the snakeskin\";",
+    "The great men's whisking, just for the groom, with a dip in the pond and a rest wrapped in blankets;"
   ],
-  "additionalTitle": "Additional:",
+  "additionalTitle": "Extras:",
   "additional": {
-    "rental": "Sauna and herbal hot tub rental – 18€ /h (4 h included in price)",
-    "extraTitle": "Additional procedures for other bachelor party participants (per person):",
+    "rental": "Sauna and herbal hot tub – 18€ / h (4 h included in the price)",
+    "extraTitle": "Extra treatments for the other guests, per person:",
     "extraServices": [
-      { "name": "Whisk beating", "price": "75€" },
+      { "name": "Whisking", "price": "75€" },
       { "name": "Vibroacoustic massage", "price": "24€" },
-      { "name": "Cleansing and nourishing scrub application", "price": "25€" }
+      { "name": "Cleansing and nourishing scrub", "price": "25€" }
     ],
     "accommodation": "Accommodation",
-    "accommodationPrice": "19.99 € (MIN 36€)"
+    "accommodationPrice": "19.99 € / person (min. 36€)"
   },
   "cta": {
-    "title": "Book \"BACHELOR PACK\" Ritual",
-    "subtitle": "Book the Event for the Groom-to-be Today!",
+    "title": "Book \"BACHELOR PACK\"",
+    "subtitle": "Book the celebration for the groom-to-be today!",
     "button": "Reserve"
   }
 }

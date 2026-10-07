@@ -1,45 +1,45 @@
 {
-  "title": "SAUNA EXPERIENCE FOR BACHELORETTE PARTY \"BACHELORETTE SAUNA\"",
+  "title": "BACHELORETTE PARTY SAUNA EXPERIENCE \"BACHELORETTE SAUNA\"",
   "poem": {
     "title": "Folk Song:",
     "line1": "To the sauna I go, to the sauna I run,",
-    "line2": "In the sauna my bride,",
-    "line3": "In the sauna my bride",
-    "line4": "Played with herbs"
+    "line2": "In the sauna is my bride,",
+    "line3": "In the sauna is my bride,",
+    "line4": "Playing with the herbs"
   },
-  "price": "360€, up to 8 people simultaneously",
-  "description1": "According to tradition, a bachelorette party is a gathering of the bride-to-be's friends, where entertainment takes place in bachelorette style, doing some unusual and exciting things.",
-  "description2": "At \"SaimniekaPirts\" bachelorette parties are organized by the bride's friends as one of the bachelorette party event elements, to relax together, enjoy beauty, self-renewal, strengthening good and preparation rituals for married life.",
+  "price": "360€, up to 8 people at once",
+  "description1": "By tradition, a bachelorette party is a gathering of the bride-to-be's friends – a day to celebrate in style and do something unusual and exciting together.",
+  "description2": "At SaimniekaPirts, the bride's friends book the sauna as part of the bachelorette celebration: to relax together and share rituals of beauty and renewal that wish the bride well and prepare her for married life.",
   "details": {
-    "duration": "Procedure Duration: 4 h",
-    "included": "Included: Herbal Hot Tub",
-    "master": "Operating: One Certified Sauna Master",
-    "availability": "Ritual available: All year round"
+    "duration": "Duration: 4 h",
+    "included": "Herbal hot tub included",
+    "master": "Led by one certified sauna master",
+    "availability": "Available all year round"
   },
-  "includedTitle": "BACHELORETTE SAUNA EXPERIENCE includes:",
+  "includedTitle": "THE BACHELORETTE SAUNA EXPERIENCE includes:",
   "includedItems": [
-    "Joint warming of friends with wish ritual;",
-    "Vibroacoustic massage with birch whisks for the bride;", 
-    "Relaxing whisk beating, during which friends help the sauna master with heating, whisk compresses;",
-    "CLEANSING SCRUB – cleansing rubbing with plant mixtures that cleanse body and spirit;",
-    "Main whisk beating individually for the bride;",
-    "NOURISHING SCRUB – (by prior agreement) application of coffee, amber, clay, honey or other body care product for the bride;"
+    "Warming up together, with a wish-making ritual for the bride;",
+    "A vibroacoustic massage with willow whisks for the bride;",
+    "A relaxing whisking, with the friends helping the sauna master to heat and to make whisk compresses;",
+    "CLEANSING SCRUB – a cleansing rub with herbal mixtures that refreshes body and spirit;",
+    "The main whisking, just for the bride;",
+    "NOURISHING SCRUB – (agreed in advance) coffee, amber, clay, honey or another body treatment for the bride;"
   ],
-  "additionalTitle": "Additional:",
+  "additionalTitle": "Extras:",
   "additional": {
-    "rental": "Sauna and herbal hot tub rental – 18€ /h (4 h included in price.)",
-    "extraTitle": "Additional procedures for other bachelorette party participants per person:",
+    "rental": "Sauna and herbal hot tub – 18€ / h (4 h included in the price)",
+    "extraTitle": "Extra treatments for the other guests, per person:",
     "extraServices": [
-      { "name": "Whisk beating", "price": "75€" },
-      { "name": "vibroacoustic massage", "price": "24€" },
-      { "name": "cleansing and nourishing scrub application", "price": "25€" }
+      { "name": "Whisking", "price": "75€" },
+      { "name": "Vibroacoustic massage", "price": "24€" },
+      { "name": "Cleansing and nourishing scrub", "price": "25€" }
     ],
     "accommodation": "Accommodation",
-    "accommodationPrice": "19.99 € /person (MIN 36€)"
+    "accommodationPrice": "19.99 € / person (min. 36€)"
   },
   "cta": {
-    "title": "Book \"BACHELORETTE SAUNA\" Ritual",
-    "subtitle": "Book the Event for the Bride-to-be Today!",
+    "title": "Book the Bachelorette Sauna",
+    "subtitle": "Book the celebration for the bride-to-be today!",
     "button": "Reserve"
   }
 }

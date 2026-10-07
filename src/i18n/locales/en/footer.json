@@ -1,10 +1,10 @@
 {
-  "tagline": "A Unique Relaxation Spot in the Heart of Latvian Nature!",
+  "tagline": "A Unique Place to Unwind in the Heart of Latvian Nature!",
   "sections": {
     "services": "Services",
     "booking": "Booking",
     "policies": "Policies",
-    "social": "Follow on Social Media"
+    "social": "Follow Us"
   },
   "services": {
     "rituals": "Sauna Rituals",
@@ -19,7 +19,7 @@
   "policies": {
     "privacy": "Privacy Policy",
     "rules": "Internal Rules",
-    "faq": "Frequently asked questions"
+    "faq": "Frequently Asked Questions"
   },
   "copyright": "© 2024 SaimniekaPirts. All rights reserved."
 }

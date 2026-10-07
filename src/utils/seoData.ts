@@ -47,12 +47,12 @@ export const seoData: Record<string, PageSEO> = {
     },
     en: {
       title: 'Sauna Rituals - Traditional Latvian Sauna Experience',
-      description: 'Certified sauna master-led rituals for individuals, couples or families. Herbal hot tubs, whisk beatings & rejuvenating treatments.',
-      keywords: 'sauna ritual, sauna master, whisk beating, herbal hot tub, traditional sauna, latvian sauna, sauna treatments, relaxation',
+      description: 'Certified sauna master-led rituals for individuals, couples or families. Herbal hot tubs, sauna whisking and rejuvenating treatments.',
+      keywords: 'sauna ritual, sauna master, sauna whisking, herbal hot tub, traditional sauna, latvian sauna, sauna treatments, relaxation',
       ogTitle: 'Sauna Rituals - Traditional Latvian Sauna',
-      ogDescription: 'Certified sauna master-led rituals for individuals, couples or families. Herbal hot tubs, whisk beatings & rejuvenating treatments.',
+      ogDescription: 'Certified sauna master-led rituals for individuals, couples or families. Herbal hot tubs, sauna whisking and rejuvenating treatments.',
       twitterTitle: 'Sauna Rituals - Traditional Latvian Sauna',
-      twitterDescription: 'Certified sauna master-led rituals with herbal hot tubs and whisk beatings. Authentic Latvian sauna experience.'
+      twitterDescription: 'Certified sauna master-led rituals with herbal hot tubs and sauna whisking. Authentic Latvian sauna experience.'
     }
   },
   '/grupu-rituali': {
@@ -87,10 +87,10 @@ export const seoData: Record<string, PageSEO> = {
     },
     en: {
       title: 'Sauna Rental - Private Sauna with or without Hot Tub',
-      description: 'Rent the White or Gray sauna for private relaxation. Option to add herbal hot tub. Perfect for families and friend groups.',
-      keywords: 'sauna rental, private sauna, white sauna, gray sauna, herbal hot tub, sauna hire, family relaxation, friend events',
+      description: 'Rent the White or Grey sauna for private relaxation. Option to add herbal hot tub. Perfect for families and friend groups.',
+      keywords: 'sauna rental, private sauna, white sauna, grey sauna, herbal hot tub, sauna hire, family relaxation, friend events',
       ogTitle: 'Sauna Rental - Private Sauna Relaxation',
-      ogDescription: 'Rent the White or Gray sauna for private relaxation. Option to add herbal hot tub. Perfect for families and friend groups.',
+      ogDescription: 'Rent the White or Grey sauna for private relaxation. Option to add herbal hot tub. Perfect for families and friend groups.',
       twitterTitle: 'Sauna Rental - Private Sauna Relaxation',
       twitterDescription: 'Private sauna rental with option to add herbal hot tub. Perfect for families and friend groups.'
     }
@@ -147,12 +147,12 @@ export const seoData: Record<string, PageSEO> = {
     },
     en: {
       title: 'Bachelor Pack - Traditional Bachelor Party Sauna',
-      description: 'Masculine sauna experience for bachelor parties. Traditional rituals, whisk beatings and friendly atmosphere for groom celebration.',
-      keywords: 'bachelor pack, bachelor party, groom ritual, masculine sauna, traditional beatings, friends event',
+      description: 'Masculine sauna experience for bachelor parties. Traditional rituals, sauna whisking and a friendly atmosphere to celebrate the groom.',
+      keywords: 'bachelor pack, bachelor party, groom ritual, masculine sauna, sauna whisking, friends event',
       ogTitle: 'Bachelor Pack - Traditional Bachelor Party',
-      ogDescription: 'Masculine sauna experience for bachelor parties. Traditional rituals, whisk beatings and friendly atmosphere.',
+      ogDescription: 'Masculine sauna experience for bachelor parties. Traditional rituals, sauna whisking and a friendly atmosphere.',
       twitterTitle: 'Bachelor Pack - Traditional Bachelor Party',
-      twitterDescription: 'Masculine sauna experience for bachelor parties with traditional rituals and whisk beatings.'
+      twitterDescription: 'Masculine sauna experience for bachelor parties with traditional rituals and sauna whisking.'
     }
   },
   '/naksnosana': {
@@ -167,10 +167,10 @@ export const seoData: Record<string, PageSEO> = {
     },
     en: {
       title: 'Accommodation - Comfortable Overnight Stay After Sauna',
-      description: 'Stay overnight after sauna rituals. Warm and comfortable accommodation in White and Gray saunas. Extend your relaxation experience.',
-      keywords: 'accommodation, overnight stay, sauna hotel, night rest, white sauna, gray sauna, extended relaxation',
+      description: 'Stay overnight after sauna rituals. Warm and comfortable accommodation in White and Grey saunas. Extend your relaxation experience.',
+      keywords: 'accommodation, overnight stay, sauna hotel, night rest, white sauna, grey sauna, extended relaxation',
       ogTitle: 'Accommodation - Comfortable Overnight Stay',
-      ogDescription: 'Stay overnight after sauna rituals. Warm and comfortable accommodation in White and Gray saunas.',
+      ogDescription: 'Stay overnight after sauna rituals. Warm and comfortable accommodation in White and Grey saunas.',
       twitterTitle: 'Accommodation - Comfortable Overnight Stay',
       twitterDescription: 'Warm and comfortable accommodation after sauna rituals. Extend your relaxation experience.'
     }

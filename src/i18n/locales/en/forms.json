@@ -25,21 +25,21 @@
     "message": "Additional Information",
     "message_placeholder": "Your message or special requirements...",
     "submit": "Reserve Sauna Ritual",
-    "submitting": "Submitting...",
-    "success": "Reservation completed, we'll be waiting for you!",
+    "submitting": "Sending…",
+    "success": "Your booking is confirmed – we look forward to seeing you!",
     "personal_info": "Personal Information",
     "ritual_details": "Ritual Details",
     "options": {
-      "option1": "Individual Ritual with Herbal Tub 🌿😊 – 280€",
-      "option2": "Individual Ritual without Tub 🌿 – 220€",
-      "option3": "Couples Ritual with Herbal Tub 🌿❤️ – 360€",
-      "option4": "Couples Ritual without Tub 🌿 – 300€",
-      "option5": "Family Ritual with Herbal Tub 🌿👨‍👩‍👧 – 380€",
-      "option6": "Adventure with Sauna Master 🌿💆‍♀️ – (70€/person, Min 360€)",
-      "option7": "Friends' Sauna 🌿🧘 – (100€/person, Min 360€)",
-      "option8": "Friends' Sauna + 🌿🧘 – (140€/person, Min 360€)",
-      "option9": "Bachelorette Ritual 🌿🧔 – 360€ (up to 8 people)",
-      "option10": "Bachelor Ritual 🌿💪 – 360€ (up to 8 people)"
+      "option1": "Individual Ritual with Herbal Hot Tub 🌿😊 – 280€",
+      "option2": "Individual Ritual without Hot Tub 🌿 – 220€",
+      "option3": "Ritual for Two with Herbal Hot Tub 🌿❤️ – 360€",
+      "option4": "Ritual for Two without Hot Tub 🌿 – 300€",
+      "option5": "Family Ritual with Herbal Hot Tub 🌿👨‍👩‍👧 – 380€",
+      "option6": "Sauna Experience with a Sauna Master 🌿💆‍♀️ – (70€/person, min. 360€)",
+      "option7": "\"Friends' Sauna\" Treatment 🌿🧘 – (100€/person, min. 360€)",
+      "option8": "\"Friends' Sauna +\" Treatment 🌿🧘 – (140€/person, min. 360€)",
+      "option9": "Bachelorette Sauna 🌿🧔 – 360€ (up to 8 people)",
+      "option10": "Bachelor Pack 🌿💪 – 360€ (up to 8 people)"
     },
     "people": {
       "3": "3 people",
@@ -73,10 +73,10 @@
     "message_label": "Additional Information",
     "message_placeholder": "Your message or special requirements...",
     "submit": "Reserve Sauna Rental",
-    "submitting": "Submitting...",
-    "success": "Reservation completed, we'll be waiting for you!",
+    "submitting": "Sending…",
+    "success": "Your booking is confirmed – we look forward to seeing you!",
     "saunas": {
-      "baltā": "Wet Sauna",
+      "baltā": "White Sauna",
       "pelēkā": "Grey Sauna"
     },
     "rentalOptions": {
