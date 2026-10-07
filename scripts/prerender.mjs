@@ -1,8 +1,8 @@
 // Writes a real HTML document for every route into dist/.
 //
-// The app is a client-rendered SPA behind a catch-all rewrite, so until now
-// every URL returned the same shell: one <div id="root"></div>, the homepage's
-// title, and a canonical pointing at the homepage. Search engines that run
+// The app is a client-rendered SPA, so until now every URL returned the same
+// shell: one <div id="root"></div>, the homepage's title, and a canonical
+// pointing at the homepage. Search engines that run
 // JavaScript eventually see the rendered page, but the crawlers behind the AI
 // assistants -- GPTBot, ClaudeBot, PerplexityBot, CCBot and friends -- mostly
 // do not execute JavaScript. They were reading an empty page, which is why the
@@ -288,6 +288,27 @@ function schemaFor(route, seo, nsData, language) {
   return graph
 }
 
+/** The shell's homepage-specific head, removed before a page adds its own. */
+const stripPageTags = (head) =>
+  head
+    .replace(/<title>[\s\S]*?<\/title>/, '')
+    .replace(/<meta\s+name="description"[^>]*>/g, '')
+    .replace(/<meta\s+name="keywords"[^>]*>/g, '')
+    .replace(/<meta\s+name="robots"[^>]*>/g, '')
+    .replace(/<link\s+rel="canonical"[^>]*>/g, '')
+    .replace(/<meta\s+property="og:title"[^>]*>/g, '')
+    .replace(/<meta\s+property="og:description"[^>]*>/g, '')
+    .replace(/<meta\s+property="og:url"[^>]*>/g, '')
+    .replace(/<meta\s+property="og:type"[^>]*>/g, '')
+    .replace(/<meta\s+name="twitter:title"[^>]*>/g, '')
+    .replace(/<meta\s+name="twitter:description"[^>]*>/g, '')
+    .replace(/<meta\s+property="og:locale"[^>]*>/g, '')
+    // The shell's cluster pointed every language at one URL; pages rebuild it
+    // now that each language has its own address.
+    .replace(/<link\s+rel="alternate"[^>]*>/g, '')
+    // The homepage LocalBusiness block is replaced by the per-route graph.
+    .replace(/<script type="application\/ld\+json">[\s\S]*?<\/script>/g, '')
+
 function documentFor({ route, seo, head, body, schema, language }) {
   const url = urlForLanguage(route.path, language)
   const robots = route.noindexHint
@@ -322,24 +343,7 @@ function documentFor({ route, seo, head, body, schema, language }) {
   ].join('\n    ')
 
   // Replace the shell's homepage-specific tags with this route's own.
-  let out = head
-    .replace(/<title>[\s\S]*?<\/title>/, '')
-    .replace(/<meta\s+name="description"[^>]*>/g, '')
-    .replace(/<meta\s+name="keywords"[^>]*>/g, '')
-    .replace(/<meta\s+name="robots"[^>]*>/g, '')
-    .replace(/<link\s+rel="canonical"[^>]*>/g, '')
-    .replace(/<meta\s+property="og:title"[^>]*>/g, '')
-    .replace(/<meta\s+property="og:description"[^>]*>/g, '')
-    .replace(/<meta\s+property="og:url"[^>]*>/g, '')
-    .replace(/<meta\s+property="og:type"[^>]*>/g, '')
-    .replace(/<meta\s+name="twitter:title"[^>]*>/g, '')
-    .replace(/<meta\s+name="twitter:description"[^>]*>/g, '')
-    .replace(/<meta\s+property="og:locale"[^>]*>/g, '')
-    // The shell's cluster pointed every language at one URL; these are rebuilt
-    // above now that each language has its own address.
-    .replace(/<link\s+rel="alternate"[^>]*>/g, '')
-    // The homepage LocalBusiness block is replaced by the per-route graph.
-    .replace(/<script type="application\/ld\+json">[\s\S]*?<\/script>/g, '')
+  let out = stripPageTags(head)
     .replace('</head>', `  ${tags}\n  </head>`)
     .replace(/<html lang="[^"]*"/, `<html lang="${language}"`)
 
@@ -396,14 +400,42 @@ for (const language of LANGUAGES) {
       language,
     })
 
+    // pirts-noma.html, not pirts-noma/index.html: Netlify serves a directory
+    // index only at the slash form and redirects /pirts-noma to /pirts-noma/,
+    // away from the address the canonical, hreflang and sitemap all name. A
+    // file of the same name is served at that address itself.
     const urlPath = pathForLanguage(route.path, language)
-    const target =
-      urlPath === '/' ? join(DIST, 'index.html') : join(DIST, urlPath, 'index.html')
+    const target = urlPath === '/' ? join(DIST, 'index.html') : join(DIST, `${urlPath}.html`)
     mkdirSync(dirname(target), { recursive: true })
     writeFileSync(target, html)
     written.push({ path: urlPath, bytes: html.length })
   }
 }
+
+// Netlify answers an address that matches no file with dist/404.html and a 404
+// status, which keeps mistyped and retired URLs out of the index; the catch-all
+// rewrite this replaces answered them with the homepage and a 200. The app
+// mounts here as on any page and shows its own not-found view, in English under
+// /en. This markup is what a crawler that runs no JavaScript reads.
+const notFoundLinks = ROUTES.filter((r) => !r.noindexHint)
+  .map((r) => `<li><a href="${r.path}">${esc(seoData[r.path].lv.title.split(' - ')[0])}</a></li>`)
+  .join('')
+const notFound = stripPageTags(shell)
+  .replace(
+    '</head>',
+    `  <title>Lapa nav atrasta · ${esc(BUSINESS.name)}</title>\n    <meta name="robots" content="noindex" />\n  </head>`
+  )
+  .replace(
+    /<div id="root"><\/div>/,
+    [
+      '<div id="root">',
+      '      <h1>Lapa nav atrasta</h1>',
+      '      <p>Šāda lapa nepastāv vai ir pārvietota. / This page does not exist or has moved.</p>',
+      `      <nav aria-label="${LABELS.lv.pages}"><ul>${notFoundLinks}</ul></nav>`,
+      '    </div>',
+    ].join('\n')
+  )
+writeFileSync(join(DIST, '404.html'), notFound)
 
 // A sitemap generated here can never list a route that was not prerendered.
 const today = new Date().toISOString().slice(0, 10)
@@ -473,4 +505,4 @@ writeFileSync(join(DIST, 'llms.txt'), llms)
 
 console.log(`Prerendered ${written.length} routes:`)
 for (const w of written) console.log(`  ${w.path.padEnd(30)} ${w.bytes} bytes`)
-console.log('  sitemap.xml and llms.txt regenerated')
+console.log('  404.html, sitemap.xml and llms.txt regenerated')
