@@ -1,5 +1,6 @@
-// The fonts and photos a gift card preview draws with: the same files the
-// invoice function puts into the PDF (public/fonts/giftcard, public/giftcard).
+// The fonts and photos a gift card preview draws with: the same typefaces the
+// invoice function puts into the PDF, as small woff2 subsets
+// (public/fonts/giftcard/web), and the same photos (public/giftcard).
 
 const FONTS = [
   ['GC Serif', 'CormorantGaramond_500Medium_Italic', 500, 'italic'],
@@ -7,11 +8,11 @@ const FONTS = [
   ['GC Sans', 'Montserrat_400Regular', 400, 'normal'],
   ['GC Sans', 'Montserrat_600SemiBold', 600, 'normal'],
 ] as const;
-const fontUrl = (file: string) => `/fonts/giftcard/${file}.ttf`;
+const fontUrl = (file: string) => `/fonts/giftcard/web/${file}.woff2`;
 
 export const fontFaces = FONTS
   .map(([family, file, weight, style]) =>
-    `@font-face{font-family:'${family}';src:url('${fontUrl(file)}') format('truetype');font-weight:${weight};font-style:${style};font-display:swap}`)
+    `@font-face{font-family:'${family}';src:url('${fontUrl(file)}') format('woff2');font-weight:${weight};font-style:${style};font-display:swap}`)
   .join('');
 
 const CARDS = ['/giftcard/card_front.jpg', '/giftcard/card_back.jpg', '/giftcard/value_front.jpg', '/giftcard/light_back.jpg', '/giftcard/logo_on_light.png'];
@@ -36,7 +37,7 @@ export function preloadGiftCard(kind: 'value' | 'ritual') {
     const link = document.createElement('link');
     link.rel = 'preload';
     link.as = 'font';
-    link.type = 'font/ttf';
+    link.type = 'font/woff2';
     link.crossOrigin = 'anonymous';
     link.href = href;
     document.head.appendChild(link);

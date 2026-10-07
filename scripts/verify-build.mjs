@@ -154,6 +154,11 @@ for (const file of [
   'giftcard/a4_douse.jpg',
   'giftcard/a4_wrap.jpg',
   'giftcard/logo_on_light.png',
+  // The preview on the site draws with woff2 subsets of the same fonts.
+  'fonts/giftcard/web/CormorantGaramond_500Medium_Italic.woff2',
+  'fonts/giftcard/web/CormorantGaramond_600SemiBold.woff2',
+  'fonts/giftcard/web/Montserrat_400Regular.woff2',
+  'fonts/giftcard/web/Montserrat_600SemiBold.woff2',
   'giftcard/a4_tub.jpg',
   'giftcard/a4_whisk.jpg',
   'giftcard/a4_scrub.jpg',

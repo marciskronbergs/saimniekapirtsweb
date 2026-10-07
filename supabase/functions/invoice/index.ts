@@ -74,6 +74,11 @@ import {
 } from './stripe.ts';
 
 type SourceType = 'reservation' | 'gift_card';
+type Locale = 'lv' | 'en' | 'ru';
+// The language a booking or order was made in; anything else is Latvian.
+const localeOf = (value: unknown): Locale => (value === 'en' || value === 'ru' ? value : 'lv');
+// An invoice line's name; lines priced before Russian came in fall back to English.
+const lineName = (name: { lv: string; en: string; ru?: string }, locale: Locale) => name[locale] ?? name.en;
 type Invoice = InvoiceRow & {
   emailed_at?: string | null;
   customer_emailed_at?: string | null;
@@ -135,7 +140,7 @@ async function attempt<T>(fn: () => Promise<T>) {
 interface Source {
   type: SourceType;
   id: string;
-  locale: 'lv' | 'en';
+  locale: Locale;
   name: string;
   email: string;
   phone: string;
@@ -169,7 +174,11 @@ function withDiscount(priced: Source['priced'], discount: Discount): Source['pri
   return {
     ...priced,
     items: [...priced.items, {
-      name: { lv: `Atlaide ${pct}${why ? ` – ${why}` : ''}`, en: `Discount ${discount.percent}%${why ? ` – ${why}` : ''}` },
+      name: {
+        lv: `Atlaide ${pct}${why ? ` – ${why}` : ''}`,
+        en: `Discount ${discount.percent}%${why ? ` – ${why}` : ''}`,
+        ru: `Скидка ${pct}${why ? ` – ${why}` : ''}`,
+      },
       quantity: 1,
       unit: 'service',
       unitPrice: -amount,
@@ -220,7 +229,7 @@ interface GiftCardFound {
   value: number;
   validUntil: string;
   kind: 'ritual' | 'value';
-  name: { lv: string; en: string };
+  name: { lv: string; en: string; ru: string };
   // How much of it the booking took.
   applied?: number;
 }
@@ -293,8 +302,8 @@ async function checkGiftCard(rawCode: unknown, rawPin: unknown, opts: { date?: s
     validUntil: card.valid_until,
     kind: ritual ? 'ritual' : 'value',
     name: ritual
-      ? { lv: ritualName(ritual, 'lv'), en: ritualName(ritual, 'en') }
-      : { lv: `Dāvanu karte ${value} €`, en: `Gift card €${value}` },
+      ? { lv: ritualName(ritual, 'lv'), en: ritualName(ritual, 'en'), ru: ritualName(ritual, 'ru') }
+      : { lv: `Dāvanu karte ${value} €`, en: `Gift card €${value}`, ru: `Подарочная карта на ${value} €` },
   };
 }
 
@@ -307,7 +316,7 @@ function withGiftCard(priced: Source['priced'], card: GiftCardFound): Source['pr
   return {
     ...priced,
     items: [...priced.items, {
-      name: { lv: `Dāvanu karte Nr. ${card.code}`, en: `Gift card no. ${card.code}` },
+      name: { lv: `Dāvanu karte Nr. ${card.code}`, en: `Gift card no. ${card.code}`, ru: `Подарочная карта № ${card.code}` },
       quantity: 1,
       unit: 'service',
       unitPrice: -amount,
@@ -348,7 +357,7 @@ async function loadSourceRow(type: SourceType, id: string): Promise<Source | nul
       type,
       id,
       row: r,
-      locale: r.locale === 'en' ? 'en' : 'lv',
+      locale: localeOf(r.locale),
       name: r.name ?? '',
       email: r.email ?? '',
       phone: r.phone ?? '',
@@ -379,7 +388,7 @@ async function loadSourceRow(type: SourceType, id: string): Promise<Source | nul
     type,
     id,
     row: g,
-    locale: g.locale === 'en' ? 'en' : 'lv',
+    locale: localeOf(g.locale),
     name: g.vards_uzvards ?? '',
     email: g.epasts ?? '',
     phone: g.talrunis ?? '',
@@ -641,12 +650,13 @@ const paysCash = (source: Source) => source.type === 'reservation' && source.row
 // Guest booking confirmation.
 
 // The transport a guest chose, in their language, with "free" for the pick-up.
-function transportName(label: string | null | undefined, locale: 'lv' | 'en') {
+function transportName(label: string | null | undefined, locale: Locale) {
   const option = prices.transport.find((x) => x.label === label);
   if (!option) return '';
-  const name = locale === 'lv' ? option.lv : option.en;
-  if (option.custom) return `${name} (${locale === 'lv' ? 'cena pēc vienošanās' : 'price by agreement'})`;
-  return option.price > 0 ? name : `${name} (${locale === 'lv' ? 'bez maksas' : 'free'})`;
+  const name = option[locale];
+  const say = (lv: string, en: string, ru: string) => (locale === 'lv' ? lv : locale === 'ru' ? ru : en);
+  if (option.custom) return `${name} (${say('cena pēc vienošanās', 'price by agreement', 'цена по договорённости')})`;
+  return option.price > 0 ? name : `${name} (${say('bez maksas', 'free', 'бесплатно')})`;
 }
 
 function guestInput(source: Source): ConfirmationInput {
@@ -1147,7 +1157,8 @@ async function sweep() {
 
 // The ritual an order is for, as its card describes it; null for a value card.
 const ritualOf = (order: { ritual_type?: string | null }) =>
-  prices.giftCard.rituals.find((r) => r.label.lv === order.ritual_type || r.label.en === order.ritual_type)?.card ?? null;
+  prices.giftCard.rituals.find((r) =>
+    r.label.lv === order.ritual_type || r.label.en === order.ritual_type || r.label.ru === order.ritual_type)?.card ?? null;
 
 async function giftCard(orderId: string, only?: GiftCardKind) {
   const { data: order, error } = await db.from('davanu_kartes_pasutijumi').select('*').eq('id', orderId).maybeSingle();
@@ -1161,15 +1172,15 @@ async function giftCard(orderId: string, only?: GiftCardKind) {
   if (cardError) throw cardError;
   if (!card?.code) throw new Error('The gift card waits for its advance invoice');
   const ritual = ritualOf(order);
-  const locale: 'lv' | 'en' = order.locale === 'en' ? 'en' : 'lv';
+  const locale = localeOf(order.locale);
   // Every order gets the ribbon card and the light card, both with the amount;
   // a ritual also the A4 card, the one without it.
   const all: GiftCardKind[] = ritual ? ['ribbon', 'light', 'a4'] : ['ribbon', 'light'];
   const kinds = only && all.includes(only) ? [only] : only ? [all[0]] : all;
-  const name = locale === 'en' ? 'Gift-card' : 'Davanu-karte';
+  const name = { lv: 'Davanu-karte', en: 'Gift-card', ru: 'Podarochnaya-karta' }[locale];
   const suffix: Record<GiftCardKind, string> = {
     ribbon: '',
-    light: locale === 'en' ? '-light' : '-gaisa',
+    light: { lv: '-gaisa', en: '-light', ru: '-svetlaya' }[locale],
     a4: '-A4',
   };
   const files: { kind: GiftCardKind; filename: string; pdf: Uint8Array }[] = [];
@@ -1665,7 +1676,7 @@ async function invoicePaid(invoice: Invoice) {
 async function invoicePayment(body: { i?: string; t?: string }) {
   const invoice = await invoiceByLink(body);
   if (!invoice) return json({ error: 'not_found' }, 404);
-  const locale = invoice.locale === 'en' ? 'en' : 'lv';
+  const locale = localeOf(invoice.locale);
   return json({
     number: invoice.number,
     status: invoice.status,
@@ -1675,7 +1686,7 @@ async function invoicePayment(body: { i?: string; t?: string }) {
     name: invoice.customer_name.trim().split(/\s+/)[0] ?? '',
     date: invoice.details?.date ?? null,
     time: invoice.details?.time ?? null,
-    items: invoice.items.map((i) => ({ name: i.name[locale], quantity: i.quantity, amount: i.amount })),
+    items: invoice.items.map((i) => ({ name: lineName(i.name, locale), quantity: i.quantity, amount: i.amount })),
     total: Number(invoice.total),
     due_on: invoice.due_on,
     bank: { payee: invoice.seller.name, iban: invoice.seller.iban, bank: invoice.seller.bank, swift: invoice.seller.swift },
@@ -1696,14 +1707,14 @@ async function payInvoice(body: { i?: string; t?: string }) {
   const reuse = (open ?? []).find((p) => isNewerThan(p.created_at, CARD_MINUTES - 10));
   if (reuse) return json({ url: reuse.url, payment: reuse.id });
 
-  const locale = invoice.locale === 'en' ? 'en' : 'lv';
+  const locale = localeOf(invoice.locale);
   const paymentId = crypto.randomUUID();
   const lines = invoice.items.map((item) => ({
     quantity: 1,
     price_data: {
       currency: 'eur',
       unit_amount: Math.round(item.amount * 100),
-      product_data: { name: `${item.name[locale]}${item.quantity > 1 ? ` × ${item.quantity}` : ''}` },
+      product_data: { name: `${lineName(item.name, locale)}${item.quantity > 1 ? ` × ${item.quantity}` : ''}` },
     },
   }));
   const cents = lines.reduce((sum, line) => sum + line.price_data.unit_amount, 0);
@@ -2059,7 +2070,7 @@ async function office(body: {
       name: r.name,
       email: r.email,
       phone: r.phone || null,
-      locale: r.locale === 'en' ? 'en' : 'lv',
+      locale: localeOf(r.locale),
       created_at: r.created_at,
       ...invoiceView(r.id, priceReservation(prices, r)),
   });
@@ -2078,7 +2089,7 @@ async function office(body: {
       service: String(g.ritual_type ?? '').startsWith('Custom Value')
         ? `Dāvanu karte, ${g.custom_price_value ?? ''}`
         : g.ritual_type,
-      locale: g.locale === 'en' ? 'en' : 'lv',
+      locale: localeOf(g.locale),
       created_at: g.created_at,
       payment: g.payment_method === 'card' ? 'card' : 'transfer',
       card_paid: cardPaid.has(g.id),
@@ -2186,7 +2197,7 @@ async function masterView(body: { token?: string }) {
         message: (r.form_type === 'noma' ? r.rental_message : r.ritual_message) || null,
         name: r.name,
         phone: r.phone || null,
-        locale: r.locale === 'en' ? 'en' : 'lv',
+        locale: localeOf(r.locale),
         cash_due: r.payment_method === 'cash' && priced.problems.length === 0 ? priced.total : null,
       };
     }),

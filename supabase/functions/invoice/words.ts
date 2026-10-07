@@ -1,4 +1,5 @@
-// The total written out in words, as Latvian invoices customarily state it:
+// The total written out in words, as Latvian invoices customarily state it
+// (and in English or Russian beside it):
 // "Simts septiņdesmit septiņi eiro, 00 centi". Amounts up to 999 999.99.
 
 const lvOnes = ['', 'viens', 'divi', 'trīs', 'četri', 'pieci', 'seši', 'septiņi', 'astoņi', 'deviņi'];
@@ -68,15 +69,59 @@ function enNumber(n: number): string {
   return parts.join(' ');
 }
 
+// Russian: thousands are feminine ("одна тысяча, две тысячи"), and the noun
+// after a number takes one of three forms (1 цент, 2 цента, 5 центов).
+const ruOnes = ['', 'один', 'два', 'три', 'четыре', 'пять', 'шесть', 'семь', 'восемь', 'девять'];
+const ruOnesFeminine = ['', 'одна', 'две', 'три', 'четыре', 'пять', 'шесть', 'семь', 'восемь', 'девять'];
+const ruTeens = [
+  'десять', 'одиннадцать', 'двенадцать', 'тринадцать', 'четырнадцать',
+  'пятнадцать', 'шестнадцать', 'семнадцать', 'восемнадцать', 'девятнадцать',
+];
+const ruTens = ['', '', 'двадцать', 'тридцать', 'сорок', 'пятьдесят', 'шестьдесят', 'семьдесят', 'восемьдесят', 'девяносто'];
+const ruHundreds = ['', 'сто', 'двести', 'триста', 'четыреста', 'пятьсот', 'шестьсот', 'семьсот', 'восемьсот', 'девятьсот'];
+
+const ruPlural = (n: number, [one, few, many]: [string, string, string]) => {
+  const mod100 = n % 100;
+  const mod10 = n % 10;
+  if (mod100 >= 11 && mod100 <= 14) return many;
+  if (mod10 === 1) return one;
+  if (mod10 >= 2 && mod10 <= 4) return few;
+  return many;
+};
+
+function ruBelowThousand(n: number, feminine = false): string[] {
+  const words: string[] = [];
+  const rest = n % 100;
+  if (Math.floor(n / 100)) words.push(ruHundreds[Math.floor(n / 100)]);
+  if (rest >= 10 && rest < 20) words.push(ruTeens[rest - 10]);
+  else {
+    if (rest >= 20) words.push(ruTens[Math.floor(rest / 10)]);
+    if (rest % 10) words.push((feminine ? ruOnesFeminine : ruOnes)[rest % 10]);
+  }
+  return words;
+}
+
+function ruNumber(n: number): string {
+  if (n === 0) return 'ноль';
+  const thousands = Math.floor(n / 1000);
+  const words: string[] = [];
+  if (thousands) words.push(...ruBelowThousand(thousands, true), ruPlural(thousands, ['тысяча', 'тысячи', 'тысяч']));
+  words.push(...ruBelowThousand(n % 1000));
+  return words.join(' ');
+}
+
 const capitalise = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
 
-export function amountInWords(amount: number, locale: 'lv' | 'en'): string {
+export function amountInWords(amount: number, locale: 'lv' | 'en' | 'ru'): string {
   const totalCents = Math.round(amount * 100);
   const euros = Math.floor(totalCents / 100);
   const cents = String(totalCents % 100).padStart(2, '0');
   if (locale === 'lv') {
     const centWord = cents.endsWith('1') && cents !== '11' ? 'cents' : 'centi';
     return `${capitalise(lvNumber(euros))} eiro, ${cents} ${centWord}`;
+  }
+  if (locale === 'ru') {
+    return `${capitalise(ruNumber(euros))} евро, ${cents} ${ruPlural(Number(cents), ['цент', 'цента', 'центов'])}`;
   }
   return `${capitalise(enNumber(euros))} ${euros === 1 ? 'euro' : 'euros'} and ${cents} ${cents === '01' ? 'cent' : 'cents'}`;
 }

@@ -22,7 +22,7 @@ export interface GiftCardA4Data {
   // Asked for with the number when the card is used to book online.
   pin: string;
   validUntil: string; // ISO date
-  locale: 'lv' | 'en';
+  locale: 'lv' | 'en' | 'ru';
   ritual: GiftCardRitual;
 }
 
@@ -270,7 +270,7 @@ export async function renderGiftCardA4Pdf(card: GiftCardA4Data): Promise<Uint8Ar
   doc.setTitle(`${giftCardWords[card.locale].giftCard} ${card.code} · A4`);
   doc.setSubject(ritualName(card.ritual, card.locale));
   doc.setAuthor('SaimniekaPirts');
-  doc.setLanguage(card.locale === 'lv' ? 'lv-LV' : 'en-GB');
+  doc.setLanguage({ lv: 'lv-LV', en: 'en-GB', ru: 'ru-RU' }[card.locale]);
 
   // The header photos tell the ritual in order, three on each page.
   const [serifItalic, serifBold, sans, sansBold, logo, ...pictures] = await Promise.all([

@@ -1,8 +1,11 @@
-The gift card fonts in this folder are subsets (Latin, Latin Extended-A,
-punctuation, euro sign) of Cormorant Garamond and Montserrat, from Google
-Fonts; in the Cormorant Garamond files the digits are mapped to the font's own
-lining figures. The invoice Edge Function (supabase/functions/invoice) embeds them in
-gift card PDFs.
+The gift card fonts are Cormorant Garamond and Montserrat, from their
+upstream repositories (CatharsisFonts/Cormorant, JulietaUla/Montserrat).
+The invoice Edge Function (supabase/functions/invoice) embeds the .ttf files
+in this folder in gift card PDFs: complete Cormorant Garamond Medium Italic and SemiBold, and
+subsets of Montserrat (Latin, Latin Extended, Cyrillic, punctuation, euro and
+numero signs). In the Cormorant Garamond files the digits are mapped to the
+font's own lining figures. The web/ folder holds woff2 subsets of the same
+fonts for the gift card preview on the website.
 
 Copyright:
 Cormorant Garamond: Copyright 2015 The Cormorant Project Authors (github.com/CatharsisFonts/Cormorant)

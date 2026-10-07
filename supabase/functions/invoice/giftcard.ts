@@ -20,7 +20,7 @@ export interface GiftCardData {
   // Asked for with the number when the card is used to book online.
   pin: string;
   validUntil: string; // ISO date
-  locale: 'lv' | 'en';
+  locale: 'lv' | 'en' | 'ru';
   // A ritual card names the ritual; every card shows its value (a ritual's price).
   ritual: GiftCardRitual | null;
   value: number;
@@ -114,7 +114,7 @@ export async function renderGiftCardPdf(card: GiftCardData): Promise<Uint8Array>
   doc.setTitle(`${w.giftCard} ${card.code}`);
   doc.setSubject(ritual ? ritualName(ritual, card.locale) : `${card.value} EUR`);
   doc.setAuthor('SaimniekaPirts');
-  doc.setLanguage(card.locale === 'lv' ? 'lv-LV' : 'en-GB');
+  doc.setLanguage({ lv: 'lv-LV', en: 'en-GB', ru: 'ru-RU' }[card.locale]);
 
   const [sans, sansBold, front, back] = await Promise.all([
     load('sans'), load('sansBold'), load('cardFront'), load('cardBack'),

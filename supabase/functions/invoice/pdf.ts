@@ -56,7 +56,7 @@ export interface InvoiceRow {
   issued_on: string;
   due_on: string;
   source_type: 'reservation' | 'gift_card';
-  locale: 'lv' | 'en';
+  locale: 'lv' | 'en' | 'ru';
   customer_name: string;
   customer_email: string;
   customer_phone: string | null;
@@ -114,20 +114,20 @@ export const formatDate = (iso: string) => {
   return `${d}.${m}.${y}`;
 };
 
-export const formatMoney = (amount: number, locale: 'lv' | 'en') => {
+export const formatMoney = (amount: number, locale: 'lv' | 'en' | 'ru') => {
   const fixed = Number(amount).toFixed(2);
-  return locale === 'lv' ? fixed.replace('.', ',') : fixed;
+  return locale === 'en' ? fixed : fixed.replace('.', ',');
 };
 
-const saunaNames: Record<string, { lv: string; en: string }> = {
-  'Baltā pirts': { lv: 'Baltā pirts', en: 'White sauna' },
-  'Pelēkā pirts': { lv: 'Pelēkā pirts', en: 'Grey sauna' },
+const saunaNames: Record<string, { lv: string; en: string; ru: string }> = {
+  'Baltā pirts': { lv: 'Baltā pirts', en: 'White sauna', ru: 'Белая баня' },
+  'Pelēkā pirts': { lv: 'Pelēkā pirts', en: 'Grey sauna', ru: 'Серая баня' },
 };
 
 const unitNames = {
-  pcs: { lv: 'gab.', en: 'pcs' },
-  person: { lv: 'pers.', en: 'person' },
-  service: { lv: 'pakalp.', en: 'service' },
+  pcs: { lv: 'gab.', en: 'pcs', ru: 'шт.' },
+  person: { lv: 'pers.', en: 'person', ru: 'чел.' },
+  service: { lv: 'pakalp.', en: 'service', ru: 'услуга' },
 };
 
 const ink = rgb(0.1, 0.1, 0.1);
@@ -138,10 +138,13 @@ const white = rgb(1, 1, 1);
 const brandGreen = rgb(0.31, 0.79, 0.29);
 
 export async function renderInvoicePdf(invoice: InvoiceRow): Promise<Uint8Array> {
-  const bilingual = invoice.locale === 'en';
+  // A guest who booked in English or Russian gets that language beside the Latvian.
+  const second = invoice.locale === 'lv' ? null : invoice.locale;
+  const bilingual = second !== null;
   const final = invoice.kind === 'final';
   const annulled = invoice.status === 'annulled';
-  const L = (lv: string, en: string) => (bilingual ? `${lv} / ${en}` : lv);
+  const L = (lv: string, en: string, ru: string) => (second ? `${lv} / ${second === 'ru' ? ru : en}` : lv);
+  const other = (en: string, ru: string) => (second === 'ru' ? ru : en);
   const money = (n: number) => formatMoney(n, invoice.locale);
   const total = Number(invoice.total);
   const seller = invoice.seller;
@@ -151,7 +154,7 @@ export async function renderInvoicePdf(invoice: InvoiceRow): Promise<Uint8Array>
   const [regularBytes, boldBytes] = await loadFonts();
   const regular = await doc.embedFont(regularBytes, { subset: true });
   const bold = await doc.embedFont(boldBytes, { subset: true });
-  doc.setTitle(`${final ? L('Rēķins', 'Invoice') : L('Avansa rēķins', 'Advance invoice')} ${invoice.number}`);
+  doc.setTitle(`${final ? L('Rēķins', 'Invoice', 'Счёт') : L('Avansa rēķins', 'Advance invoice', 'Счёт на предоплату')} ${invoice.number}`);
   doc.setAuthor(seller.name);
   doc.setCreator(seller.web);
 
@@ -230,34 +233,36 @@ export async function renderInvoicePdf(invoice: InvoiceRow): Promise<Uint8Array>
     text('Pirts', left + bold.widthOfTextAtSize('Saimnieka', 22), { font: bold, size: 22, color: brandGreen });
   }
   y = bandBottom + 44;
-  const title = final ? L('RĒĶINS', 'INVOICE') : L('AVANSA RĒĶINS', 'ADVANCE INVOICE');
-  text(title, right, { font: bold, size: bilingual && !final ? 15 : 18, color: white, align: 'right' });
+  const title = final ? L('RĒĶINS', 'INVOICE', 'СЧЁТ') : L('AVANSA RĒĶINS', 'ADVANCE INVOICE', 'СЧЁТ НА ПРЕДОПЛАТУ');
+  text(title, right, { font: bold, size: bilingual && !final ? (second === 'ru' ? 13 : 15) : 18, color: white, align: 'right' });
   y = bandBottom + 24;
   text(`Nr. ${invoice.number}`, right, { font: bold, size: 11, color: brandGreen, align: 'right' });
 
   y = bandBottom - 24;
   text(`${seller.web} · ${seller.email} · ${seller.phone}`, left, { size: 8.5, color: grey });
-  text(`${L('Datums', 'Date')}: ${formatDate(invoice.issued_on)}`, right, { align: 'right' });
+  text(`${L('Datums', 'Date', 'Дата')}: ${formatDate(invoice.issued_on)}`, right, { align: 'right' });
   y -= 14;
   if (final || invoice.details?.payment === 'card' || invoice.details?.payment === 'gift_card') {
-    text(L('Apmaksāts', 'Paid'), right, { font: bold, color: brandGreen, align: 'right' });
+    text(L('Apmaksāts', 'Paid', 'Оплачено'), right, { font: bold, color: brandGreen, align: 'right' });
   } else {
-    text(`${L('Apmaksāt līdz', 'Due by')}: ${formatDate(invoice.due_on)}`, right, { font: bold, align: 'right' });
+    text(`${L('Apmaksāt līdz', 'Due by', 'Оплатить до')}: ${formatDate(invoice.due_on)}`, right, { font: bold, align: 'right' });
   }
   y -= 30;
 
   // Seller and buyer side by side.
   const col2 = left + 270;
   const top = y;
-  text(L('Pakalpojuma sniedzējs', 'Supplier'), left, { font: bold, size: 8.5, color: grey });
+  text(L('Pakalpojuma sniedzējs', 'Supplier', 'Исполнитель'), left, { font: bold, size: 8.5, color: grey });
   y -= 15;
   text(seller.name, left, { font: bold, size: 10.5 });
   const sellerLines = [
-    `${L('Reģ. Nr.', 'Reg. No.')}: ${seller.regNumber}`,
-    ...wrap(`${L('Adrese', 'Address')}: ${seller.address.lv}`, regular, 9, 250),
-    `${L('Banka', 'Bank')}: ${seller.bank}, SWIFT ${seller.swift}`,
-    `${L('Konts', 'Account')}: ${seller.iban}`,
-    invoice.vat_note ?? '',
+    `${L('Reģ. Nr.', 'Reg. No.', 'Рег. №')}: ${seller.regNumber}`,
+    ...wrap(`${L('Adrese', 'Address', 'Адрес')}: ${seller.address.lv}`, regular, 9, 250),
+    `${L('Banka', 'Bank', 'Банк')}: ${seller.bank}, SWIFT ${seller.swift}`,
+    `${L('Konts', 'Account', 'Счёт')}: ${seller.iban}`,
+    invoice.vat_note === 'Nav PVN maksātājs'
+      ? L('Nav PVN maksātājs', 'Not a VAT payer', 'Не является плательщиком НДС')
+      : invoice.vat_note ?? '',
   ].filter(Boolean);
   for (const line of sellerLines) {
     y -= 13;
@@ -266,7 +271,7 @@ export async function renderInvoicePdf(invoice: InvoiceRow): Promise<Uint8Array>
   const sellerBottom = y;
 
   y = top;
-  text(L('Saņēmējs', 'Customer'), col2, { font: bold, size: 8.5, color: grey });
+  text(L('Saņēmējs', 'Customer', 'Получатель'), col2, { font: bold, size: 8.5, color: grey });
   y -= 15;
   for (const [i, line] of wrap(invoice.customer_name, bold, 10.5, right - col2).entries()) {
     if (i) y -= 13;
@@ -282,13 +287,13 @@ export async function renderInvoicePdf(invoice: InvoiceRow): Promise<Uint8Array>
   // What the invoice is for.
   const d = invoice.details;
   if (d?.kind === 'reservation' && d.date) {
-    const sauna = d.sauna ? saunaNames[d.sauna] ?? { lv: d.sauna, en: d.sauna } : null;
-    const when = [formatDate(d.date), d.time, sauna ? L(sauna.lv, sauna.en) : ''].filter(Boolean).join(', ');
-    text(`${L('Apmeklējuma laiks', 'Visit')}: ${when}`, left, { size: 9.5 });
+    const sauna = d.sauna ? saunaNames[d.sauna] ?? { lv: d.sauna, en: d.sauna, ru: d.sauna } : null;
+    const when = [formatDate(d.date), d.time, sauna ? L(sauna.lv, sauna.en, sauna.ru) : ''].filter(Boolean).join(', ');
+    text(`${L('Apmeklējuma laiks', 'Visit', 'Визит')}: ${when}`, left, { size: 9.5 });
     y -= 18;
   }
   if (final && d?.advance_number) {
-    text(`${L('Avansa rēķins', 'Advance invoice')}: ${d.advance_number}`, left, { size: 9.5 });
+    text(`${L('Avansa rēķins', 'Advance invoice', 'Счёт на предоплату')}: ${d.advance_number}`, left, { size: 9.5 });
     y -= 18;
   }
 
@@ -306,17 +311,19 @@ export async function renderInvoicePdf(invoice: InvoiceRow): Promise<Uint8Array>
     text(en, x, { size: 7.5, color: grey, align });
     y += 10;
   };
-  heading('Nr.', 'No.', cols.nr + 3);
-  heading('Nosaukums', 'Description', cols.name);
-  heading('Daudz.', 'Qty', cols.qty, 'right');
-  heading('Mērv.', 'Unit', cols.unit);
-  heading('Cena, EUR', 'Price, EUR', cols.price, 'right');
-  heading('Summa, EUR', 'Amount, EUR', cols.amount, 'right');
+  heading('Nr.', other('No.', '№'), cols.nr + 3);
+  heading('Nosaukums', other('Description', 'Наименование'), cols.name);
+  heading('Daudz.', other('Qty', 'Кол-во'), cols.qty, 'right');
+  heading('Mērv.', other('Unit', 'Ед.'), cols.unit);
+  heading('Cena, EUR', other('Price, EUR', 'Цена, EUR'), cols.price, 'right');
+  heading('Summa, EUR', other('Amount, EUR', 'Сумма, EUR'), cols.amount, 'right');
   y -= headerHeight + 4;
 
   invoice.items.forEach((item, index) => {
     const nameLines = wrap(item.name.lv, regular, 9.5, nameWidth);
-    const enLines = bilingual ? wrap(item.name.en, regular, 8.5, nameWidth) : [];
+    // Lines priced before Russian came in have no Russian name: English then.
+    const otherName = second === 'ru' ? (item.name as { ru?: string }).ru ?? item.name.en : item.name.en;
+    const enLines = bilingual ? wrap(otherName, regular, 8.5, nameWidth) : [];
     ensureRoom(14 * (nameLines.length + enLines.length) + 8);
     const unit = unitNames[item.unit] ?? unitNames.pcs;
     text(`${index + 1}.`, cols.nr + 3);
@@ -331,7 +338,7 @@ export async function renderInvoicePdf(invoice: InvoiceRow): Promise<Uint8Array>
     enLines.forEach((line, i) => {
       y -= 11;
       text(line, cols.name, { size: 8.5, color: grey });
-      if (i === 0) text(unit.en, cols.unit, { size: 7.5, color: grey });
+      if (i === 0) text(other(unit.en, unit.ru), cols.unit, { size: 7.5, color: grey });
     });
     y -= 10;
     hr();
@@ -342,38 +349,39 @@ export async function renderInvoicePdf(invoice: InvoiceRow): Promise<Uint8Array>
   ensureRoom(90);
   y -= 4;
   const labelX = left + 250;
-  text(L('PVN', 'VAT'), labelX);
-  text(L('nav piemērojams', 'not applicable'), cols.amount, { align: 'right', color: grey });
+  text(L('PVN', 'VAT', 'НДС'), labelX);
+  text(L('nav piemērojams', 'not applicable', 'не применяется'), cols.amount, { align: 'right', color: grey });
   y -= 18;
-  text(final ? L('Kopā', 'Total') : L('Kopā apmaksai', 'Total due'), labelX, { font: bold, size: 11 });
+  text(final ? L('Kopā', 'Total', 'Итого') : L('Kopā apmaksai', 'Total due', 'Итого к оплате'), labelX, { font: bold, size: 11 });
   text(`${money(total)} EUR`, cols.amount, { font: bold, size: 11, align: 'right' });
   y -= 26;
 
-  text(`${L('Summa vārdiem', 'Amount in words')}: ${amountInWords(total, 'lv')}`, left, { size: 9 });
+  text(`${L('Summa vārdiem', 'Amount in words', 'Сумма прописью')}: ${amountInWords(total, 'lv')}`, left, { size: 9 });
   if (bilingual) {
     y -= 12;
-    text(amountInWords(total, 'en'), left, { size: 9, color: grey });
+    text(amountInWords(total, second === 'ru' ? 'ru' : 'en'), left, { size: 9, color: grey });
   }
   y -= 26;
 
   // How to pay, or that it has been paid.
   ensureRoom(80);
-  text(L('Apmaksa', 'Payment'), left, { font: bold, size: 10 });
+  text(L('Apmaksa', 'Payment', 'Оплата'), left, { font: bold, size: 10 });
   y -= 15;
   const card = invoice.details?.payment === 'card';
   const paidOn = invoice.details?.paid_on ? formatDate(invoice.details.paid_on) : '';
   const byGiftCard = invoice.details?.payment === 'gift_card';
   const payment = card ? [
-    L(`Apmaksāts ar maksājumu karti ${paidOn}. Paldies!`, `Paid by card on ${paidOn}. Thank you!`),
+    L(`Apmaksāts ar maksājumu karti ${paidOn}. Paldies!`, `Paid by card on ${paidOn}. Thank you!`, `Оплачено картой ${paidOn}. Спасибо!`),
   ] : byGiftCard ? [
     L(`Apmaksāts ar dāvanu karti Nr. ${invoice.details?.gift_card ?? ''}. Paldies!`,
-      `Paid with gift card no. ${invoice.details?.gift_card ?? ''}. Thank you!`),
+      `Paid with gift card no. ${invoice.details?.gift_card ?? ''}. Thank you!`,
+      `Оплачено подарочной картой № ${invoice.details?.gift_card ?? ''}. Спасибо!`),
   ] : final ? [
-    L('Rēķins ir apmaksāts. Paldies!', 'This invoice has been paid in full. Thank you!'),
+    L('Rēķins ir apmaksāts. Paldies!', 'This invoice has been paid in full. Thank you!', 'Счёт оплачен полностью. Спасибо!'),
   ] : [
-    L(`Ar pārskaitījumu līdz ${formatDate(invoice.due_on)}`, `By bank transfer by ${formatDate(invoice.due_on)}`) +
+    L(`Ar pārskaitījumu līdz ${formatDate(invoice.due_on)}`, `By bank transfer by ${formatDate(invoice.due_on)}`, `Банковским переводом до ${formatDate(invoice.due_on)}`) +
       ` – ${seller.name}, ${seller.iban}, ${seller.bank}.`,
-    L(`Maksājuma mērķī norādiet rēķina numuru ${invoice.number}.`, `Please quote invoice number ${invoice.number} as the payment reference.`),
+    L(`Maksājuma mērķī norādiet rēķina numuru ${invoice.number}.`, `Please quote invoice number ${invoice.number} as the payment reference.`, `В назначении платежа укажите номер счёта ${invoice.number}.`),
   ];
   for (const para of payment) {
     for (const line of wrap(para, regular, 9, right - left)) {
@@ -384,7 +392,7 @@ export async function renderInvoicePdf(invoice: InvoiceRow): Promise<Uint8Array>
 
   // An annulled invoice keeps its number and is stamped, never deleted.
   if (annulled) {
-    const stamp = L('ANULĒTS', 'ANNULLED');
+    const stamp = L('ANULĒTS', 'ANNULLED', 'АННУЛИРОВАН');
     const size = 54;
     const red = rgb(0.8, 0.1, 0.1);
     for (const p of doc.getPages()) {
@@ -407,10 +415,11 @@ export async function renderInvoicePdf(invoice: InvoiceRow): Promise<Uint8Array>
     page.drawLine({ start: { x: left, y: 58 }, end: { x: right, y: 58 }, thickness: 0.6, color: rule });
     y = 46;
     text('Rēķins sagatavots elektroniski un ir derīgs bez paraksta.', left, { size: 7.5, color: grey });
-    text(`${seller.name} · ${L('Reģ. Nr.', 'Reg. No.')} ${seller.regNumber}`, right, { size: 7.5, color: grey, align: 'right' });
+    text(`${seller.name} · ${L('Reģ. Nr.', 'Reg. No.', 'Рег. №')} ${seller.regNumber}`, right, { size: 7.5, color: grey, align: 'right' });
     if (bilingual) {
       y = 36;
-      text('This invoice was prepared electronically and is valid without a signature.', left, { size: 7.5, color: grey });
+      text(other('This invoice was prepared electronically and is valid without a signature.',
+        'Счёт составлен в электронном виде и действителен без подписи.'), left, { size: 7.5, color: grey });
     }
   }
 

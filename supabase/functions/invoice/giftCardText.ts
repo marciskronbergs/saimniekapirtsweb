@@ -153,8 +153,8 @@ export const giftCardWords: Record<Locale, GiftCardWords> = {
     howTo: 'Как воспользоваться картой',
     steps: [
       `Забронируйте онлайн на ${nb('saimniekapirts.lv/rezervet')}${DASH}введите номер и код карты, и она будет учтена автоматически.`,
-      `Или забронируйте по телефону ${PHONE} или по e-mail info@saimniekapirts.lv, назвав ${nb('номер карты')}.`,
-      `При визите покажите подарочную карту${DASH}распечатанную или в телефоне.`,
+      `Или по телефону ${PHONE} или e-mail info@saimniekapirts.lv, назвав ${nb('номер карты')}.`,
+      `При визите покажите карту${DASH}распечатанную или в телефоне.`,
     ],
     anyService: `Номинал карты можно использовать для любой нашей услуги${DASH}${nb('банного ритуала')}, ${nb('аренды бани')} или ночёвки. ${PAY_MORE_RU}`,
     ritualService: (r: GiftCardRitual) =>

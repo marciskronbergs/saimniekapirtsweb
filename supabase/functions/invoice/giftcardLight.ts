@@ -127,7 +127,7 @@ export async function renderLightCardPdf(card: GiftCardData): Promise<Uint8Array
   doc.setTitle(`${w.giftCard} ${card.code}`);
   doc.setSubject(ritual ? ritualName(ritual, card.locale) : `${card.value} EUR · ${w.tagline}`);
   doc.setAuthor('SaimniekaPirts');
-  doc.setLanguage(card.locale === 'lv' ? 'lv-LV' : 'en-GB');
+  doc.setLanguage({ lv: 'lv-LV', en: 'en-GB', ru: 'ru-RU' }[card.locale]);
 
   const [serifItalic, serifBold, sans, sansBold, front, back, logo] = await Promise.all([
     load('serifItalic'), load('serifBold'), load('sans'), load('sansBold'),
