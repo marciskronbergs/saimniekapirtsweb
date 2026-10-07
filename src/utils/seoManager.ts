@@ -1,4 +1,4 @@
-import { getCurrentPageSEO } from './seoData';
+import { getCurrentPageSEO, hasPageSEO } from './seoData';
 import { LANGUAGES, routePathOf, urlForLanguage, type Language } from './locale';
 
 const OG_LOCALE: Record<Language, string> = { lv: 'lv_LV', en: 'en_US', ru: 'ru_RU' };
@@ -20,6 +20,13 @@ export class SEOManager {
     // The office's pages set their own title and noindex, and have nothing
     // for search engines.
     if (/^\/(rekins|birojs|pirtnieks|apmaksa)\/?$/.test(pathname)) return;
+    // Nor does the not-found view, which an unknown address would otherwise
+    // dress in the homepage's title and a canonical pointing at itself. It
+    // still speaks the visitor's language.
+    if (!hasPageSEO(pathname)) {
+      document.documentElement.lang = language;
+      return;
+    }
     this.currentLanguage = language;
     const seoData = getCurrentPageSEO(pathname, language);
 

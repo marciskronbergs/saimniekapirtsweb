@@ -263,7 +263,7 @@ const DavanuKartesPage = () => {
                 <div className="relative h-48 sm:h-56 lg:h-64 overflow-hidden">
                   <img
                     src="https://wigoyeorqnssgbrgexku.supabase.co/storage/v1/object/public/websiteassets/bildes/31.png"
-                    alt="Pirts Rituāls Dāvanu Karte"
+                    alt={({ lv: 'Pirts rituāla dāvanu karte', en: 'Sauna ritual gift card', ru: 'Подарочная карта на банный ритуал' })[locale]}
                     className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-black/20"></div>
@@ -332,7 +332,9 @@ const DavanuKartesPage = () => {
                   {/* Gift Card Content */}
                   <div className="relative z-10 text-center">
                     <Gift className="w-12 h-12 sm:w-14 sm:h-14 lg:w-16 lg:h-16 text-white mx-auto mb-3 sm:mb-4" />
-                    <h3 className="text-lg sm:text-xl lg:text-2xl font-bold text-white mb-2">DĀVANU KARTE</h3>
+                    <h3 className="text-lg sm:text-xl lg:text-2xl font-bold text-white mb-2">
+                      {({ lv: 'DĀVANU KARTE', en: 'GIFT CARD', ru: 'ПОДАРОЧНАЯ КАРТА' })[locale]}
+                    </h3>
                     <p className="text-amber-100 text-base sm:text-lg">80€ – 380€</p>
                   </div>
 

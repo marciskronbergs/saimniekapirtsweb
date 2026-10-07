@@ -1,5 +1,10 @@
 {
   "reserve": "Rezervēt",
+  "notFound": {
+    "title": "Lapa nav atrasta",
+    "text": "Šāda lapa nepastāv vai ir pārvietota. Varbūt meklējāt kādu no šīm?",
+    "home": "Uz sākumlapu"
+  },
   "calendar": {
     "select_date": "Izvēlieties datumu",
     "select_time": "Izvēlieties laiku",

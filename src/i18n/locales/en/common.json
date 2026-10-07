@@ -1,5 +1,10 @@
 {
   "reserve": "Reserve",
+  "notFound": {
+    "title": "Page not found",
+    "text": "This page does not exist or has moved. Perhaps you were looking for one of these?",
+    "home": "Back to the homepage"
+  },
   "calendar": {
     "select_date": "Select Date",
     "select_time": "Select Time",

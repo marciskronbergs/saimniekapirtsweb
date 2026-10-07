@@ -395,13 +395,17 @@ export const seoData: Record<string, PageSEO> = {
   }
 };
 
+// A trailing slash must not change which page this is: /pirts-rituali/ would
+// otherwise find no entry above, and the page would silently adopt the
+// homepage title, description and canonical.
+const normalizePath = (pathname: string) =>
+  pathname.length > 1 ? pathname.replace(/\/+$/, '') : pathname;
+
+/** Whether the address is one of the site's public pages. */
+export const hasPageSEO = (pathname: string): boolean => normalizePath(pathname) in seoData;
+
 // Function to get current page SEO data
 export const getCurrentPageSEO = (pathname: string, language: 'lv' | 'en' | 'ru'): SEOData => {
-  // Since every route is prerendered to its own directory, the same page is
-  // reachable as /pirts-rituali and /pirts-rituali/. Without trimming the
-  // trailing slash the second form finds no entry above, and the page
-  // silently adopts the homepage title, description and canonical.
-  const normalized = pathname.length > 1 ? pathname.replace(/\/+$/, '') : pathname;
-  const pageSEO = seoData[normalized] || seoData['/'];
+  const pageSEO = seoData[normalizePath(pathname)] || seoData['/'];
   return pageSEO[language];
 };
