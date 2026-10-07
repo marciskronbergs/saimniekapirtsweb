@@ -1,11 +1,12 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Check } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import { asLanguage } from '../../utils/locale';
 
 const PricingCards = () => {
   const [isVisible, setIsVisible] = useState(false);
   const sectionRef = useRef<HTMLDivElement>(null);
-  const { t } = useTranslation('noma');
+  const { t, i18n } = useTranslation('noma');
 
   useEffect(() => {
     const observer = new IntersectionObserver(
@@ -57,7 +58,7 @@ const PricingCards = () => {
             {option.popular && (
               <div className="absolute -top-4 left-1/2 transform -translate-x-1/2">
                 <span className="bg-green-600 text-white px-4 py-2 rounded-full text-sm font-semibold">
-                  Populārākais
+                  {({ lv: 'Populārākais', en: 'Most popular', ru: 'Популярнее всего' })[asLanguage(i18n.language)]}
                 </span>
               </div>
             )}

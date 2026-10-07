@@ -8,6 +8,7 @@ import GrupuPirtsDraugu from '../components/grupuRituali/GrupuPirtsDraugu';
 import GrupuPirtsDrauguPlus from '../components/grupuRituali/GrupuPirtsDrauguPlus';
 import { ArrowLeft } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import { asLanguage } from '../utils/locale';
 
 export type TabType = 'meistaru' | 'draugu' | 'draugu-plus';
 
@@ -16,7 +17,7 @@ const GrupuRitualiPage = () => {
   const [isVisible, setIsVisible] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
-  const { t } = useTranslation('groupRituals');
+  const { t, i18n } = useTranslation('groupRituals');
 
   // Auto-load selected tab from router state
   useEffect(() => {
@@ -68,7 +69,9 @@ const GrupuRitualiPage = () => {
                 className="flex items-center gap-3 text-gray-300 hover:text-green-400 transition-colors duration-300 group"
               >
                 <ArrowLeft className="w-5 h-5 group-hover:-translate-x-1 transition-transform duration-300" />
-                <span className="text-lg">Atpakaļ uz Pirts Rituāliem</span>
+                <span className="text-lg">
+                  {({ lv: 'Atpakaļ uz pirts rituāliem', en: 'Back to sauna rituals', ru: 'Назад к банным ритуалам' })[asLanguage(i18n.language)]}
+                </span>
               </button>
             </div>
 

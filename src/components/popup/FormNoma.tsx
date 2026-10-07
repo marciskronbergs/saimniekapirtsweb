@@ -31,6 +31,8 @@ interface FormNomaProps {
 
 const FormNoma: React.FC<FormNomaProps> = ({ selectedDate, selectedTime, onClose }) => {
   const { t, i18n } = useTranslation('forms');
+  // A message in the visitor's language.
+  const say = (lv: string, en: string, ru: string) => ({ lv, en, ru })[asLanguage(i18n.language)];
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -130,7 +132,7 @@ const FormNoma: React.FC<FormNomaProps> = ({ selectedDate, selectedTime, onClose
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedDate || !selectedTime) {
-      setSubmitError('Lūdzu izvēlieties datumu un laiku!');
+      setSubmitError(say('Lūdzu izvēlieties datumu un laiku!', 'Please choose a date and time.', 'Пожалуйста, выберите дату и время.'));
       return;
     }
 
@@ -220,7 +222,7 @@ const FormNoma: React.FC<FormNomaProps> = ({ selectedDate, selectedTime, onClose
 
     } catch (error) {
       console.error('Submission error:', error);
-      setSubmitError(error instanceof Error ? error.message : 'Radās kļūda. Lūdzu mēģiniet vēlreiz.');
+      setSubmitError(error instanceof Error ? error.message : say('Radās kļūda. Lūdzu mēģiniet vēlreiz.', 'Something went wrong. Please try again.', 'Произошла ошибка. Пожалуйста, попробуйте ещё раз.'));
     } finally {
       submittingRef.current = false;
       setIsSubmitting(false);

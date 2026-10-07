@@ -42,6 +42,8 @@ interface FormRitualProps {
 
 const FormRitual: React.FC<FormRitualProps> = ({ selectedDate, selectedTime, onClose }) => {
   const { t, i18n } = useTranslation(['forms', 'common']);
+  // A message in the visitor's language.
+  const say = (lv: string, en: string, ru: string) => ({ lv, en, ru })[asLanguage(i18n.language)];
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -128,7 +130,7 @@ React.useEffect(() => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedDate || !selectedTime) {
-      setSubmitError('Lūdzu izvēlieties datumu un laiku!');
+      setSubmitError(say('Lūdzu izvēlieties datumu un laiku!', 'Please choose a date and time.', 'Пожалуйста, выберите дату и время.'));
       return;
     }
 
@@ -141,7 +143,7 @@ React.useEffect(() => {
       // Prepare data for Supabase
      const assignedSaunaType = await fetchSaunaType();
 if (!assignedSaunaType) {
-  setSubmitError('Diemžēl abas pirtis jau ir rezervētas šim laikam.');
+  setSubmitError(say('Diemžēl abas pirtis jau ir rezervētas šim laikam.', 'Sorry, both saunas are already booked for this time.', 'К сожалению, на это время обе бани уже забронированы.'));
   setIsSubmitting(false);
   return;
 }
@@ -248,7 +250,7 @@ const reservationData = {
       
     } catch (error) {
       console.error('Submission error:', error);
-      setSubmitError(error instanceof Error ? error.message : 'Radās kļūda. Lūdzu mēģiniet vēlreiz.');
+      setSubmitError(error instanceof Error ? error.message : say('Radās kļūda. Lūdzu mēģiniet vēlreiz.', 'Something went wrong. Please try again.', 'Произошла ошибка. Пожалуйста, попробуйте ещё раз.'));
     } finally {
       submittingRef.current = false;
       setIsSubmitting(false);
