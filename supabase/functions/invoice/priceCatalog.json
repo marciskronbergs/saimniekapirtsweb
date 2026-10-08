@@ -16,7 +16,7 @@
     { "label": "4h – 150€ (Pirts & Kubls diviem)", "price": 150, "lv": "Pirts un kubls diviem, 4 h", "en": "Sauna and hot tub for two, 4 h", "ru": "Баня и чан для двоих, 4 ч" },
     { "label": "3h – 80€ (Pirts bez kubla diviem)", "price": 80, "lv": "Pirts bez kubla diviem, 3 h", "en": "Sauna for two without hot tub, 3 h", "ru": "Баня для двоих без чана, 3 ч" },
     { "label": "4h – 90€ (Pirts bez kubla diviem)", "price": 90, "lv": "Pirts bez kubla diviem, 4 h", "en": "Sauna for two without hot tub, 4 h", "ru": "Баня для двоих без чана, 4 ч" },
-    { "label": "5h – 170€ (Pirts & Kubls / līdz 5 cilvēkiem)", "price": 170, "lv": "Pirts un kubls līdz 5 cilvēkiem, 5 h", "en": "Sauna and hot tub, up to 5 people, 5 h", "ru": "Баня и чан, до 5 человек, 5 ч" },
+    { "label": "4h – 170€ (Pirts & Kubls / līdz 5 cilvēkiem)", "price": 170, "lv": "Pirts un kubls līdz 5 cilvēkiem, 4 h", "en": "Sauna and hot tub, up to 5 people, 4 h", "ru": "Баня и чан, до 5 человек, 4 ч" },
     { "label": "5h – 120€ (Pirts bez kubla / līdz 5 cilvēkiem)", "price": 120, "lv": "Pirts bez kubla līdz 5 cilvēkiem, 5 h", "en": "Sauna without hot tub, up to 5 people, 5 h", "ru": "Баня без чана, до 5 человек, 5 ч" },
     { "label": "5h – 200€ (Pirts & Kubls / 6–10 cilvēkiem)", "price": 200, "lv": "Pirts un kubls 6–10 cilvēkiem, 5 h", "en": "Sauna and hot tub, 6–10 people, 5 h", "ru": "Баня и чан, 6–10 человек, 5 ч" },
     { "label": "5h – 140€ (Pirts bez kubla / 6–10 cilvēkiem)", "price": 140, "lv": "Pirts bez kubla 6–10 cilvēkiem, 5 h", "en": "Sauna without hot tub, 6–10 people, 5 h", "ru": "Баня без чана, 6–10 человек, 5 ч" }

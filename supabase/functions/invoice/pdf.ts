@@ -45,6 +45,16 @@ export interface InvoiceDetails {
   gift_card_problem?: { code: string; reason: string };
   // An advance invoice issued in place of an annulled one (a discount given later).
   replaces?: string;
+  // The company the guest asked the invoice to be made out to. The customer
+  // name, email and phone are then its contact person's.
+  company?: InvoiceCompany;
+}
+
+export interface InvoiceCompany {
+  name: string;
+  regNumber: string;
+  address: string;
+  vatNumber?: string;
 }
 
 export interface InvoiceRow {
@@ -273,11 +283,27 @@ export async function renderInvoicePdf(invoice: InvoiceRow): Promise<Uint8Array>
   y = top;
   text(L('Saņēmējs', 'Customer', 'Получатель'), col2, { font: bold, size: 8.5, color: grey });
   y -= 15;
-  for (const [i, line] of wrap(invoice.customer_name, bold, 10.5, right - col2).entries()) {
+  // A company first, with its registration number and address; the guest is
+  // then its contact person.
+  const company = invoice.details?.company;
+  const recipient = company?.name ?? invoice.customer_name;
+  for (const [i, line] of wrap(recipient, bold, 10.5, right - col2).entries()) {
     if (i) y -= 13;
     text(line, col2, { font: bold, size: 10.5 });
   }
-  for (const line of [invoice.customer_email, invoice.customer_phone ?? ''].filter(Boolean)) {
+  const contact = [invoice.customer_email, invoice.customer_phone ?? ''].filter(Boolean);
+  const recipientLines = company
+    ? [
+        `${L('Reģ. Nr.', 'Reg. No.', 'Рег. №')}: ${company.regNumber}`,
+        ...(company.vatNumber ? [`${L('PVN Nr.', 'VAT No.', 'НДС №')}: ${company.vatNumber}`] : []),
+        `${L('Adrese', 'Address', 'Адрес')}: ${company.address}`,
+        ...(invoice.customer_name.trim() && invoice.customer_name.trim() !== company.name
+          ? [`${L('Kontaktpersona', 'Contact', 'Контактное лицо')}: ${invoice.customer_name.trim()}`]
+          : []),
+        ...contact,
+      ]
+    : contact;
+  for (const line of recipientLines.flatMap((l) => wrap(l, regular, 9, right - col2))) {
     y -= 13;
     text(line, col2, { size: 9 });
   }

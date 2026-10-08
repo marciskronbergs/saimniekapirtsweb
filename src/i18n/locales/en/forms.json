@@ -83,7 +83,7 @@
       "option1": "4h – €150 (Sauna & Tub for two)",
       "option2": "3h – €80 (Sauna without tub for two)",
       "option3": "4h – €90 (Sauna without tub for two)",
-      "option4": "5h – €170 (Sauna & Tub / up to 5 people)",
+      "option4": "4h – €170 (Sauna & Tub / up to 5 people)",
       "option5": "5h – €120 (Sauna without tub / up to 5 people)",
       "option6": "5h – €200 (Sauna & Tub / 6–10 people)",
       "option7": "5h – €140 (Sauna without tub / 6–10 people)"
@@ -146,5 +146,13 @@
       "used": "This card has already been used for another booking.",
       "error": "We could not check the card just now."
     }
+  },
+  "company": {
+    "toggle": "Invoice to a company",
+    "note": "The invoice will be made out to the company; the name above will be the contact person.",
+    "name": "Company name",
+    "regNumber": "Registration No.",
+    "address": "Legal address",
+    "vatNumber": "VAT No. (if any)"
   }
 }

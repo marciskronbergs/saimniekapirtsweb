@@ -59,7 +59,7 @@ import { PDFDocument } from 'npm:pdf-lib@1.17.1';
 import catalog from './priceCatalog.json' with { type: 'json' };
 import { priceReservation, priceGiftCard, type PriceCatalog } from './pricing.ts';
 import seller from './seller.json' with { type: 'json' };
-import { renderInvoicePdf, formatDate, type InvoiceRow, type InvoiceDetails } from './pdf.ts';
+import { renderInvoicePdf, formatDate, type InvoiceRow, type InvoiceDetails, type InvoiceCompany } from './pdf.ts';
 import {
   invoiceEmail, holdEmail, finalPendingEmail, confirmationEmail, reminderEmail, advanceInvoiceGuestEmail, finalInvoiceGuestEmail, thanksEmail,
   manageLink,
@@ -346,6 +346,20 @@ async function giftCardCheck(body: { code?: string; pin?: string; date?: string 
   return json({ status: 'ok', code: check.code, kind: check.kind, value: check.value, name: check.name, valid_until: check.validUntil });
 }
 
+// The company a booking asks to be invoiced to, as the guest typed it on the
+// form; nothing unless its name, registration number and address are all there.
+function companyOf(value: unknown): InvoiceCompany | null {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return null;
+  const v = value as Record<string, unknown>;
+  const text = (x: unknown, max: number) => (typeof x === 'string' ? x.trim().replace(/\s+/g, ' ').slice(0, max) : '');
+  const company = { name: text(v.name, 200), regNumber: text(v.regNumber, 40), address: text(v.address, 300) };
+  if (!company.name || !company.regNumber || !company.address) return null;
+  const vatNumber = text(v.vatNumber, 40);
+  return vatNumber ? { ...company, vatNumber } : company;
+}
+const companyLine = (c: InvoiceCompany) =>
+  `${c.name}, reģ. nr. ${c.regNumber}${c.vatNumber ? `, PVN nr. ${c.vatNumber}` : ''}, ${c.address}`;
+
 async function loadSourceRow(type: SourceType, id: string): Promise<Source | null> {
   const today = rigaToday();
   if (type === 'reservation') {
@@ -353,6 +367,7 @@ async function loadSourceRow(type: SourceType, id: string): Promise<Source | nul
     if (error) throw error;
     if (!r) return null;
     const date: string = r.reservation_date;
+    const company = companyOf(r.company);
     return {
       type,
       id,
@@ -364,12 +379,13 @@ async function loadSourceRow(type: SourceType, id: string): Promise<Source | nul
       // A transfer is due before the visit; a booking picked up late is still
       // never due in the past.
       dueOn: date && date > today ? date : today,
-      details: { kind: 'reservation', date, time: r.reservation_time, sauna: r.sauna_type },
+      details: { kind: 'reservation', date, time: r.reservation_time, sauna: r.sauna_type, ...(company ? { company } : {}) },
       priced: priceReservation(prices, r),
       fields: [
         ['Vārds', r.name ?? ''],
         ['E-pasts', r.email ?? ''],
         ['Tālrunis', r.phone ?? ''],
+        ['Uzņēmums', company ? companyLine(company) : ''],
         ['Datums', `${date} ${r.reservation_time ?? ''}`],
         ['Pirts', r.sauna_type ?? ''],
         ['Veids', r.form_type === 'noma' ? r.rental_type : r.ritual_type],
@@ -2068,6 +2084,7 @@ async function office(body: {
       gift_card_code: r.gift_card_code ?? null,
       message: (r.form_type === 'noma' ? r.rental_message : r.ritual_message) || null,
       name: r.name,
+      company: companyOf(r.company)?.name ?? null,
       email: r.email,
       phone: r.phone || null,
       locale: localeOf(r.locale),

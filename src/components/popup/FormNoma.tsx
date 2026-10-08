@@ -8,6 +8,8 @@ import TransportChoice from './TransportChoice';
 import PaymentChoice, { type PaymentMethod } from './PaymentChoice';
 import GiftCardChoice from './GiftCardChoice';
 import { emptyGiftCard, type GiftCardEntry } from './giftCardEntry';
+import CompanyChoice from './CompanyChoice';
+import { companyForBooking, type CompanyEntry } from './companyEntry';
 import { goToCardPayment, paymentLabel, useCardPayments } from '../../lib/cardPayments';
 import { scrollIntoPopup } from './scrollIntoPopup';
 import { cancelUrl } from './cancelUrl';
@@ -53,6 +55,8 @@ const FormNoma: React.FC<FormNomaProps> = ({ selectedDate, selectedTime, onClose
   const cardPayments = useCardPayments();
   // A gift card given with the booking: its remainder, if any, is invoiced.
   const [giftCard, setGiftCard] = useState<GiftCardEntry>(emptyGiftCard);
+  // The company the invoice is made out to, if not the guest.
+  const [company, setCompany] = useState<CompanyEntry | null>(null);
   const withGiftCard = !!giftCard.code.trim();
   const paymentMethod: PaymentMethod = withGiftCard ? 'transfer' : formData.paymentMethod;
   // The button is disabled through state, which only takes effect on the next
@@ -177,6 +181,7 @@ const FormNoma: React.FC<FormNomaProps> = ({ selectedDate, selectedTime, onClose
         payment_method: paymentMethod,
         gift_card_code: withGiftCard ? giftCard.code.trim() : null,
         gift_card_pin: withGiftCard ? giftCard.pin.trim() : null,
+        company: companyForBooking(company),
       };
 
       const { error } = await supabase.from('reservations').insert([reservationData]);
@@ -291,6 +296,8 @@ const FormNoma: React.FC<FormNomaProps> = ({ selectedDate, selectedTime, onClose
               className="w-full pl-10 pr-4 py-3 bg-gray-800 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:border-green-500 focus:ring-2 focus:ring-green-500/20"
             />
           </div>
+
+          <CompanyChoice value={company} onChange={setCompany} />
         </div>
 
         {/* Booking Details */}

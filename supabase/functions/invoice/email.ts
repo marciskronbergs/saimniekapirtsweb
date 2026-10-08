@@ -53,7 +53,14 @@ const SAUNA_NAMES: Record<string, { en: string; ru: string }> = {
 const saunaName = (sauna: string | undefined, locale: Locale) =>
   !sauna ? '' : locale === 'lv' ? sauna : SAUNA_NAMES[sauna]?.[locale] ?? sauna;
 
-const firstName = (name: string) => name.trim().split(/\s+/)[0] ?? '';
+// The name to greet the guest by: their first name, or none when the booking
+// was made in a company's name (SIA "BE Trade").
+const firstName = (name: string) => {
+  const first = name.trim().split(/\s+/)[0] ?? '';
+  return /^(SIA|AS|IK|ZS|KS|PS|OÜ|UAB|LLC|Ltd|OOO|ООО)$/i.test(first) || /["„“”«»]/.test(name) ? '' : first;
+};
+const hello = (t: Tr, who: string) =>
+  who ? t(`Sveiki, ${who}!`, `Hello ${who},`, `Здравствуйте, ${who}!`) : t('Sveiki!', 'Hello,', 'Здравствуйте!');
 
 const visitLv = (d: InvoiceDetails | null) =>
   d?.kind === 'reservation' && d.date
@@ -183,7 +190,7 @@ export function confirmationEmail(c: ConfirmationInput) {
     const subject = t('Dāvanu kartes pasūtījums saņemts · SaimniekaPirts', 'Gift card order received · SaimniekaPirts',
       'Заказ подарочной карты получен · SaimniekaPirts');
     const body = [
-      p(t(`Sveiki, ${who}!`, `Hello ${who},`, `Здравствуйте, ${who}!`)),
+      p(hello(t, who)),
       p(t('Paldies par dāvanu kartes pasūtījumu! Tā ir lieliska dāvana – pirts rituāls, ko atceras ilgi.',
         'Thank you for ordering a gift card – a sauna ritual is a gift people remember for a long time.',
         'Спасибо за заказ подарочной карты! Это прекрасный подарок – банный ритуал запоминается надолго.')),
@@ -217,7 +224,7 @@ export function confirmationEmail(c: ConfirmationInput) {
     : '';
 
   const body = [
-    p(t(`Sveiki, ${who}!`, `Hello ${who},`, `Здравствуйте, ${who}!`)),
+    p(hello(t, who)),
     p(ritual
       ? t('Paldies, ka izvēlējāties SaimniekaPirts! Jūsu pirts rituāls ir rezervēts, un mēs jau gatavojamies Jūs sagaidīt.',
         'Thank you for choosing SaimniekaPirts! Your sauna ritual is booked and we are looking forward to welcoming you.',
@@ -274,7 +281,7 @@ export function reminderEmail(c: ConfirmationInput) {
     `Напоминание: завтра в ${c.time ?? ''} ${ritual ? 'банный ритуал' : 'аренда бани'} · SaimniekaPirts`,
   );
   const body = [
-    p(t(`Sveiki, ${who}!`, `Hello ${who},`, `Здравствуйте, ${who}!`)),
+    p(hello(t, who)),
     p(ritual
       ? t(`Atgādinām, ka rīt, <strong>${when}, plkst. ${c.time ?? ''}</strong>, Jūs gaida pirts rituāls SaimniekaPirts. Mēs jau gatavojam pirti!`,
         `A reminder that your sauna ritual at SaimniekaPirts is tomorrow, <strong>${when}, at ${c.time ?? ''}</strong>. We are getting the sauna ready!`,
@@ -365,7 +372,7 @@ export function advanceInvoiceGuestEmail(invoice: InvoiceRow, payUrl?: string) {
   const card = escapeHtml(d?.gift_card ?? '');
   if (d?.payment === 'gift_card') {
     const covered = [
-      p(t(`Sveiki, ${who}!`, `Hello ${who},`, `Здравствуйте, ${who}!`)),
+      p(hello(t, who)),
       p(t(`Jūsu apmeklējums ${what} ir pilnībā apmaksāts ar dāvanu karti Nr. ${card} – nekas nav jāmaksā. Pielikumā ir rēķins Nr. ${invoice.number}.`,
         `Your visit ${what} is paid in full with gift card no. ${card} – there is nothing to pay. Attached is invoice ${invoice.number}.`,
         `Ваш визит ${what} полностью оплачен подарочной картой № ${card} – платить ничего не нужно. Во вложении счёт № ${invoice.number}.`)),
@@ -382,7 +389,7 @@ export function advanceInvoiceGuestEmail(invoice: InvoiceRow, payUrl?: string) {
   }
   if (d?.payment === 'card') {
     const paid = [
-      p(t(`Sveiki, ${who}!`, `Hello ${who},`, `Здравствуйте, ${who}!`)),
+      p(hello(t, who)),
       p(t(`Paldies, apmaksa ar karti ir saņemta! Pielikumā ir rēķins Nr. ${invoice.number} ${what} par ${eur(invoice.total)}. Tas ir apmaksāts – nekas vairs nav jādara.`,
         `Thank you, your card payment has been received! Attached is invoice ${invoice.number} ${what} for ${eur(invoice.total, 'en')}. It has been paid – there is nothing more you need to do.`,
         `Спасибо, оплата картой получена! Во вложении счёт № ${invoice.number} ${what} на сумму ${eur(invoice.total, 'ru')}. Он оплачен – больше ничего делать не нужно.`)),
@@ -397,7 +404,7 @@ export function advanceInvoiceGuestEmail(invoice: InvoiceRow, payUrl?: string) {
   }
   const problem = d?.gift_card_problem;
   const body = [
-    p(t(`Sveiki, ${who}!`, `Hello ${who},`, `Здравствуйте, ${who}!`)),
+    p(hello(t, who)),
     p(t(`Pielikumā ir avansa rēķins Nr. ${invoice.number} ${what}.`, `Attached is advance invoice ${invoice.number} ${what}.`,
       `Во вложении счёт на предоплату № ${invoice.number} ${what}.`)),
     d?.gift_card ? p(t(`Dāvanu karte Nr. ${card} ir ieskaitīta – rēķinā ir tikai atlikusī summa.`,
@@ -451,7 +458,7 @@ export function thanksEmail(c: ConfirmationInput) {
   const who = escapeHtml(firstName(c.name));
   const subject = t('Paldies par apmeklējumu! · SaimniekaPirts', 'Thank you for visiting! · SaimniekaPirts', 'Спасибо за визит! · SaimniekaPirts');
   const body = [
-    p(t(`Sveiki, ${who}!`, `Hello ${who},`, `Здравствуйте, ${who}!`)),
+    p(hello(t, who)),
     p(t('Liels paldies, ka bijāt pie mums SaimniekaPirts un uzticējāties mums! Ceram, ka pirts Jums sniedza atpūtu un spēku.',
       'Thank you so much for visiting SaimniekaPirts and trusting us with your time! We hope the sauna left you rested and renewed.',
       'Большое спасибо, что побывали у нас в SaimniekaPirts и доверились нам! Надеемся, баня подарила вам отдых и новые силы.')),
@@ -486,7 +493,7 @@ export function finalInvoiceGuestEmail(invoice: InvoiceRow, giftCard?: GiftCardN
     const pin = giftCard.pin ? escapeHtml(giftCard.pin) : '';
     const email = `<a href="mailto:${invoice.seller.email}" style="color:#2e7d32">${invoice.seller.email}</a>`;
     const body = [
-      p(t(`Sveiki, ${who}!`, `Hello ${who},`, `Здравствуйте, ${who}!`)),
+      p(hello(t, who)),
       p(t('Paldies par dāvanu kartes pirkumu! Pielikumā ir:', 'Thank you for buying a gift card! Attached are:', 'Спасибо за покупку подарочной карты! Во вложении:')),
       list([
         giftCard.kind === 'value'
@@ -517,7 +524,7 @@ export function finalInvoiceGuestEmail(invoice: InvoiceRow, giftCard?: GiftCardN
       `Спасибо за визит! Счёт ${invoice.number} · SaimniekaPirts`)
     : t(`Rēķins ${invoice.number} · SaimniekaPirts`, `Invoice ${invoice.number} · SaimniekaPirts`, `Счёт ${invoice.number} · SaimniekaPirts`);
   const body = [
-    p(t(`Sveiki, ${who}!`, `Hello ${who},`, `Здравствуйте, ${who}!`)),
+    p(hello(t, who)),
     visit
       ? p(t('Liels paldies, ka bijāt pie mums SaimniekaPirts! Ceram, ka pirts Jums sniedza atpūtu un spēku.',
         'Thank you so much for visiting SaimniekaPirts! We hope the sauna left you rested and renewed.',
@@ -552,6 +559,9 @@ export function invoiceEmail(invoice: InvoiceRow & { manage_token?: string }, ca
     })
     .join('');
   const phone = invoice.customer_phone ? `, tālr. ${escapeHtml(invoice.customer_phone)}` : '';
+  const company = invoice.details?.company
+    ? `${invoice.details.company.name}, reģ. nr. ${invoice.details.company.regNumber}`
+    : '';
   const link = invoice.manage_token ? manageLink({ id: invoice.id, manage_token: invoice.manage_token }) : '';
   const card = invoice.details?.payment === 'card';
   const coveredByGiftCard = invoice.details?.payment === 'gift_card';
@@ -575,6 +585,7 @@ ${headline}
 <a href="mailto:${escapeHtml(invoice.customer_email)}">${escapeHtml(invoice.customer_email)}</a>${phone}. Šī ir biroja kopija.
 </div>
 <p style="margin:0 0 4px"><strong>${escapeHtml(invoice.customer_name)}</strong></p>
+${company ? `<p style="margin:0 0 4px">Rēķins uzņēmumam: ${escapeHtml(company)}</p>` : ''}
 <p style="margin:0 0 14px;color:#555">${escapeHtml(visitLv(invoice.details))} · avansa rēķins ${escapeHtml(invoice.number)} · ${card ? 'apmaksāts ar karti' : coveredByGiftCard ? 'apmaksāts ar dāvanu karti' : `apmaksāt līdz ${formatDate(invoice.due_on)}`}</p>
 <table style="border-collapse:collapse;margin-bottom:6px">${lines}
 <tr><td style="padding:8px 12px 4px 0;border-top:1px solid #ccc"><strong>Kopā</strong></td>
@@ -591,6 +602,7 @@ ${link ? `<p style="margin:26px 0 0;padding-top:12px;border-top:1px solid #ddd;c
       `${invoice.customer_email}${invoice.customer_phone ? `, tālr. ${invoice.customer_phone}` : ''}. Šī ir biroja kopija.`,
     '',
     invoice.customer_name,
+    ...(company ? [`Rēķins uzņēmumam: ${company}`] : []),
     `${visitLv(invoice.details)} · avansa rēķins ${invoice.number} · ${card ? 'apmaksāts ar karti' : coveredByGiftCard ? 'apmaksāts ar dāvanu karti' : `apmaksāt līdz ${formatDate(invoice.due_on)}`}`,
     '',
     ...invoice.items.map((i) => `${i.name.lv}${i.quantity > 1 ? ` × ${i.quantity}` : ''}: ${eur(i.amount)}`),

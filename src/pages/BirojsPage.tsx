@@ -43,6 +43,8 @@ interface Booking extends InvoiceInfo {
   gift_card_code: string | null;
   message: string | null;
   name: string;
+  // The company the invoice is made out to, if the guest asked for one.
+  company: string | null;
   email: string;
   phone: string | null;
   locale: 'lv' | 'en' | 'ru';
@@ -575,6 +577,7 @@ const BirojsPage = () => {
                 <div className="space-y-1">
                   <div className="flex flex-wrap items-center gap-2">
                     <span className="font-semibold text-white">{b.name}</span>
+                    {b.company && b.company !== b.name && <span className="text-sm text-gray-300">{b.company}</span>}
                     <span className="text-sm text-gray-400">{longDate(b.date)} {b.time} · {b.sauna}</span>
                   </div>
                   <div className="flex flex-wrap items-center gap-2 text-sm text-gray-300">
@@ -691,6 +694,7 @@ const BirojsPage = () => {
                   <div className="space-y-2 min-w-0">
                     <div className="flex flex-wrap items-center gap-2">
                       <span className="text-lg font-semibold">{b.name}</span>
+                      {b.company && <Badge tone="amber">🏢 Rēķins uzņēmumam{b.company !== b.name ? `: ${b.company}` : ''}</Badge>}
                       <Badge tone={b.type === 'ritual' ? 'green' : 'blue'}>{b.type === 'ritual' ? 'Rituāls' : 'Noma'}</Badge>
                       {b.sauna && <Badge>{b.sauna}</Badge>}
                       {b.locale !== 'lv' && <Badge tone="blue">{b.locale.toUpperCase()}</Badge>}

@@ -84,7 +84,7 @@
       "option1": "4h – 150€ (Pirts & Kubls diviem)",
       "option2": "3h – 80€ (Pirts bez kubla diviem)",
       "option3": "4h – 90€ (Pirts bez kubla diviem)",
-      "option4": "5h – 170€ (Pirts & Kubls / līdz 5 cilvēkiem)",
+      "option4": "4h – 170€ (Pirts & Kubls / līdz 5 cilvēkiem)",
       "option5": "5h – 120€ (Pirts bez kubla / līdz 5 cilvēkiem)",
       "option6": "5h – 200€ (Pirts & Kubls / 6–10 cilvēkiem)",
       "option7": "5h – 140€ (Pirts bez kubla / 6–10 cilvēkiem)"
@@ -147,5 +147,13 @@
       "used": "Šī karte jau ir izmantota citai rezervācijai.",
       "error": "Karti šobrīd neizdevās pārbaudīt."
     }
+  },
+  "company": {
+    "toggle": "Rēķins uzņēmumam",
+    "note": "Rēķins tiks izrakstīts uzņēmumam; augstāk norādītais vārds būs kontaktpersona.",
+    "name": "Uzņēmuma nosaukums",
+    "regNumber": "Reģistrācijas Nr.",
+    "address": "Juridiskā adrese",
+    "vatNumber": "PVN reģistrācijas Nr. (ja ir)"
   }
 }
