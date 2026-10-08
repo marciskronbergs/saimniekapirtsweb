@@ -23,6 +23,8 @@ interface InvoiceInfo {
   final: { number: string } | null;
   // A discount the office gave, already in the invoice.
   discount?: { percent: number; reason: string } | null;
+  // Invoiced as premises rental ("Telpu noma"), set by the office.
+  premises?: boolean;
 }
 
 interface Booking extends InvoiceInfo {
@@ -53,6 +55,8 @@ interface Booking extends InvoiceInfo {
 interface GiftCard extends InvoiceInfo {
   id: string;
   name: string;
+  // The company the invoice is made out to, if the buyer asked for one.
+  company: string | null;
   email: string;
   phone: string | null;
   service: string | null;
@@ -163,6 +167,7 @@ const InvoiceLine = ({ info, cash = false }: { info: InvoiceInfo; cash?: boolean
     ) : (
       <span className="text-gray-500">{cash ? 'Skaidrā naudā uz vietas – bez rēķina' : 'Avansa rēķina vēl nav'}</span>
     )}
+    {info.premises && <Badge tone="amber">🏢 Telpu noma</Badge>}
     {info.discount && <Badge tone="amber">Atlaide {info.discount.percent}%{info.discount.reason ? ` · ${info.discount.reason}` : ''}</Badge>}
     {info.advance?.paid && !info.final && <Badge tone="green">Apmaksāts</Badge>}
     {info.final && <Badge tone="green">Gala rēķins {info.final.number}</Badge>}
@@ -324,6 +329,40 @@ const BirojsPage = () => {
         ? `Atlaide ${percent}% piemērota: rēķins ${r.replaced} anulēts, jaunais ${r.number} (${eur(r.total ?? 0)}) nosūtīts klientam un birojam.`
         : `Atlaide ${percent}% saglabāta – tā būs rēķinā, kad to izrakstīs.`);
       setDiscountFor(null);
+      await load(pin);
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setBusyId(null);
+    }
+  };
+
+  // The office has a booking invoiced as premises rental, or back as sauna
+  // services: an unpaid advance invoice is replaced and sent to the guest.
+  const togglePremises = async (b: Booking) => {
+    const on = !b.premises;
+    const invoice = b.advance && b.advance.status === 'issued' ? b.advance.number : null;
+    const what = on
+      ? 'rēķinā pakalpojumus rādīt kā vienu rindu "Telpu noma" (summa nemainās)'
+      : 'rēķinā atkal rādīt pirts pakalpojumus, nevis telpu nomu';
+    const then = invoice
+      ? `\n\nRēķins ${invoice} tiks anulēts, un klientam uz ${b.email} aizies jauns rēķins.`
+      : '\n\nRēķina vēl nav – tas būs šādā veidā, kad to izrakstīs.';
+    if (!window.confirm(`${b.name}: ${what}?${then}`)) return;
+    setBusyId(b.id);
+    setError(null);
+    setNotice(null);
+    try {
+      const r = await callInvoiceFunction<{ status: string; number?: string; replaced?: string; error?: string }>({
+        office: { pin, action: 'premises', id: b.id, on },
+      });
+      if (r.status === 'reissued') {
+        setNotice(`Rēķins ${r.replaced} anulēts; jaunais ${r.number} ${on ? 'ar rindu "Telpu noma"' : 'ar pirts pakalpojumiem'} nosūtīts klientam un birojam.`);
+      } else if (r.status === 'saved' || r.status === 'unchanged') {
+        setNotice(on ? 'Saglabāts: rēķins būs kā telpu noma.' : 'Saglabāts: rēķinā būs pirts pakalpojumi.');
+      } else {
+        throw new Error('Neizdevās. Mēģiniet vēlreiz pēc brīža.');
+      }
       await load(pin);
     } catch (e) {
       setError((e as Error).message);
@@ -731,6 +770,8 @@ const BirojsPage = () => {
                       onSend={(withLink) => sendInvoice('reservation', b, withLink)}
                       onPayLink={() => showPayLink('reservation', b)}
                       onDiscount={() => openDiscount('reservation', b)}
+                      premises={!!b.premises}
+                      onPremises={() => togglePremises(b)}
                     />
                     {b.type === 'ritual' && (
                       <label className="flex flex-wrap items-center gap-2 text-sm text-gray-300">
@@ -782,6 +823,7 @@ const BirojsPage = () => {
               <div className="flex flex-wrap items-center gap-2">
                 <span className="text-sm text-gray-400">{shortDate(g.created_at)}</span>
                 <span className="font-semibold">{g.name}</span>
+                {g.company && <Badge tone="amber">🏢 Rēķins uzņēmumam{g.company !== g.name ? `: ${g.company}` : ''}</Badge>}
                 {g.locale !== 'lv' && <Badge tone="blue">{g.locale.toUpperCase()}</Badge>}
                 {g.cancelled ? <Badge tone="red">Atcelta</Badge> : <CardBadge payment={g.payment} paid={g.card_paid} />}
                 {!g.cancelled && g.final && <Badge tone="green">Apmaksāta · karte nosūtīta</Badge>}

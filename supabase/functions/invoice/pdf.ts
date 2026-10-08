@@ -48,6 +48,8 @@ export interface InvoiceDetails {
   // The company the guest asked the invoice to be made out to. The customer
   // name, email and phone are then its contact person's.
   company?: InvoiceCompany;
+  // Invoiced by the office as premises rental: the visit is the rental period.
+  premises?: boolean;
 }
 
 export interface InvoiceCompany {
@@ -314,8 +316,9 @@ export async function renderInvoicePdf(invoice: InvoiceRow): Promise<Uint8Array>
   const d = invoice.details;
   if (d?.kind === 'reservation' && d.date) {
     const sauna = d.sauna ? saunaNames[d.sauna] ?? { lv: d.sauna, en: d.sauna, ru: d.sauna } : null;
-    const when = [formatDate(d.date), d.time, sauna ? L(sauna.lv, sauna.en, sauna.ru) : ''].filter(Boolean).join(', ');
-    text(`${L('Apmeklējuma laiks', 'Visit', 'Визит')}: ${when}`, left, { size: 9.5 });
+    const when = [formatDate(d.date), d.time, sauna && !d.premises ? L(sauna.lv, sauna.en, sauna.ru) : ''].filter(Boolean).join(', ');
+    const label = d.premises ? L('Nomas laiks', 'Rental period', 'Время аренды') : L('Apmeklējuma laiks', 'Visit', 'Визит');
+    text(`${label}: ${when}`, left, { size: 9.5 });
     y -= 18;
   }
   if (final && d?.advance_number) {

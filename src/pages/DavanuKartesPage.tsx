@@ -6,6 +6,8 @@ import { supabase } from '../lib/supabase';
 import { useTranslation } from 'react-i18next';
 import priceCatalog from '../data/priceCatalog.json';
 import PaymentChoice from '../components/popup/PaymentChoice';
+import CompanyChoice from '../components/popup/CompanyChoice';
+import { companyForBooking, type CompanyEntry } from '../components/popup/companyEntry';
 import { goToCardPayment, useCardPayments } from '../lib/cardPayments';
 import GiftCardPreview from '../components/giftcards/GiftCardPreview';
 import { preloadGiftCard } from '../components/giftcards/giftCardAssets';
@@ -35,6 +37,8 @@ const DavanuKartesPage = () => {
   // is sent once the invoice is paid. Card is the default while it is offered.
   const cardPayments = useCardPayments();
   const [chosenPayment, setChosenPayment] = useState<'card' | 'transfer' | null>(null);
+  // The company the invoice is made out to, if not the buyer.
+  const [company, setCompany] = useState<CompanyEntry | null>(null);
   const paymentMethod = chosenPayment ?? (cardPayments ? 'card' : 'transfer');
 
   useEffect(() => {
@@ -173,7 +177,8 @@ const DavanuKartesPage = () => {
         specific_ritual_type: submissionPayload.specific_ritual_type,
         custom_price_value: submissionPayload.custom_price_value,
         payment_method: paymentMethod,
-        locale
+        locale,
+        company: companyForBooking(company),
       };
 
       const { error } = await supabase
@@ -500,6 +505,8 @@ const DavanuKartesPage = () => {
                     </div>
                   </div>
 
+                  <CompanyChoice value={company} onChange={setCompany} />
+
                   {cardPayments && (
                     <PaymentChoice
                       card
@@ -620,6 +627,8 @@ const DavanuKartesPage = () => {
                       />
                     </div>
                   </div>
+
+                  <CompanyChoice value={company} onChange={setCompany} />
 
                   {cardPayments && (
                     <PaymentChoice

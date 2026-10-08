@@ -35,7 +35,7 @@
 //                                           frees the time slot and asks Make to
 //                                           take it off the calendar
 //   { office: { pin, action: 'list' | 'assign' | 'save_master' | 'gift_card_pdf'
-//               | 'send_invoice' | 'pay_link' } }
+//               | 'send_invoice' | 'pay_link' | 'discount' | 'premises' } }
 //                                           the office's page: upcoming bookings,
 //                                           the sauna masters assigned to them, and
 //                                           invoices and payment links sent by hand
@@ -158,6 +158,8 @@ interface Source {
   // in `priced`. Otherwise why it did not.
   giftCard?: GiftCardFound | null;
   giftCardProblem?: GiftCardProblem | null;
+  // The office has the booking invoiced as premises rental.
+  premises?: boolean;
 }
 
 interface Discount {
@@ -188,6 +190,37 @@ function withDiscount(priced: Source['priced'], discount: Discount): Source['pri
   };
 }
 
+// A booking the office invoices as premises rental ("Telpu noma"), for a
+// company that books the place for an event: the services become one line
+// for the rental, at the same price; a discount or gift card stays a line of
+// its own.
+function asPremisesRental(priced: Source['priced'], date: string): Source['priced'] {
+  if (!priced.items.length || priced.problems.length) return priced;
+  const services = priced.items.filter((i) => i.amount > 0);
+  if (!services.length) return priced;
+  const amount = Math.round(services.reduce((sum, i) => sum + i.amount, 0) * 100) / 100;
+  const day = date ? ` ${formatDate(date)}` : '';
+  return {
+    ...priced,
+    items: [
+      {
+        name: { lv: `Telpu noma${day}`, en: `Premises rental${day}`, ru: `Аренда помещения${day}` },
+        quantity: 1,
+        unit: 'service',
+        unitPrice: amount,
+        amount,
+      },
+      ...priced.items.filter((i) => i.amount <= 0),
+    ],
+  };
+}
+
+async function premisesOf(id: string): Promise<boolean> {
+  const { data, error } = await db.from('premises_rentals').select('source_id').eq('source_id', id).maybeSingle();
+  if (error) throw error;
+  return !!data;
+}
+
 async function discountOf(type: SourceType, id: string): Promise<Discount | null> {
   const { data, error } = await db.from('discounts').select('percent, reason').eq('source_type', type).eq('source_id', id).maybeSingle();
   if (error) throw error;
@@ -211,6 +244,11 @@ async function loadSource(type: SourceType, id: string): Promise<Source | null> 
     } else {
       source.giftCardProblem = check.reason;
     }
+  }
+  if (type === 'reservation' && (await premisesOf(id))) {
+    source.premises = true;
+    source.priced = asPremisesRental(source.priced, source.row.reservation_date);
+    source.details = { ...source.details, premises: true };
   }
   return source;
 }
@@ -400,6 +438,7 @@ async function loadSourceRow(type: SourceType, id: string): Promise<Source | nul
   const { data: g, error } = await db.from('davanu_kartes_pasutijumi').select('*').eq('id', id).maybeSingle();
   if (error) throw error;
   if (!g) return null;
+  const company = companyOf(g.company);
   return {
     type,
     id,
@@ -409,12 +448,13 @@ async function loadSourceRow(type: SourceType, id: string): Promise<Source | nul
     email: g.epasts ?? '',
     phone: g.talrunis ?? '',
     dueOn: addDays(today, 7),
-    details: { kind: 'gift_card' },
+    details: { kind: 'gift_card', ...(company ? { company } : {}) },
     priced: priceGiftCard(prices, g),
     fields: [
       ['Vārds', g.vards_uzvards ?? ''],
       ['E-pasts', g.epasts ?? ''],
       ['Tālrunis', g.talrunis ?? ''],
+      ['Uzņēmums', company ? companyLine(company) : ''],
       ['Dāvanu karte', g.ritual_type ?? ''],
       ['Vērtība', g.custom_price_value ?? ''],
     ],
@@ -1599,6 +1639,44 @@ async function officeDiscount(body: { type?: string; id?: string; percent?: numb
   return json({ status: 'reissued', percent, number: invoice.number, replaced: current.number, total: Number(invoice.total), guest });
 }
 
+// The office has a booking invoiced as premises rental ("Telpu noma"), or no
+// longer (on: false). Kept for the booking, like a discount: an advance
+// invoice already issued and not yet paid is annulled and replaced by one with
+// the rental line, which goes to the guest, to the office and to the list.
+async function officePremises(body: { id?: string; on?: boolean }) {
+  const id = body.id;
+  if (!id || !uuidPattern.test(id)) return json({ error: 'not_found' }, 404);
+  const on = body.on !== false;
+  if (!(await loadSource('reservation', id))) return json({ error: 'not_found' }, 404);
+
+  const { data: invoices, error } = await db.from('invoices').select('*')
+    .eq('source_type', 'reservation').eq('source_id', id).order('created_at', { ascending: false });
+  if (error) throw error;
+  const current = (invoices ?? []).find((i) => i.kind === 'advance' && i.status === 'issued') ?? null;
+  const settled = (invoices ?? []).some((i) => i.kind === 'final') || !!current?.paid ||
+    (await cardPayments('reservation', id)).some((p) => p.status === 'paid');
+  if (settled) return json({ error: 'already_paid' }, 409);
+
+  const { error: saveError } = on
+    ? await db.from('premises_rentals').upsert({ source_id: id }, { onConflict: 'source_id', ignoreDuplicates: true })
+    : await db.from('premises_rentals').delete().eq('source_id', id);
+  if (saveError) throw saveError;
+  // No invoice yet (a cash booking, or one on hold): it waits for the invoice.
+  if (!current) return json({ status: 'saved', on });
+  // Already as asked: nothing to replace.
+  if (!!current.details?.premises === on) return json({ status: 'unchanged', on, number: current.number });
+
+  await annul(current, true);
+  const source = await loadSource('reservation', id);
+  const made = await createAdvance(source!, undefined, current);
+  if (!made.invoice) return json({ error: 'cannot_invoice', reason: made.reason ?? '' }, 409);
+  const invoice = made.invoice;
+  await attempt(() => deliverAdvance(invoice));
+  await attempt(() => archive(invoice));
+  const guest = await attempt(() => deliverAdvanceToGuest(invoice));
+  return json({ status: 'reissued', on, number: invoice.number, replaced: current.number, total: Number(invoice.total), guest });
+}
+
 // The office cancels a gift card order. The card no longer holds for booking.
 // An unpaid advance invoice is annulled; a paid one stays (any refund is the
 // office's to make), and a card already used for a booking cannot be cancelled.
@@ -1944,7 +2022,7 @@ async function officeFinal(type: SourceType, id?: string) {
 // deno-lint-ignore no-explicit-any
 async function office(body: {
   pin?: string; action?: string; reservation?: string; order?: string; a4?: boolean; light?: boolean; master_id?: string | null; master?: any;
-  type?: string; id?: string; pay_link?: boolean; percent?: number; reason?: string;
+  type?: string; id?: string; pay_link?: boolean; percent?: number; reason?: string; on?: boolean;
 }) {
   const pinResult = await pinCheck(body.pin);
   if (pinResult !== 'ok') return pinRefusal(pinResult);
@@ -1961,6 +2039,14 @@ async function office(body: {
   if (body.action === 'discount') {
     try {
       return await officeDiscount(body);
+    } catch (e) {
+      console.error(e);
+      return json({ error: describe(e) }, 500);
+    }
+  }
+  if (body.action === 'premises') {
+    try {
+      return await officePremises(body);
     } catch (e) {
       console.error(e);
       return json({ error: describe(e) }, 500);
@@ -2012,15 +2098,16 @@ async function office(body: {
 
   const ids = [...(bookings.data ?? []), ...(cards.data ?? []), ...(past.data ?? [])].map((r) => r.id as string);
   const cardIds = (cards.data ?? []).map((g) => g.id as string);
-  const [{ data: invoices, error }, { data: paidByCard }, { data: codes }, { data: discounts }] = ids.length
+  const [{ data: invoices, error }, { data: paidByCard }, { data: codes }, { data: discounts }, { data: premises }] = ids.length
     ? await Promise.all([
       db.from('invoices').select('id, number, kind, status, paid, source_id, manage_token, total, created_at')
         .in('source_id', ids).order('created_at', { ascending: false }),
       db.from('card_payments').select('source_id').eq('status', 'paid').in('source_id', ids),
       db.from('gift_cards').select('order_id, code, valid_until, pin, failed_checks').in('order_id', cardIds.length ? cardIds : [crypto.randomUUID()]),
       db.from('discounts').select('source_id, percent, reason').in('source_id', ids),
+      db.from('premises_rentals').select('source_id').in('source_id', ids),
     ])
-    : [{ data: [], error: null }, { data: [] }, { data: [] }, { data: [] }];
+    : [{ data: [], error: null }, { data: [] }, { data: [] }, { data: [] }, { data: [] }];
   if (error) return json({ error: describe(error) }, 500);
   const cardPaid = new Set((paidByCard ?? []).map((p) => p.source_id));
   // deno-lint-ignore no-explicit-any
@@ -2064,6 +2151,7 @@ async function office(body: {
       final: final ? { number: final.number } : null,
       discount: (discounts ?? []).filter((d: { source_id: string }) => d.source_id === sourceId)
         .map((d) => ({ percent: Number(d.percent), reason: d.reason ?? '' }))[0] ?? null,
+      premises: (premises ?? []).some((p: { source_id: string }) => p.source_id === sourceId),
     };
   };
 
@@ -2101,6 +2189,7 @@ async function office(body: {
     gift_cards: (cards.data ?? []).map((g) => ({
       id: g.id,
       name: g.vards_uzvards,
+      company: companyOf(g.company)?.name ?? null,
       email: g.epasts,
       phone: g.talrunis || null,
       service: String(g.ritual_type ?? '').startsWith('Custom Value')

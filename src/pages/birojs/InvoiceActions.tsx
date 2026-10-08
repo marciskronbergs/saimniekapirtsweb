@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Copy, CreditCard, ExternalLink, Loader2, Percent, QrCode, Send, X } from 'lucide-react';
+import { Building2, Copy, CreditCard, ExternalLink, Loader2, Percent, QrCode, Send, X } from 'lucide-react';
 import { eur } from '../../lib/officeApi';
 
 // The office's buttons on a booking or gift card order: send the guest their
@@ -14,12 +14,15 @@ interface InvoiceActionsProps {
   onSend: (withLink: boolean) => void;
   onPayLink: () => void;
   onDiscount: () => void;
+  // Bookings only: whether the invoice shows premises rental, and the switch.
+  premises?: boolean;
+  onPremises?: () => void;
 }
 
 const buttonClass =
   'inline-flex items-center gap-1.5 rounded-lg border border-gray-600 bg-gray-800 hover:bg-gray-700 disabled:opacity-50 px-2.5 py-1.5 text-sm';
 
-export const InvoiceActions = ({ settled, cardPayments, busy, onSend, onPayLink, onDiscount }: InvoiceActionsProps) => (
+export const InvoiceActions = ({ settled, cardPayments, busy, onSend, onPayLink, onDiscount, premises, onPremises }: InvoiceActionsProps) => (
   <div className="flex flex-wrap gap-2">
     <button type="button" onClick={() => onSend(false)} disabled={busy} className={buttonClass}>
       <Send className="w-4 h-4 text-green-400" />
@@ -41,6 +44,12 @@ export const InvoiceActions = ({ settled, cardPayments, busy, onSend, onPayLink,
       <button type="button" onClick={onDiscount} disabled={busy} className={buttonClass}>
         <Percent className="w-4 h-4 text-amber-400" />
         Atlaide
+      </button>
+    )}
+    {!settled && onPremises && (
+      <button type="button" onClick={onPremises} disabled={busy} className={buttonClass}>
+        <Building2 className="w-4 h-4 text-amber-400" />
+        {premises ? 'Rēķins kā pirts pakalpojumi' : 'Rēķins kā telpu noma'}
       </button>
     )}
   </div>
