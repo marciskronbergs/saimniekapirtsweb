@@ -2,7 +2,7 @@
   "title": "Privacy Policy",
   "subtitle": "Your privacy is important to us. This policy informs about personal data processing procedures.",
   "intro": {
-    "description": "Your privacy is important to us. The purpose of SIA \"KMR Business\" privacy policy is to inform clients and other data subjects about their personal data processing procedures in accordance with Regulation (EU) 2016/679 of the European Parliament and of the Council (April 27, 2016) on the protection of natural persons with regard to the processing of personal data and on the free movement of such data."
+    "description": "Your privacy is important to us. The purpose of SIA \"Saimnieku Pirtis\" privacy policy is to inform clients and other data subjects about their personal data processing procedures in accordance with Regulation (EU) 2016/679 of the European Parliament and of the Council (April 27, 2016) on the protection of natural persons with regard to the processing of personal data and on the free movement of such data."
   },
   "controller": {
     "title": "Controller and Contact Information",
@@ -15,7 +15,7 @@
   },
   "dataClassification": {
     "title": "Personal Data Classification and Processing Purpose",
-    "description": "Personal data is any information about an identified or identifiable natural person: SIA \"KMR Business\" clients (including potential, former and current), service recipients, guests, website visitors, business partners, employees or job candidates (all together hereinafter - data subject), including:",
+    "description": "Personal data is any information about an identified or identifiable natural person: SIA \"Saimnieku Pirtis\" clients (including potential, former and current), service recipients, guests, website visitors, business partners, employees or job candidates (all together hereinafter - data subject), including:",
     "types": [
       "Personal identification data (name, surname, date of birth and/or personal code)",
       "Contact information (phone number, email address, contact address)",
@@ -41,7 +41,7 @@
   },
   "legalBasis": {
     "title": "Legal Basis for Personal Data Processing",
-    "description": "SIA \"KMR Business\" legitimate interests are: to conduct commercial activities, to verify client identity before concluding a contract, to ensure fulfillment of contractual obligations, to prevent unjustified risks to its commercial activities, to perform service quality analysis and implement improvements, to advertise its services, to analyze the company's website and implement improvements, to perform activities to retain clients and expand client segment, to prevent fraud, to administer payments, to ensure effective company management processes, to turn to public administration and operational institutions for protection of its legal interests, to inform the public about its activities."
+    "description": "SIA \"Saimnieku Pirtis\" legitimate interests are: to conduct commercial activities, to verify client identity before concluding a contract, to ensure fulfillment of contractual obligations, to prevent unjustified risks to its commercial activities, to perform service quality analysis and implement improvements, to advertise its services, to analyze the company's website and implement improvements, to perform activities to retain clients and expand client segment, to prevent fraud, to administer payments, to ensure effective company management processes, to turn to public administration and operational institutions for protection of its legal interests, to inform the public about its activities."
   },
   "dataAccess": {
     "title": "Personal Data Access",
@@ -53,11 +53,11 @@
     "requestMethods": {
       "title": "Request submission methods:",
       "methods": [
-        "In writing in person at SIA \"KMR Business\" legal address: Jelgava, Sudrabu Edžus 15-64, LV-3001, showing an identity document",
+        "In writing in person at SIA \"Saimnieku Pirtis\" legal address: \"Kroņmeži\", Baldone parish, Ķekava municipality, LV-2125, Latvia, showing an identity document",
         "Electronically, by sending an application signed with a secure electronic signature to email address: info@saimniekapirts.lv"
       ]
     },
-    "additionalInfo": "The data subject's request is evaluated in accordance with regulatory acts, and the response is sent to the client's specified contact address in the manner and terms specified in regulatory acts. If the data subject believes that the Controller has acted unlawfully, they have the right to file a complaint with the Data State Inspectorate at Blaumaņa Street 11/13, Riga, LV-1011. Providing the information we request is not mandatory, but it is a prerequisite for receiving our services. We do not use personal data for automated decision-making and do not perform profiling. SIA \"KMR Business\" data subjects' personal data are not sent outside the European Union or European Economic Area countries."
+    "additionalInfo": "The data subject's request is evaluated in accordance with regulatory acts, and the response is sent to the client's specified contact address in the manner and terms specified in regulatory acts. If the data subject believes that the Controller has acted unlawfully, they have the right to file a complaint with the Data State Inspectorate at Blaumaņa Street 11/13, Riga, LV-1011. Providing the information we request is not mandatory, but it is a prerequisite for receiving our services. We do not use personal data for automated decision-making and do not perform profiling. SIA \"Saimnieku Pirtis\" data subjects' personal data are not sent outside the European Union or European Economic Area countries."
   },
   "dataRetention": {
     "title": "Data Retention Period",
@@ -99,7 +99,7 @@
   },
   "policyChanges": {
     "title": "Changes to Privacy Policy",
-    "description": "SIA \"KMR Business\" privacy policy may be changed or amended in accordance with the requirements of applicable regulatory acts. Our existing and potential clients can familiarize themselves with changes to the privacy policy by regularly visiting our website."
+    "description": "SIA \"Saimnieku Pirtis\" privacy policy may be changed or amended in accordance with the requirements of applicable regulatory acts. Our existing and potential clients can familiarize themselves with changes to the privacy policy by regularly visiting our website."
   },
   "notice": "Remember that you are responsible for the security of your personal data!"
 }
