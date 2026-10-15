@@ -2021,12 +2021,17 @@ async function officeFinal(type: SourceType, id?: string) {
 // the PIN, since the list holds guests' names, emails and phone numbers.
 // deno-lint-ignore no-explicit-any
 async function office(body: {
-  pin?: string; action?: string; reservation?: string; order?: string; a4?: boolean; light?: boolean; master_id?: string | null; master?: any;
+  pin?: string; action?: string; reservation?: string; order?: string; a4?: boolean; light?: boolean; master_id?: string | null; master_ids?: unknown; master?: any;
   type?: string; id?: string; pay_link?: boolean; percent?: number; reason?: string; on?: boolean;
 }) {
   const pinResult = await pinCheck(body.pin);
   if (pinResult !== 'ok') return pinRefusal(pinResult);
-  if (body.action === 'assign') return await assignMaster(body.reservation, body.master_id ?? null);
+  if (body.action === 'assign') {
+    // master_ids: everyone leading the ritual; master_id: one, from a page
+    // loaded before several could be assigned.
+    const ids = Array.isArray(body.master_ids) ? body.master_ids : body.master_id ? [body.master_id] : [];
+    return await assignMasters(body.reservation, ids);
+  }
   if (body.action === 'save_master') return await saveMaster(body.master);
   if (body.action === 'cancel_gift_card') {
     try {
@@ -2110,6 +2115,8 @@ async function office(body: {
     : [{ data: [], error: null }, { data: [] }, { data: [] }, { data: [] }, { data: [] }];
   if (error) return json({ error: describe(error) }, 500);
   const cardPaid = new Set((paidByCard ?? []).map((p) => p.source_id));
+  const masters = await assignedMasters([...(bookings.data ?? []), ...(past.data ?? [])].map((r) => r.id as string));
+  const mastersOf = (id: string) => masters.get(id) ?? [];
   // deno-lint-ignore no-explicit-any
   const cardOf = (id: string) => (codes ?? []).find((c: any) => c.order_id === id) ?? null;
   const codeOf = (id: string) => {
@@ -2168,7 +2175,7 @@ async function office(body: {
       transport: transportName(r.transport, 'lv') || null,
       payment: ['cash', 'card'].includes(r.payment_method) ? r.payment_method : 'transfer',
       card_paid: cardPaid.has(r.id),
-      master_id: r.master_id ?? null,
+      master_ids: mastersOf(r.id),
       gift_card_code: r.gift_card_code ?? null,
       message: (r.form_type === 'noma' ? r.rental_message : r.ritual_message) || null,
       name: r.name,
@@ -2217,14 +2224,27 @@ async function office(body: {
 
 const masterLink = (token: string) => `https://saimniekapirts.lv/pirtnieks?t=${token}`;
 
+// Who leads each of these bookings: reservation id -> master ids.
+async function assignedMasters(reservationIds: string[]): Promise<Map<string, string[]>> {
+  const byBooking = new Map<string, string[]>();
+  if (!reservationIds.length) return byBooking;
+  const { data, error } = await db.from('reservation_masters').select('reservation_id, master_id')
+    .in('reservation_id', reservationIds).order('created_at');
+  if (error) throw error;
+  for (const row of data ?? []) byBooking.set(row.reservation_id, [...(byBooking.get(row.reservation_id) ?? []), row.master_id]);
+  return byBooking;
+}
+
 async function mastersList() {
   const today = rigaToday();
-  const [{ data: masters, error }, { data: assigned }] = await Promise.all([
+  const [{ data: masters, error }, { data: upcoming, error: upcomingError }] = await Promise.all([
     db.from('sauna_masters').select('*').order('active', { ascending: false }).order('name'),
-    db.from('reservations').select('master_id').not('master_id', 'is', null).gte('reservation_date', today),
+    db.from('reservations').select('id').gte('reservation_date', today),
   ]);
   if (error) throw error;
-  const count = (id: string) => (assigned ?? []).filter((r) => r.master_id === id).length;
+  if (upcomingError) throw upcomingError;
+  const assigned = [...(await assignedMasters((upcoming ?? []).map((r) => r.id))).values()].flat();
+  const count = (id: string) => assigned.filter((m) => m === id).length;
   return (masters ?? []).map((m) => ({
     id: m.id,
     name: m.name,
@@ -2236,18 +2256,36 @@ async function mastersList() {
   }));
 }
 
-async function assignMaster(reservation: string | undefined, masterId: string | null) {
+// The office sets who leads a booking: any number of masters, none included.
+async function assignMasters(reservation: string | undefined, masterIds: unknown[]) {
   if (!reservation || !uuidPattern.test(reservation)) return json({ error: 'bad_link' }, 400);
-  if (masterId !== null && !uuidPattern.test(masterId)) return json({ error: 'unknown_master' }, 400);
-  if (masterId) {
-    const { data: master } = await db.from('sauna_masters').select('id').eq('id', masterId).maybeSingle();
-    if (!master) return json({ error: 'unknown_master' }, 404);
+  const ids = [...new Set(masterIds)];
+  if (ids.length > 10 || ids.some((id) => typeof id !== 'string' || !uuidPattern.test(id))) {
+    return json({ error: 'unknown_master' }, 400);
   }
-  const { data, error } = await db.from('reservations').update({ master_id: masterId })
-    .eq('id', reservation).select('id').maybeSingle();
-  if (error) return json({ error: describe(error) }, 500);
-  if (!data) return json({ error: 'not_found' }, 404);
-  return json({ status: 'assigned' });
+  if (ids.length) {
+    const { data: masters, error } = await db.from('sauna_masters').select('id').in('id', ids as string[]);
+    if (error) return json({ error: describe(error) }, 500);
+    if ((masters ?? []).length !== ids.length) return json({ error: 'unknown_master' }, 404);
+  }
+  const { data: booking } = await db.from('reservations').select('id').eq('id', reservation).maybeSingle();
+  if (!booking) return json({ error: 'not_found' }, 404);
+
+  const { data: now, error: readError } = await db.from('reservation_masters').select('master_id').eq('reservation_id', reservation);
+  if (readError) return json({ error: describe(readError) }, 500);
+  const had = (now ?? []).map((r) => r.master_id as string);
+  const gone = had.filter((id) => !ids.includes(id));
+  const added = (ids as string[]).filter((id) => !had.includes(id));
+  if (gone.length) {
+    const { error } = await db.from('reservation_masters').delete().eq('reservation_id', reservation).in('master_id', gone);
+    if (error) return json({ error: describe(error) }, 500);
+  }
+  if (added.length) {
+    const { error } = await db.from('reservation_masters')
+      .upsert(added.map((master_id) => ({ reservation_id: reservation, master_id })), { onConflict: 'reservation_id,master_id', ignoreDuplicates: true });
+    if (error) return json({ error: describe(error) }, 500);
+  }
+  return json({ status: 'assigned', master_ids: ids });
 }
 
 // deno-lint-ignore no-explicit-any
@@ -2281,10 +2319,20 @@ async function masterView(body: { token?: string }) {
   const { data: master } = await db.from('sauna_masters').select('*').eq('token', token).eq('active', true).maybeSingle();
   if (!master) return json({ error: 'unknown_master' }, 404);
   const today = rigaToday();
-  const { data: rows, error } = await db.from('reservations').select('*').eq('master_id', master.id)
+  const { data: mine, error: mineError } = await db.from('reservation_masters').select('reservation_id').eq('master_id', master.id);
+  if (mineError) return json({ error: describe(mineError) }, 500);
+  const ids = (mine ?? []).map((r) => r.reservation_id as string);
+  const { data: rows, error } = await db.from('reservations').select('*').in('id', ids.length ? ids : [crypto.randomUUID()])
     .gte('reservation_date', today).lte('reservation_date', addDays(today, 90))
     .order('reservation_date').order('reservation_time');
   if (error) return json({ error: describe(error) }, 500);
+  // The others leading the same ritual, so the master knows whom they work with.
+  const together = await assignedMasters((rows ?? []).map((r) => r.id));
+  const others = [...new Set([...together.values()].flat())].filter((id) => id !== master.id);
+  const { data: named } = others.length
+    ? await db.from('sauna_masters').select('id, name').in('id', others)
+    : { data: [] };
+  const nameOf = (id: string) => (named ?? []).find((m) => m.id === id)?.name ?? '';
   return json({
     name: master.name,
     today,
@@ -2305,6 +2353,7 @@ async function masterView(body: { token?: string }) {
         phone: r.phone || null,
         locale: localeOf(r.locale),
         cash_due: r.payment_method === 'cash' && priced.problems.length === 0 ? priced.total : null,
+        with: (together.get(r.id) ?? []).filter((id) => id !== master.id).map(nameOf).filter(Boolean),
       };
     }),
   });

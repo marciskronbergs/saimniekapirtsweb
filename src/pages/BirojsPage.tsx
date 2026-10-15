@@ -1,5 +1,5 @@
 import { useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
-import { CalendarDays, Download, ExternalLink, LogOut, Mail, Phone, RefreshCw, Search, Send } from 'lucide-react';
+import { CalendarDays, Download, ExternalLink, LogOut, Mail, Phone, RefreshCw, Search, Send, X } from 'lucide-react';
 import { PopupContext } from '../App';
 import { OfficeError, callInvoiceFunction, eur, useOfficePage } from '../lib/officeApi';
 import MastersSection, { type Master, type MasterDraft } from './birojs/MastersSection';
@@ -40,7 +40,8 @@ interface Booking extends InvoiceInfo {
   payment: 'transfer' | 'cash' | 'card';
   // Paid through Stripe; a card booking not yet paid is waiting for the guest.
   card_paid: boolean;
-  master_id: string | null;
+  // The sauna masters leading the ritual; a large group may have several.
+  master_ids: string[];
   // The gift card the guest gave when booking online.
   gift_card_code: string | null;
   message: string | null;
@@ -469,16 +470,16 @@ const BirojsPage = () => {
     }
   };
 
-  // Assigning a master saves at once; the list is updated in place.
-  const assign = async (b: Booking, masterId: string) => {
+  // Adding or removing a master saves at once; the list is updated in place.
+  const assign = async (b: Booking, masterIds: string[]) => {
     setError(null);
     setNotice(null);
     try {
-      await callInvoiceFunction({ office: { pin, action: 'assign', reservation: b.id, master_id: masterId || null } });
+      await callInvoiceFunction({ office: { pin, action: 'assign', reservation: b.id, master_ids: masterIds } });
       setList((l) => {
         if (!l) return l;
-        const bookings = l.bookings.map((x) => (x.id === b.id ? { ...x, master_id: masterId || null } : x));
-        const upcoming = (id: string) => bookings.filter((x) => x.master_id === id).length;
+        const bookings = l.bookings.map((x) => (x.id === b.id ? { ...x, master_ids: masterIds } : x));
+        const upcoming = (id: string) => bookings.filter((x) => x.master_ids.includes(id)).length;
         return { ...l, bookings, masters: l.masters.map((m) => ({ ...m, upcoming: upcoming(m.id) })) };
       });
     } catch (e) {
@@ -507,7 +508,7 @@ const BirojsPage = () => {
     const q = query.trim().toLowerCase();
     const matches = (b: Booking) =>
       !q ||
-      [b.name, b.email, b.phone, b.service, b.sauna, b.advance?.number, list?.masters.find((m) => m.id === b.master_id)?.name]
+      [b.name, b.email, b.phone, b.service, b.sauna, b.advance?.number, ...b.master_ids.map((id) => list?.masters.find((m) => m.id === id)?.name)]
         .some((v) => v?.toLowerCase().includes(q));
     const days = new Map<string, Booking[]>();
     for (const b of list?.bookings ?? []) {
@@ -774,24 +775,41 @@ const BirojsPage = () => {
                       onPremises={() => togglePremises(b)}
                     />
                     {b.type === 'ritual' && (
-                      <label className="flex flex-wrap items-center gap-2 text-sm text-gray-300">
-                        Pirtnieks:
-                        <select
-                          value={b.master_id ?? ''}
-                          onChange={(e) => assign(b, e.target.value)}
-                          className="rounded-lg bg-gray-800 border border-gray-600 px-2 py-1 text-white"
-                        >
-                          <option value="">— nav piešķirts —</option>
-                          {list.masters
-                            .filter((m) => m.active || m.id === b.master_id)
-                            .map((m) => (
-                              <option key={m.id} value={m.id}>
-                                {m.name}
-                              </option>
-                            ))}
-                        </select>
-                        {!b.master_id && <Badge tone="red">Rituālam nav pirtnieka</Badge>}
-                      </label>
+                      <div className="flex flex-wrap items-center gap-2 text-sm text-gray-300">
+                        {b.master_ids.length > 1 ? 'Pirtnieki:' : 'Pirtnieks:'}
+                        {b.master_ids.map((id) => (
+                          <span key={id} className="inline-flex items-center gap-1 rounded-lg bg-gray-800 border border-gray-600 pl-2 pr-1 py-0.5 text-white">
+                            {list.masters.find((m) => m.id === id)?.name ?? '—'}
+                            <button
+                              type="button"
+                              onClick={() => assign(b, b.master_ids.filter((x) => x !== id))}
+                              title="Noņemt pirtnieku"
+                              aria-label="Noņemt pirtnieku"
+                              className="rounded p-0.5 text-gray-400 hover:text-white hover:bg-gray-700"
+                            >
+                              <X className="w-3.5 h-3.5" />
+                            </button>
+                          </span>
+                        ))}
+                        {list.masters.some((m) => m.active && !b.master_ids.includes(m.id)) && (
+                          <select
+                            value=""
+                            onChange={(e) => e.target.value && assign(b, [...b.master_ids, e.target.value])}
+                            aria-label="Pievienot pirtnieku"
+                            className="rounded-lg bg-gray-800 border border-gray-600 px-2 py-1 text-white"
+                          >
+                            <option value="">{b.master_ids.length ? '+ vēl pirtnieks' : '— piešķirt pirtnieku —'}</option>
+                            {list.masters
+                              .filter((m) => m.active && !b.master_ids.includes(m.id))
+                              .map((m) => (
+                                <option key={m.id} value={m.id}>
+                                  {m.name}
+                                </option>
+                              ))}
+                          </select>
+                        )}
+                        {b.master_ids.length === 0 && <Badge tone="red">Rituālam nav pirtnieka</Badge>}
+                      </div>
                     )}
                   </div>
                   <div className="sm:text-right">

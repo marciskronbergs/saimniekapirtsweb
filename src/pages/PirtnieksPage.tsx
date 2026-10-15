@@ -22,6 +22,8 @@ interface MasterBooking {
   phone: string | null;
   locale: 'lv' | 'en' | 'ru';
   cash_due: number | null;
+  // The other masters leading the same ritual.
+  with: string[];
 }
 
 interface MasterView {
@@ -117,6 +119,7 @@ const PirtnieksPage = () => {
                       <li>{b.service ?? (b.type === 'ritual' ? 'Rituāls' : 'Noma')}</li>
                       {b.sauna && <li className="text-gray-400">{b.sauna}</li>}
                       {b.participants ? <li className="text-gray-400">Dalībnieki: {b.participants}</li> : null}
+                      {b.with?.length ? <li className="text-amber-300">Kopā ar: {b.with.join(', ')}</li> : null}
                       {b.overnight && <li className="text-gray-400">Ar nakšņošanu</li>}
                       {b.transport && <li className="text-sky-300">🚌 {b.transport}</li>}
                       {b.cash_due !== null && (
