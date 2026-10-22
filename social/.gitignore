@@ -1,0 +1,7 @@
+*.wav
+*.mp3
+*.mp4
+*.mov
+*.m4a
+hyperframes/out_*/
+hyperframes/assets/vo/
