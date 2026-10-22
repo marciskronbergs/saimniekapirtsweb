@@ -1,0 +1,26 @@
+{
+ "title": "Palaist vaļā",
+ "hook_img": "a4_wrap.jpg",
+ "hook": {
+  "en": ["Letting go", "doesn't mean", "doing nothing.", "The biggest mistake", "I see in people 👇"],
+  "lv": ["Palaist vaļā", "nenozīmē", "nedarīt neko.", "Lielākā kļūda,", "ko redzu cilvēkos 👇"]
+ },
+ "segments": [
+  {"wav": "assets/vo/s0.wav", "vo": "People hear \"let go\", and think it means: sit back and wait. It doesn't.", "speech": [0.05, 4.28], "pauses": [[2.23, 2.57], [3.58, 3.84]]},
+  {"wav": "assets/vo/s1.wav", "vo": "Letting go means dropping the assumptions you don't need.", "speech": [0.05, 3.45], "pauses": [[1.07, 1.37]]},
+  {"wav": "assets/vo/s2.wav", "vo": "Don't fear the change. Doing nothing still moves everything around you.", "speech": [0.05, 4.27], "pauses": [[1.37, 1.79]]},
+  {"wav": "assets/vo/s3.wav", "vo": "And then you act. You build a reality you'd at least want to live in. Open hands. Still moving.", "speech": [0.05, 6.1], "pauses": [[0.98, 1.40], [3.74, 4.22]]}
+ ],
+ "points": [
+  {"img": "a4_douse.jpg", "en": "Drop the assumptions you don't need", "lv": "Atmet liekos pieņēmumus"},
+  {"img": "a4_swim.jpg", "en": "Doing nothing still moves the field", "lv": "Arī nedarīšana maina lauku"},
+  {"img": "a4_whisk.jpg", "en": "Then act. Open hands, still moving", "lv": "Tad dari. Atvērtas rokas, kustībā"}
+ ],
+ "captions_lv": [
+  ["Cilvēki dzird «palaid vaļā»", "un domā: apsēdies un gaidi.", "Tā nav."],
+  ["Palaist vaļā nozīmē atmest", "pieņēmumus, kas nav vajadzīgi."],
+  ["Nebaidies no pārmaiņām.", "Arī nedarīšana maina visu apkārt."],
+  ["Un tad tu dari.", "Veido realitāti, kurā pats gribētu dzīvot.", "Atvērtas rokas. Kustībā."]
+ ],
+ "end": {"en": "Saimnieku Pirtis", "lv": "Saimnieku Pirtis"}
+}
