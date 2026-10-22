@@ -26,7 +26,7 @@
 - Attēli: īsti pirts kadri no Drive "Pirts klipi" (atslēgas, slotu siešana, tvaiks, krāsns utt., skat. "RĀDA UZ" scenārijos).
 
 ## Noteikumi saturam
-Nav temperatūru (pirts rituāli ir 60–70 °C, neminēt), nav alkohola, nav medicīnisku/veselības apgalvojumu, rituāla ilgums ir "tik ilgi, cik vajag". Latviešu valodai jābūt dabiskai.
+Nav temperatūru (pirts rituāli ir 60–70 °C, neminēt), nav alkohola, nav medicīnisku/veselības apgalvojumu (izņēmums: frāze par toksīnu izvadīšanu ir atļauta), rituāla ilgums ir "tik ilgi, cik vajag". Latviešu valodai jābūt dabiskai.
 
 ## Kvalitātes vārti (lietotāja prasība)
 Katru gatavo video pirms rādīšanas lietotājam vērtē `/llm-council` (ar ChatGPT, ja pieejams). Padome saņem kadru kontaktlapu, transkriptu, metadatus un audio līmeņus un vērtē pēc kritērijiem: āķis, ritms, skaņa, subtitri, kadrējums, zīmols, noteikumi. Lietotājam rāda tikai 10/10. Montāžā izgriež klusumus, bet nekad negriež vārda vai teikuma vidū; skaļumu normalizē ar loudnorm (−14 LUFS).

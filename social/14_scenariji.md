@@ -129,4 +129,4 @@ Avots: "No rokām krīt daudz atslēgas… nelabojam, nomainām… esam tam gata
 - BALSS: "Keys are falling from our hands. Old ones, rusted. Some looked new only yesterday. They don't turn, they don't get us in. So we're not repairing them anymore. We replace what we see. You know this already. We're ready for it. And one last thing: I am not my body. Everything is one. I am everything."
 
 ---
-Noteikumu pārbaude: nav temperatūru, nav veselības apgalvojumu, nav alkohola, rituāla ilgums ir "tik ilgi, cik vajag". Latviešu tekstam vēl jāiziet dzimtās valodas lasījums (Mārcis).
+Noteikumu pārbaude: nav temperatūru, nav veselības apgalvojumu (frāze par toksīnu izvadīšanu ir atļauta, bet šajā sērijā nav vajadzīga), nav alkohola, rituāla ilgums ir "tik ilgi, cik vajag". Latviešu tekstam vēl jāiziet dzimtās valodas lasījums (Mārcis).
