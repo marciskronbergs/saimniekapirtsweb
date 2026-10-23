@@ -1,5 +1,5 @@
 import { useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
-import { CalendarDays, Download, ExternalLink, LogOut, Mail, Phone, RefreshCw, Search, Send, X } from 'lucide-react';
+import { CalendarDays, Download, ExternalLink, LogOut, Mail, Phone, RefreshCw, Search, Send, Star, X } from 'lucide-react';
 import { PopupContext } from '../App';
 import { OfficeError, callInvoiceFunction, eur, useOfficePage } from '../lib/officeApi';
 import MastersSection, { type Master, type MasterDraft } from './birojs/MastersSection';
@@ -42,6 +42,8 @@ interface Booking extends InvoiceInfo {
   card_paid: boolean;
   // The sauna masters leading the ritual; a large group may have several.
   master_ids: string[];
+  // Thanked and asked for a review (by the office or the morning run).
+  thanked?: boolean;
   // The gift card the guest gave when booking online.
   gift_card_code: string | null;
   message: string | null;
@@ -433,6 +435,25 @@ const BirojsPage = () => {
     }
   };
 
+  // Thanks and a request for a review, now: for a visit that has happened.
+  const askForReview = async (b: Booking) => {
+    const again = b.thanked ? '\n\nŠim klientam lūgums jau ir nosūtīts – tas aizies vēlreiz.' : '';
+    if (!window.confirm(`Nosūtīt ${b.name} paldies par apmeklējumu un lūgumu atstāt atsauksmi Google uz ${b.email}?${again}`)) return;
+    setBusyId(b.id);
+    setError(null);
+    setNotice(null);
+    try {
+      const r = await callInvoiceFunction<{ status: string; to?: string }>({ office: { pin, action: 'thanks', id: b.id } });
+      if (r.status !== 'sent') throw new Error('Neizdevās. Mēģiniet vēlreiz pēc brīža.');
+      setNotice(`Paldies un lūgums atstāt atsauksmi nosūtīts ${b.name} uz ${r.to ?? b.email}.`);
+      setList((l) => (l ? { ...l, bookings: l.bookings.map((x) => (x.id === b.id ? { ...x, thanked: true } : x)) } : l));
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setBusyId(null);
+    }
+  };
+
   const cancel = async (b: Booking) => {
     const when = `${longDate(b.date)} ${b.time}`;
     const refund = b.payment === 'card' && b.card_paid
@@ -809,6 +830,20 @@ const BirojsPage = () => {
                           </select>
                         )}
                         {b.master_ids.length === 0 && <Badge tone="red">Rituālam nav pirtnieka</Badge>}
+                      </div>
+                    )}
+                    {b.date <= list.today && (
+                      <div className="flex flex-wrap items-center gap-2 text-sm">
+                        <button
+                          type="button"
+                          onClick={() => askForReview(b)}
+                          disabled={busyId !== null}
+                          className="inline-flex items-center gap-1.5 rounded-lg border border-gray-600 bg-gray-800 hover:bg-gray-700 disabled:opacity-50 px-2.5 py-1.5"
+                        >
+                          <Star className="w-4 h-4 text-amber-400" />
+                          {b.thanked ? 'Lūgt atsauksmi vēlreiz' : 'Lūgt atsauksmi'}
+                        </button>
+                        {b.thanked && <Badge tone="green">Atsauksmes lūgums nosūtīts</Badge>}
                       </div>
                     )}
                   </div>

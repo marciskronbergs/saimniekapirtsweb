@@ -35,7 +35,7 @@
 //                                           frees the time slot and asks Make to
 //                                           take it off the calendar
 //   { office: { pin, action: 'list' | 'assign' | 'save_master' | 'gift_card_pdf'
-//               | 'send_invoice' | 'pay_link' | 'discount' | 'premises' } }
+//               | 'send_invoice' | 'pay_link' | 'discount' | 'premises' | 'thanks' } }
 //                                           the office's page: upcoming bookings,
 //                                           the sauna masters assigned to them, and
 //                                           invoices and payment links sent by hand
@@ -1677,6 +1677,26 @@ async function officePremises(body: { id?: string; on?: boolean }) {
   return json({ status: 'reissued', on, number: invoice.number, replaced: current.number, total: Number(invoice.total), guest });
 }
 
+// The office thanks a guest and asks for a review now, for a visit that has
+// happened: a cash guest straight after the sauna, say, or anyone whose final
+// invoice is not wanted. It is the morning run's email, recorded as its own,
+// so that run does not send it again; the office may send it more than once.
+async function officeThanks(id?: string) {
+  if (!id || !uuidPattern.test(id)) return json({ error: 'not_found' }, 404);
+  if (!(await guestUrl())) return json({ error: 'guest_mail_off' }, 409);
+  const source = await loadSource('reservation', id);
+  if (!source) return json({ error: 'not_found' }, 404);
+  if (!source.email.includes('@')) return json({ error: 'no_email' }, 409);
+  if (source.row.reservation_date > rigaToday()) return json({ error: 'not_yet' }, 409);
+  await sendToGuest(source.email, thanksEmail(guestInput(source)));
+  const { error } = await db.from('guest_emails').upsert(
+    { source_type: 'reservation', source_id: id, kind: 'thanks', sent_at: new Date().toISOString() },
+    { onConflict: 'source_type,source_id,kind' },
+  );
+  if (error) throw error;
+  return json({ status: 'sent', to: source.email });
+}
+
 // The office cancels a gift card order. The card no longer holds for booking.
 // An unpaid advance invoice is annulled; a paid one stays (any refund is the
 // office's to make), and a card already used for a booking cannot be cancelled.
@@ -2049,6 +2069,14 @@ async function office(body: {
       return json({ error: describe(e) }, 500);
     }
   }
+  if (body.action === 'thanks') {
+    try {
+      return await officeThanks(body.id);
+    } catch (e) {
+      console.error(e);
+      return json({ error: describe(e) }, 500);
+    }
+  }
   if (body.action === 'premises') {
     try {
       return await officePremises(body);
@@ -2117,6 +2145,13 @@ async function office(body: {
   const cardPaid = new Set((paidByCard ?? []).map((p) => p.source_id));
   const masters = await assignedMasters([...(bookings.data ?? []), ...(past.data ?? [])].map((r) => r.id as string));
   const mastersOf = (id: string) => masters.get(id) ?? [];
+  // Guests already thanked and asked for a review.
+  const bookingIds = (bookings.data ?? []).map((r) => r.id as string);
+  const { data: thankedRows } = bookingIds.length
+    ? await db.from('guest_emails').select('source_id').eq('source_type', 'reservation').eq('kind', 'thanks')
+      .not('sent_at', 'is', null).in('source_id', bookingIds)
+    : { data: [] };
+  const thanked = new Set((thankedRows ?? []).map((r) => r.source_id));
   // deno-lint-ignore no-explicit-any
   const cardOf = (id: string) => (codes ?? []).find((c: any) => c.order_id === id) ?? null;
   const codeOf = (id: string) => {
@@ -2176,6 +2211,7 @@ async function office(body: {
       payment: ['cash', 'card'].includes(r.payment_method) ? r.payment_method : 'transfer',
       card_paid: cardPaid.has(r.id),
       master_ids: mastersOf(r.id),
+      thanked: thanked.has(r.id),
       gift_card_code: r.gift_card_code ?? null,
       message: (r.form_type === 'noma' ? r.rental_message : r.ritual_message) || null,
       name: r.name,

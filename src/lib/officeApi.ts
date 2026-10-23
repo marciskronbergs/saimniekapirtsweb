@@ -20,6 +20,7 @@ const messages: Record<string, string> = {
   annulled: 'Avansa rēķins ir anulēts, tāpēc to vairs nevar nosūtīt.',
   card_off: 'Maksājumi ar karti pašlaik nav ieslēgti.',
   cannot_invoice: 'Cenu nevarēja noteikt pēc cenrāža, tāpēc rēķins jāizraksta pašiem.',
+  not_yet: 'Apmeklējums vēl nav bijis – atsauksmi var lūgt no apmeklējuma dienas.',
 };
 
 export class OfficeError extends Error {
