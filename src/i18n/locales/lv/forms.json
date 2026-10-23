@@ -155,5 +155,11 @@
     "regNumber": "Reģistrācijas Nr.",
     "address": "Juridiskā adrese",
     "vatNumber": "PVN reģistrācijas Nr. (ja ir)"
+  },
+  "contactCheck": {
+    "suggest": "Vai domājāt",
+    "noMail": "Uz šo e-pasta adresi nevar nosūtīt e-pastu – lūdzu, pārbaudiet to. Uz to nosūtīsim rēķinu un rezervācijas apstiprinājumu.",
+    "phoneShort": "Tālruņa numurs izskatās nepilnīgs – lūdzu, pārbaudiet to.",
+    "keep": "Ja viss ir pareizi, spiediet pogu vēlreiz."
   }
 }

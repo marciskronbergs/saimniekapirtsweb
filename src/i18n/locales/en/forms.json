@@ -154,5 +154,11 @@
     "regNumber": "Registration No.",
     "address": "Legal address",
     "vatNumber": "VAT No. (if any)"
+  },
+  "contactCheck": {
+    "suggest": "Did you mean",
+    "noMail": "Email cannot be delivered to this address – please check it. We send the invoice and the booking confirmation there.",
+    "phoneShort": "The phone number looks incomplete – please check it.",
+    "keep": "If everything is right, press the button again."
   }
 }

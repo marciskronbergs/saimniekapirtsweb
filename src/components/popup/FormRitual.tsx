@@ -19,6 +19,7 @@ import PaymentChoice, { type PaymentMethod } from './PaymentChoice';
 import GiftCardChoice from './GiftCardChoice';
 import { emptyGiftCard, type GiftCardEntry } from './giftCardEntry';
 import CompanyChoice from './CompanyChoice';
+import { useContactCheck, ContactCheckNotice } from './ContactCheck';
 import { companyForBooking, type CompanyEntry } from './companyEntry';
 import { goToCardPayment, paymentLabel, useCardPayments } from '../../lib/cardPayments';
 import { scrollIntoPopup } from './scrollIntoPopup';
@@ -66,6 +67,8 @@ const FormRitual: React.FC<FormRitualProps> = ({ selectedDate, selectedTime, onC
   const [giftCard, setGiftCard] = useState<GiftCardEntry>(emptyGiftCard);
   // The company the invoice is made out to, if not the guest.
   const [company, setCompany] = useState<CompanyEntry | null>(null);
+  // A mistyped email or phone, caught before the booking is saved.
+  const contact = useContactCheck(formData.email, formData.phone);
   const withGiftCard = !!giftCard.code.trim();
   const paymentMethod: PaymentMethod = withGiftCard ? 'transfer' : formData.paymentMethod;
   // The button is disabled through state, which only takes effect on the next
@@ -142,6 +145,7 @@ React.useEffect(() => {
     setSubmitError(null);
 
     try {
+      if (!(await contact.confirmBeforeSubmit())) return;
       // Prepare data for Supabase
      const assignedSaunaType = await fetchSaunaType();
 if (!assignedSaunaType) {
@@ -307,6 +311,7 @@ const reservationData = {
               placeholder={t('forms:ritual.email_placeholder')}
               value={formData.email}
               onChange={(e) => handleInputChange('email', e.target.value)}
+              onBlur={contact.onEmailBlur}
               className="w-full pl-10 pr-4 py-3 bg-gray-800 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:border-green-500 focus:ring-2 focus:ring-green-500/20"
               required
             />
@@ -322,6 +327,8 @@ const reservationData = {
               className="w-full pl-10 pr-4 py-3 bg-gray-800 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:border-green-500 focus:ring-2 focus:ring-green-500/20"
             />
           </div>
+
+          <ContactCheckNotice notice={contact.notice} onUse={(email) => handleInputChange('email', email)} />
 
           <CompanyChoice value={company} onChange={setCompany} />
         </div>

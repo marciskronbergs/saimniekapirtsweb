@@ -7,6 +7,7 @@ import { useTranslation } from 'react-i18next';
 import priceCatalog from '../data/priceCatalog.json';
 import PaymentChoice from '../components/popup/PaymentChoice';
 import CompanyChoice from '../components/popup/CompanyChoice';
+import { useContactCheck, ContactCheckNotice } from '../components/popup/ContactCheck';
 import { companyForBooking, type CompanyEntry } from '../components/popup/companyEntry';
 import { goToCardPayment, useCardPayments } from '../lib/cardPayments';
 import GiftCardPreview from '../components/giftcards/GiftCardPreview';
@@ -39,6 +40,8 @@ const DavanuKartesPage = () => {
   const [chosenPayment, setChosenPayment] = useState<'card' | 'transfer' | null>(null);
   // The company the invoice is made out to, if not the buyer.
   const [company, setCompany] = useState<CompanyEntry | null>(null);
+  // A mistyped email or phone, caught before the order is saved.
+  const contact = useContactCheck(formData.email, formData.phone);
   const paymentMethod = chosenPayment ?? (cardPayments ? 'card' : 'transfer');
 
   useEffect(() => {
@@ -145,6 +148,7 @@ const DavanuKartesPage = () => {
     setIsSubmitting(true);
 
     try {
+      if (!(await contact.confirmBeforeSubmit())) return;
       // Get the full label for the selected ritual
       const getSelectedRitualLabel = () => {
         if (type === 'ritual' && selectedRitual) {
@@ -470,6 +474,7 @@ const DavanuKartesPage = () => {
                         type="email"
                         value={formData.email}
                         onChange={(e) => handleInputChange('email', e.target.value)}
+                        onBlur={contact.onEmailBlur}
                         placeholder={t('form.emailPlaceholder')}
                         required
                         className="w-full px-3 sm:px-4 py-3 sm:py-4 bg-black/30 border border-green-500/30 rounded-xl text-white placeholder-gray-400 focus:border-green-500 focus:ring-2 focus:ring-green-500/20 transition-all duration-300 text-sm sm:text-base min-h-[48px]"
@@ -504,6 +509,8 @@ const DavanuKartesPage = () => {
                       />
                     </div>
                   </div>
+
+                  <ContactCheckNotice notice={contact.notice} onUse={(email) => handleInputChange('email', email)} />
 
                   <CompanyChoice value={company} onChange={setCompany} />
 
@@ -593,6 +600,7 @@ const DavanuKartesPage = () => {
                         type="email"
                         value={formData.email}
                         onChange={(e) => handleInputChange('email', e.target.value)}
+                        onBlur={contact.onEmailBlur}
                         placeholder={t('form.emailPlaceholder')}
                         required
                         className="w-full px-3 sm:px-4 py-3 sm:py-4 bg-black/30 border border-green-500/30 rounded-xl text-white placeholder-gray-400 focus:border-green-500 focus:ring-2 focus:ring-green-500/20 transition-all duration-300 text-sm sm:text-base min-h-[48px]"
@@ -627,6 +635,8 @@ const DavanuKartesPage = () => {
                       />
                     </div>
                   </div>
+
+                  <ContactCheckNotice notice={contact.notice} onUse={(email) => handleInputChange('email', email)} />
 
                   <CompanyChoice value={company} onChange={setCompany} />
 
