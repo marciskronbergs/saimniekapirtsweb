@@ -10,6 +10,7 @@ import {
   Home
 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
+import { sameSlot } from './timeSlots';
 
 import priceCatalog from '../../data/priceCatalog.json';
 import BookingConfirmation, { type ConfirmedBooking } from './BookingConfirmation';
@@ -105,21 +106,18 @@ React.useEffect(() => {
 
   const formattedDate = selectedDate.toLocaleDateString('en-CA');
 
-  const timesToCheck =
-    selectedTime === '17:00' || selectedTime === '18:00'
-      ? ['17:00', '18:00']
-      : [selectedTime];
-
-  const { data, error } = await supabase
+  // The day's bookings in the same part of the day: the evening slots, and a
+  // time the office booked off the list, share the saunas.
+  const { data: day, error } = await supabase
     .from('reservations')
-    .select('sauna_type')
-    .eq('reservation_date', formattedDate)
-    .in('reservation_time', timesToCheck);
+    .select('sauna_type, reservation_time')
+    .eq('reservation_date', formattedDate);
 
-  if (error) {
+  if (error || !day) {
     console.error('Failed to fetch existing reservations:', error);
     return 'Pelēkā pirts'; // fallback
   }
+  const data = day.filter((r) => sameSlot(r.reservation_time, selectedTime));
 
   const usedTypes = new Set(data.map((r: any) => r.sauna_type));
 

@@ -4,7 +4,12 @@ import { supabase } from '../../lib/supabase';
 export const timeSlots = ['12:00', '17:00', '18:00'];
 
 const maxPerSlot = 2;
-const eveningSlots = ['17:00', '18:00'];
+
+// The evening slots share the same saunas, and a booking the office makes at
+// another time (a group arriving at 16:00) takes its sauna for that part of
+// the day too: before 14:00 the midday slot, from 14:00 the evening.
+const slotGroup = (time: string) => (time < '14:00' ? 'midday' : 'evening');
+export const sameSlot = (a: string, b: string) => slotGroup(a) === slotGroup(b);
 
 export type SlotBadge = 'green' | 'yellow' | 'red';
 
@@ -59,11 +64,9 @@ export const useSlotAvailability = (selectedDate: Date | null): SlotAvailability
     };
   }, [selectedDate]);
 
-  // The two evening slots share the same saunas, so they are counted together.
+  // Bookings in the same part of the day are counted together.
   const bookedCount = (time: string): number =>
-    eveningSlots.includes(time)
-      ? (availability['17:00'] ?? 0) + (availability['18:00'] ?? 0)
-      : availability[time] ?? 0;
+    Object.entries(availability).reduce((sum, [booked, count]) => (sameSlot(booked, time) ? sum + count : sum), 0);
 
   // Reservations need a day's notice.
   const isTooSoon = (time: string): boolean => {

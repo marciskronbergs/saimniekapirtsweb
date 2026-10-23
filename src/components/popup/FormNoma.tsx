@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { User, Mail, Phone, MessageSquare, Home, Plus } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
+import { sameSlot } from './timeSlots';
 import { useTranslation } from 'react-i18next';
 import priceCatalog from '../../data/priceCatalog.json';
 import BookingConfirmation, { type ConfirmedBooking } from './BookingConfirmation';
@@ -82,15 +83,14 @@ const FormNoma: React.FC<FormNomaProps> = ({ selectedDate, selectedTime, onClose
       if (!selectedDate || !selectedTime) return;
 
       const formattedDate = selectedDate.toLocaleDateString('en-CA');
-      const timesToCheck = selectedTime === '17:00' || selectedTime === '18:00'
-        ? ['17:00', '18:00']
-        : [selectedTime];
 
-      const { data, error } = await supabase
+      // The day's bookings in the same part of the day: the evening slots,
+      // and a time the office booked off the list, share the saunas.
+      const { data: day, error } = await supabase
         .from('reservations')
-        .select('sauna_type')
-        .eq('reservation_date', formattedDate)
-        .in('reservation_time', timesToCheck);
+        .select('sauna_type, reservation_time')
+        .eq('reservation_date', formattedDate);
+      const data = day?.filter((r) => sameSlot(r.reservation_time, selectedTime));
 
       if (error) {
         console.error('Failed to fetch sauna reservations:', error);
