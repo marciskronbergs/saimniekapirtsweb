@@ -35,7 +35,7 @@
 //                                           frees the time slot and asks Make to
 //                                           take it off the calendar
 //   { office: { pin, action: 'list' | 'assign' | 'save_master' | 'gift_card_pdf'
-//               | 'send_invoice' | 'pay_link' | 'discount' | 'premises' | 'thanks' } }
+//               | 'send_invoice' | 'pay_link' | 'discount' | 'premises' | 'thanks' | 'move' } }
 //                                           the office's page: upcoming bookings,
 //                                           the sauna masters assigned to them, and
 //                                           invoices and payment links sent by hand
@@ -1677,6 +1677,95 @@ async function officePremises(body: { id?: string; on?: boolean }) {
   return json({ status: 'reissued', on, number: invoice.number, replaced: current.number, total: Number(invoice.total), guest });
 }
 
+// The Make scenario the booking forms call: it puts a booking on the office's
+// Google Calendar and writes to the office. The forms' own address, as in the
+// site's JavaScript.
+const BOOKING_HOOK = 'https://hook.eu2.make.com/4lyknzb8yu44wvfojo9eahoju5q16zif';
+
+// deno-lint-ignore no-explicit-any
+async function addToCalendar(r: any) {
+  await post(BOOKING_HOOK, 'Calendar booking', {
+    form_type: r.form_type,
+    name: r.name,
+    email: r.email,
+    phone: r.phone ?? '',
+    reservation_date: r.reservation_date,
+    reservation_time: r.reservation_time,
+    ritual_type: r.ritual_type ?? '',
+    ritual_participants: r.ritual_participants ?? null,
+    overnight_stay: !!r.overnight_stay,
+    ritual_message: r.ritual_message ?? '',
+    sauna_type: r.sauna_type ?? '',
+    rental_type: r.rental_type ?? '',
+    rental_extras: r.rental_extras ?? [],
+    rental_message: r.rental_message ?? '',
+    transport: r.transport ?? '',
+    payment_method: r.payment_method,
+    payment_label: r.payment_method === 'cash' ? 'Skaidrā naudā uz vietas'
+      : r.payment_method === 'card' ? 'Karte (Stripe) – maksā tiešsaistē' : 'Pārskaitījums (avansa rēķins)',
+    gift_card: r.gift_card_code ?? '',
+    locale: localeOf(r.locale),
+    cancel_url: `https://saimniekapirts.lv/rekins?r=${r.id}`,
+  });
+  return { status: 'sent' };
+}
+
+// Two bookings in one sauna clash when they fall in the same part of the day:
+// before 14:00 the midday slot, from 14:00 the evening (as on the forms).
+const partOfDay = (time: string) => (time < '14:00' ? 'midday' : 'evening');
+
+// The office moves a booking to another day, time or sauna, as agreed with the
+// guest: the calendar follows (the old event off, the new one on), the
+// reminder is due again before the new day, and the guest is told, in their
+// language, with the same details as their confirmation. Nothing changed and
+// notify on: the guest is only told. Invoices stay as issued.
+async function officeMove(body: { id?: string; date?: string; time?: string; sauna?: string; notify?: boolean }) {
+  const id = body.id;
+  if (!id || !uuidPattern.test(id)) return json({ error: 'not_found' }, 404);
+  const date = String(body.date ?? '');
+  const time = String(body.time ?? '');
+  const sauna = String(body.sauna ?? '');
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(date) || !/^([01]\d|2[0-3]):[0-5]\d$/.test(time) || !['Baltā pirts', 'Pelēkā pirts'].includes(sauna)) {
+    return json({ error: 'bad_move' }, 400);
+  }
+  const { data: old, error: readError } = await db.from('reservations').select('*').eq('id', id).maybeSingle();
+  if (readError) throw readError;
+  if (!old) return json({ error: 'not_found' }, 404);
+  const { data: final } = await db.from('invoices').select('id')
+    .eq('source_type', 'reservation').eq('source_id', id).eq('kind', 'final').maybeSingle();
+  if (final) return json({ error: 'final_exists' }, 409);
+
+  const changed = old.reservation_date !== date || old.reservation_time !== time || old.sauna_type !== sauna;
+  let calendar: unknown = null;
+  if (changed) {
+    const { data: day, error } = await db.from('reservations').select('id, reservation_time')
+      .eq('reservation_date', date).eq('sauna_type', sauna).neq('id', id);
+    if (error) throw error;
+    if ((day ?? []).some((r) => partOfDay(r.reservation_time) === partOfDay(time))) return json({ error: 'slot_taken' }, 409);
+    const { error: moveError } = await db.from('reservations')
+      .update({ reservation_date: date, reservation_time: time, sauna_type: sauna }).eq('id', id);
+    if (moveError) return json({ error: moveError.code === '23505' ? 'slot_taken' : describe(moveError) }, 409);
+    await db.from('guest_emails').delete().eq('source_type', 'reservation').eq('source_id', id).eq('kind', 'reminder');
+    calendar = {
+      removed: await attempt(() => removeFromCalendar(old)),
+      added: await attempt(() => addToCalendar({ ...old, reservation_date: date, reservation_time: time, sauna_type: sauna })),
+    };
+  }
+
+  let guest: unknown = { status: 'not_asked' };
+  if (body.notify !== false) {
+    guest = await attempt(async () => {
+      if (!(await guestUrl())) return { status: 'guest_mail_off' };
+      const source = await loadSource('reservation', id);
+      if (!source || !source.email.includes('@')) return { status: 'no_email' };
+      source.cardPaid = await hasCardPayment(source);
+      await sendToGuest(source.email, confirmationEmail({ ...guestInput(source), changed: true }));
+      return { status: 'sent', to: source.email };
+    });
+  }
+  return json({ status: changed ? 'moved' : 'unchanged', calendar, guest });
+}
+
 // The office thanks a guest and asks for a review now, for a visit that has
 // happened: a cash guest straight after the sauna, say, or anyone whose final
 // invoice is not wanted. It is the morning run's email, recorded as its own,
@@ -2043,6 +2132,7 @@ async function officeFinal(type: SourceType, id?: string) {
 async function office(body: {
   pin?: string; action?: string; reservation?: string; order?: string; a4?: boolean; light?: boolean; master_id?: string | null; master_ids?: unknown; master?: any;
   type?: string; id?: string; pay_link?: boolean; percent?: number; reason?: string; on?: boolean;
+  date?: string; time?: string; sauna?: string; notify?: boolean;
 }) {
   const pinResult = await pinCheck(body.pin);
   if (pinResult !== 'ok') return pinRefusal(pinResult);
@@ -2064,6 +2154,14 @@ async function office(body: {
   if (body.action === 'discount') {
     try {
       return await officeDiscount(body);
+    } catch (e) {
+      console.error(e);
+      return json({ error: describe(e) }, 500);
+    }
+  }
+  if (body.action === 'move') {
+    try {
+      return await officeMove(body);
     } catch (e) {
       console.error(e);
       return json({ error: describe(e) }, 500);

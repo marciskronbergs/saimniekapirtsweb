@@ -180,6 +180,8 @@ export interface ConfirmationInput {
   priced: PricedOrder;
   individual?: boolean;
   seller: InvoiceRow['seller'];
+  // The office moved the booking: the same email, saying it changed.
+  changed?: boolean;
 }
 
 export function confirmationEmail(c: ConfirmationInput) {
@@ -213,9 +215,9 @@ export function confirmationEmail(c: ConfirmationInput) {
   const ritual = c.formType === 'ritual';
   const dateText = c.date ? longDate(c.date, c.locale) : '';
   const subject = t(
-    `Rezervācija apstiprināta: ${ritual ? 'pirts rituāls' : 'pirts noma'} ${c.date ? formatDate(c.date) : ''} plkst. ${c.time ?? ''} · SaimniekaPirts`,
-    `Booking confirmed: ${ritual ? 'sauna ritual' : 'sauna rental'} on ${c.date ? formatDate(c.date) : ''} at ${c.time ?? ''} · SaimniekaPirts`,
-    `Бронирование подтверждено: ${ritual ? 'банный ритуал' : 'аренда бани'} ${c.date ? formatDate(c.date) : ''} в ${c.time ?? ''} · SaimniekaPirts`,
+    `${c.changed ? 'Rezervācija mainīta' : 'Rezervācija apstiprināta'}: ${ritual ? 'pirts rituāls' : 'pirts noma'} ${c.date ? formatDate(c.date) : ''} plkst. ${c.time ?? ''} · SaimniekaPirts`,
+    `${c.changed ? 'Booking changed' : 'Booking confirmed'}: ${ritual ? 'sauna ritual' : 'sauna rental'} on ${c.date ? formatDate(c.date) : ''} at ${c.time ?? ''} · SaimniekaPirts`,
+    `${c.changed ? 'Бронирование изменено' : 'Бронирование подтверждено'}: ${ritual ? 'банный ритуал' : 'аренда бани'} ${c.date ? formatDate(c.date) : ''} в ${c.time ?? ''} · SaimniekaPirts`,
   );
   const duration = ritual
     ? (c.individual
@@ -225,7 +227,12 @@ export function confirmationEmail(c: ConfirmationInput) {
 
   const body = [
     p(hello(t, who)),
-    p(ritual
+    c.changed
+      ? p(t('Jūsu rezervācija ir mainīta, kā norunājām. Jaunais laiks un pārējās ziņas ir zemāk – iepriekšējais apstiprinājums vairs nav spēkā.',
+        'Your booking has been changed as agreed. The new time and the other details are below – the earlier confirmation no longer applies.',
+        'Ваше бронирование изменено, как мы договорились. Новое время и остальные данные ниже – прежнее подтверждение больше не действует.'))
+      : '',
+    c.changed ? '' : p(ritual
       ? t('Paldies, ka izvēlējāties SaimniekaPirts! Jūsu pirts rituāls ir rezervēts, un mēs jau gatavojamies Jūs sagaidīt.',
         'Thank you for choosing SaimniekaPirts! Your sauna ritual is booked and we are looking forward to welcoming you.',
         'Спасибо, что выбрали SaimniekaPirts! Ваш банный ритуал забронирован, и мы уже готовимся вас встретить.')
@@ -254,6 +261,10 @@ export function confirmationEmail(c: ConfirmationInput) {
       : c.cash
       ? t('Norēķināties varēsiet skaidrā naudā uz vietas pēc apmeklējuma.', 'You will pay in cash on site after your visit.',
         'Оплатить можно наличными на месте после визита.')
+      : c.changed
+      ? t('Avansa rēķins Jums jau ir nosūtīts, un tas paliek spēkā – ja tas vēl nav apmaksāts, lūdzam to apmaksāt ar pārskaitījumu pirms apmeklējuma.',
+        'You already have the advance invoice, and it still applies – if it is not paid yet, please pay it by bank transfer before your visit.',
+        'Счёт на предоплату вам уже отправлен, и он остаётся в силе – если он ещё не оплачен, пожалуйста, оплатите его переводом до визита.')
       : t('Avansa rēķinu nosūtām atsevišķā e-pastā – lūdzam to apmaksāt ar pārskaitījumu pirms apmeklējuma. Ja ērtāk, var norēķināties arī skaidrā naudā uz vietas.',
         'The advance invoice follows in a separate email – please pay it by bank transfer before your visit. If you prefer, you can also pay in cash on site.',
         'Счёт на предоплату придёт отдельным письмом – пожалуйста, оплатите его переводом до визита. Если удобнее, можно расплатиться и наличными на месте.')),
@@ -264,7 +275,10 @@ export function confirmationEmail(c: ConfirmationInput) {
     p(t('Gaidīsim Jūs! 🌿', 'We look forward to seeing you! 🌿', 'Ждём вас! 🌿')),
   ].join('');
 
-  return { subject, html: guestLayout(t('Rezervācija apstiprināta', 'Your booking is confirmed', 'Бронирование подтверждено'), body, c.locale, c.seller) };
+  const title = c.changed
+    ? t('Rezervācija mainīta', 'Your booking has changed', 'Бронирование изменено')
+    : t('Rezervācija apstiprināta', 'Your booking is confirmed', 'Бронирование подтверждено');
+  return { subject, html: guestLayout(title, body, c.locale, c.seller) };
 }
 
 // ---------------------------------------------------------------------------

@@ -21,6 +21,8 @@ const messages: Record<string, string> = {
   card_off: 'Maksājumi ar karti pašlaik nav ieslēgti.',
   cannot_invoice: 'Cenu nevarēja noteikt pēc cenrāža, tāpēc rēķins jāizraksta pašiem.',
   not_yet: 'Apmeklējums vēl nav bijis – atsauksmi var lūgt no apmeklējuma dienas.',
+  slot_taken: 'Šajā dienā un laikā šī pirts jau ir aizņemta.',
+  bad_move: 'Pārbaudiet datumu, laiku un pirti.',
 };
 
 export class OfficeError extends Error {

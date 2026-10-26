@@ -204,6 +204,8 @@ const BirojsPage = () => {
   const [notice, setNotice] = useState<string | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [payLink, setPayLink] = useState<PayLink | null>(null);
+  // A booking being moved to another day, time or sauna.
+  const [moving, setMoving] = useState<{ id: string; date: string; time: string; sauna: string; notify: boolean } | null>(null);
   const [discountFor, setDiscountFor] = useState<DiscountTarget | null>(null);
   const [mode, setMode] = useState<string>('MONTH');
   const [query, setQuery] = useState('');
@@ -447,6 +449,31 @@ const BirojsPage = () => {
       if (r.status !== 'sent') throw new Error('Neizdevās. Mēģiniet vēlreiz pēc brīža.');
       setNotice(`Paldies un lūgums atstāt atsauksmi nosūtīts ${b.name} uz ${r.to ?? b.email}.`);
       setList((l) => (l ? { ...l, bookings: l.bookings.map((x) => (x.id === b.id ? { ...x, thanked: true } : x)) } : l));
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setBusyId(null);
+    }
+  };
+
+  // Moves a booking as agreed with the guest: the calendar follows, and the
+  // guest is told unless the box is cleared. Unchanged, it only tells the guest.
+  const move = async (b: Booking) => {
+    if (!moving) return;
+    const { date, time, sauna, notify } = moving;
+    setBusyId(b.id);
+    setError(null);
+    setNotice(null);
+    try {
+      const r = await callInvoiceFunction<{ status: string; guest?: { status?: string; to?: string } }>({
+        office: { pin, action: 'move', id: b.id, date, time, sauna, notify },
+      });
+      const told = r.guest?.status === 'sent' ? `klientam nosūtīts paziņojums uz ${r.guest.to}` : notify ? 'klientam paziņojumu neizdevās nosūtīt' : 'klientam nekas netika sūtīts';
+      setNotice(r.status === 'moved'
+        ? `${b.name} rezervācija pārcelta uz ${longDate(date)} ${time}, ${sauna}. Kalendārs atjaunināts; ${told}.`
+        : `${b.name}: rezervācija nemainījās; ${told}.`);
+      setMoving(null);
+      await load(pin);
     } catch (e) {
       setError((e as Error).message);
     } finally {
@@ -846,15 +873,83 @@ const BirojsPage = () => {
                         {b.thanked && <Badge tone="green">Atsauksmes lūgums nosūtīts</Badge>}
                       </div>
                     )}
+                    {moving?.id === b.id && (
+                      <form
+                        onSubmit={(e) => { e.preventDefault(); move(b); }}
+                        className="rounded-lg border border-gray-700 bg-black/40 p-3 space-y-3 text-sm"
+                      >
+                        <p className="font-semibold text-white">Pārcelt rezervāciju</p>
+                        <div className="flex flex-wrap gap-2">
+                          <input
+                            type="date"
+                            value={moving.date}
+                            onChange={(e) => setMoving({ ...moving, date: e.target.value })}
+                            required
+                            aria-label="Datums"
+                            className="rounded-lg bg-gray-800 border border-gray-600 px-2 py-1.5 text-white"
+                          />
+                          <input
+                            type="time"
+                            value={moving.time}
+                            onChange={(e) => setMoving({ ...moving, time: e.target.value })}
+                            required
+                            aria-label="Laiks"
+                            className="rounded-lg bg-gray-800 border border-gray-600 px-2 py-1.5 text-white"
+                          />
+                          <select
+                            value={moving.sauna}
+                            onChange={(e) => setMoving({ ...moving, sauna: e.target.value })}
+                            aria-label="Pirts"
+                            className="rounded-lg bg-gray-800 border border-gray-600 px-2 py-1.5 text-white"
+                          >
+                            <option>Baltā pirts</option>
+                            <option>Pelēkā pirts</option>
+                          </select>
+                        </div>
+                        <label className="flex items-center gap-2 text-gray-300">
+                          <input
+                            type="checkbox"
+                            checked={moving.notify}
+                            onChange={(e) => setMoving({ ...moving, notify: e.target.checked })}
+                          />
+                          Paziņot klientam uz {b.email}
+                        </label>
+                        <div className="flex flex-wrap gap-2">
+                          <button
+                            type="submit"
+                            disabled={busyId !== null}
+                            className="rounded-lg bg-green-600 hover:bg-green-500 disabled:opacity-50 px-3 py-1.5 font-semibold text-black"
+                          >
+                            {busyId === b.id ? 'Saglabā…' : 'Saglabāt'}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setMoving(null)}
+                            className="rounded-lg border border-gray-600 px-3 py-1.5 text-gray-300 hover:bg-gray-800"
+                          >
+                            Atpakaļ
+                          </button>
+                        </div>
+                      </form>
+                    )}
                   </div>
-                  <div className="sm:text-right">
+                  <div className="sm:text-right flex sm:flex-col gap-2 items-start sm:items-end">
+                    {!b.final && (
+                      <button
+                        onClick={() => setMoving({ id: b.id, date: b.date, time: b.time, sauna: b.sauna ?? 'Baltā pirts', notify: true })}
+                        disabled={busyId !== null}
+                        className="rounded-lg border border-gray-600 text-gray-200 hover:bg-gray-800 disabled:opacity-50 px-3 py-2 text-sm"
+                      >
+                        Mainīt
+                      </button>
+                    )}
                     {!b.final && (
                       <button
                         onClick={() => cancel(b)}
                         disabled={busyId !== null}
                         className="rounded-lg border border-red-600/60 text-red-300 hover:bg-red-900/40 disabled:opacity-50 px-3 py-2 text-sm"
                       >
-                        {busyId === b.id ? 'Atceļ…' : 'Atcelt'}
+                        {busyId === b.id && moving?.id !== b.id ? 'Atceļ…' : 'Atcelt'}
                       </button>
                     )}
                   </div>
