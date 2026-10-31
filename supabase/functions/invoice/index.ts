@@ -35,7 +35,8 @@
 //                                           frees the time slot and asks Make to
 //                                           take it off the calendar
 //   { office: { pin, action: 'list' | 'assign' | 'save_master' | 'gift_card_pdf'
-//               | 'send_invoice' | 'pay_link' | 'discount' | 'premises' | 'thanks' | 'move' } }
+//               | 'send_invoice' | 'pay_link' | 'discount' | 'premises' | 'thanks' | 'move'
+//               | 'postpone' | 'restore' | 'final' } }
 //                                           the office's page: upcoming bookings,
 //                                           the sauna masters assigned to them, and
 //                                           invoices and payment links sent by hand
@@ -57,7 +58,7 @@
 import { createClient } from 'npm:@supabase/supabase-js@2';
 import { PDFDocument } from 'npm:pdf-lib@1.17.1';
 import catalog from './priceCatalog.json' with { type: 'json' };
-import { priceReservation, priceGiftCard, type PriceCatalog } from './pricing.ts';
+import { priceReservation, priceGiftCard, type PriceCatalog, type PricedItem } from './pricing.ts';
 import seller from './seller.json' with { type: 'json' };
 import { renderInvoicePdf, formatDate, type InvoiceRow, type InvoiceDetails, type InvoiceCompany } from './pdf.ts';
 import {
@@ -911,25 +912,32 @@ async function createAdvance(source: Source, paidOn?: string, replaces?: Invoice
 // Final invoices.
 
 // Issues the invoice that settles an advance, unless the advance was annulled.
-// The lines and the seller are the advance's, word for word.
-async function issueFinal(advance: Invoice) {
+// The lines and the seller are the advance's, word for word. Extras the office
+// adds (a guest more than booked) follow them: the advance counts as paid
+// towards the new total, and the rest is due in a week.
+async function issueFinal(advance: Invoice, extras: PricedItem[] = []) {
   if (advance.kind !== 'advance') throw new Error('Not an advance invoice');
   if (advance.status === 'annulled') return { status: 'annulled' };
+  const balance = Math.round(extras.reduce((sum, item) => sum + item.amount, 0) * 100) / 100;
   const { data: invoice, error } = await db.rpc('create_invoice', {
     p_kind: 'final',
     p_source_type: advance.source_type,
     p_source_id: advance.source_id,
-    p_due_on: rigaToday(),
+    p_due_on: balance > 0 ? addDays(rigaToday(), 7) : rigaToday(),
     p_locale: advance.locale,
     p_customer_name: advance.customer_name,
     p_customer_email: advance.customer_email,
     p_customer_phone: advance.customer_phone,
-    p_items: advance.items,
-    p_total: advance.total,
+    p_items: [...advance.items, ...extras],
+    p_total: Math.round((Number(advance.total) + balance) * 100) / 100,
     p_seller: advance.seller,
     p_vat_note: advance.vat_note,
-    p_details: { ...(advance.details ?? {}), advance_number: advance.number },
-    p_paid: true,
+    p_details: {
+      ...(advance.details ?? {}),
+      advance_number: advance.number,
+      ...(balance > 0 ? { advance_paid: Number(advance.total), balance } : {}),
+    },
+    p_paid: balance <= 0,
     p_advance_id: advance.id,
   });
   if (error) throw error;
@@ -1002,7 +1010,10 @@ async function finals() {
       advance: advance.number,
       ...(await attempt(async () => {
         const { data: booking } = await db.from('reservations').select('id').eq('id', advance.source_id).maybeSingle();
-        if (!booking) return await annul(advance);
+        if (!booking) {
+          if ((await postponedIds([advance.source_id])).size) return { status: 'postponed' };
+          return await annul(advance);
+        }
         return await askForFinal(advance);
       })),
     });
@@ -1013,24 +1024,44 @@ async function finals() {
 }
 
 // Advances of visits between `from` and `today` (not included) that have no
-// final invoice yet, leaving out bookings paid in cash, which get none.
+// final invoice yet, leaving out bookings paid in cash, which get none. The
+// visit is the booking's own day, which the office may have moved since the
+// invoice; a postponed booking has no day yet and waits for one.
 async function awaitingFinal(from: string, today: string): Promise<Invoice[]> {
   const { data: advances, error } = await db.from('invoices').select('*')
     .eq('kind', 'advance').eq('status', 'issued').eq('source_type', 'reservation');
   if (error) throw error;
-  const due = (advances ?? []).filter((a) => {
-    const date = a.details?.date as string | undefined;
+  const all = advances ?? [];
+  if (all.length === 0) return [];
+  const allIds = all.map((a) => a.source_id as string);
+  const [{ data: rows, error: rowsError }, postponed] = await Promise.all([
+    db.from('reservations').select('id, reservation_date, payment_method').in('id', allIds),
+    postponedIds(allIds),
+  ]);
+  if (rowsError) throw rowsError;
+  const rowOf = new Map((rows ?? []).map((r) => [r.id as string, r]));
+  const due = all.filter((a) => {
+    if (postponed.has(a.source_id)) return false;
+    const date = (rowOf.get(a.source_id)?.reservation_date ?? a.details?.date) as string | undefined;
     return date && date < today && date >= from;
   });
   if (due.length === 0) return [];
-  const ids = due.map((a) => a.source_id as string);
-  const [{ data: existing }, { data: cash }] = await Promise.all([
-    db.from('invoices').select('advance_id').eq('kind', 'final').in('advance_id', due.map((a) => a.id)),
-    db.from('reservations').select('id').eq('payment_method', 'cash').in('id', ids),
-  ]);
+  const { data: existing } = await db.from('invoices').select('advance_id').eq('kind', 'final').in('advance_id', due.map((a) => a.id));
   const done = new Set((existing ?? []).map((f) => f.advance_id));
-  const paidInCash = new Set((cash ?? []).map((r) => r.id));
+  const paidInCash = new Set((rows ?? []).filter((r) => r.payment_method === 'cash').map((r) => r.id as string));
   return due.filter((a) => !done.has(a.id) && !paidInCash.has(a.source_id));
+}
+
+// Bookings put off with no new date yet (postpone_reservation): their advance
+// stays in force. Before that table exists, nothing is postponed.
+async function postponedIds(ids: string[]): Promise<Set<string>> {
+  if (ids.length === 0) return new Set();
+  const { data, error } = await db.from('postponed_reservations').select('id').in('id', ids);
+  if (error) {
+    if (error.code === 'PGRST205' || error.code === '42P01') return new Set();
+    throw error;
+  }
+  return new Set((data ?? []).map((r) => r.id as string));
 }
 
 const paidByText = (advance: Invoice) =>
@@ -1752,18 +1783,61 @@ async function officeMove(body: { id?: string; date?: string; time?: string; sau
     };
   }
 
-  let guest: unknown = { status: 'not_asked' };
-  if (body.notify !== false) {
-    guest = await attempt(async () => {
-      if (!(await guestUrl())) return { status: 'guest_mail_off' };
-      const source = await loadSource('reservation', id);
-      if (!source || !source.email.includes('@')) return { status: 'no_email' };
-      source.cardPaid = await hasCardPayment(source);
-      await sendToGuest(source.email, confirmationEmail({ ...guestInput(source), changed: true }));
-      return { status: 'sent', to: source.email };
-    });
-  }
+  const guest = await tellOfChange(id, body.notify);
   return json({ status: changed ? 'moved' : 'unchanged', calendar, guest });
+}
+
+// The guest's booking confirmation again, headed as a change, unless the office
+// cleared the box.
+async function tellOfChange(id: string, notify?: boolean) {
+  if (notify === false) return { status: 'not_asked' };
+  return await attempt(async () => {
+    if (!(await guestUrl())) return { status: 'guest_mail_off' };
+    const source = await loadSource('reservation', id);
+    if (!source || !source.email.includes('@')) return { status: 'no_email' };
+    source.cardPaid = await hasCardPayment(source);
+    await sendToGuest(source.email, confirmationEmail({ ...guestInput(source), changed: true }));
+    return { status: 'sent', to: source.email };
+  });
+}
+
+// The office puts a booking off with no new date (the guest fell ill and will
+// call when well). Its time is free again and it comes off the calendar, but
+// unlike a cancelled one its advance invoice stays in force: it may be paid.
+async function officePostpone(id?: string) {
+  if (!id || !uuidPattern.test(id)) return json({ error: 'not_found' }, 404);
+  const { data: final } = await db.from('invoices').select('id')
+    .eq('source_type', 'reservation').eq('source_id', id).eq('kind', 'final').maybeSingle();
+  if (final) return json({ error: 'final_exists' }, 409);
+  const { data: row, error } = await db.rpc('postpone_reservation', { p_id: id });
+  if (error) return json({ error: describe(error) }, 409);
+  if (!row) return json({ error: 'not_found' }, 404);
+  await db.from('guest_emails').delete().eq('source_type', 'reservation').eq('source_id', id).eq('kind', 'reminder');
+  const calendar = await attempt(() => removeFromCalendar(row));
+  return json({ status: 'postponed', calendar });
+}
+
+// A postponed booking gets its new day: back among the bookings with its id,
+// invoice and confirmation, on the calendar, and the guest told as after a move.
+async function officeRestore(body: { id?: string; date?: string; time?: string; sauna?: string; notify?: boolean }) {
+  const id = body.id;
+  if (!id || !uuidPattern.test(id)) return json({ error: 'not_found' }, 404);
+  const date = String(body.date ?? '');
+  const time = String(body.time ?? '');
+  const sauna = String(body.sauna ?? '');
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(date) || !/^([01]\d|2[0-3]):[0-5]\d$/.test(time) || !['Baltā pirts', 'Pelēkā pirts'].includes(sauna)) {
+    return json({ error: 'bad_move' }, 400);
+  }
+  const { data: day, error: dayError } = await db.from('reservations').select('id, reservation_time')
+    .eq('reservation_date', date).eq('sauna_type', sauna);
+  if (dayError) throw dayError;
+  if ((day ?? []).some((r) => partOfDay(r.reservation_time) === partOfDay(time))) return json({ error: 'slot_taken' }, 409);
+  const { data: row, error } = await db.rpc('restore_reservation', { p_id: id, p_date: date, p_time: time, p_sauna: sauna });
+  if (error) return json({ error: error.code === '23505' ? 'slot_taken' : describe(error) }, 409);
+  if (!row) return json({ error: 'not_found' }, 404);
+  const calendar = await attempt(() => addToCalendar(row));
+  const guest = await tellOfChange(id, body.notify);
+  return json({ status: 'restored', calendar, guest });
 }
 
 // The office thanks a guest and asks for a review now, for a visit that has
@@ -2036,20 +2110,25 @@ async function manageReservation(body: { reservation?: string; pin?: string; act
   const { reservation: id, pin, action = 'view' } = body;
   if (!id || !uuidPattern.test(id)) return json({ error: 'bad_link' }, 400);
   const { data: booking } = await db.from('reservations').select('*').eq('id', id).maybeSingle();
-  const { data: cancelled } = booking
+  // Put off by the office with no new date yet: still the guest's booking.
+  const { data: postponed } = booking
+    ? { data: null }
+    : await db.from('postponed_reservations').select('reservation').eq('id', id).maybeSingle();
+  const { data: cancelled } = booking || postponed
     ? { data: null }
     : await db.from('cancelled_reservations').select('reservation, cancelled_at').eq('id', id).maybeSingle();
-  if (!booking && !cancelled) return json({ error: 'not_found' }, 404);
-  const row = booking ?? cancelled!.reservation;
+  if (!booking && !postponed && !cancelled) return json({ error: 'not_found' }, 404);
+  const row = booking ?? postponed?.reservation ?? cancelled!.reservation;
   const { data: invoices } = await db.from('invoices').select('*')
     .eq('source_type', 'reservation').eq('source_id', id);
   const advance = (invoices ?? []).find((i) => i.kind === 'advance' && i.status !== 'annulled')
     ?? (invoices ?? []).find((i) => i.kind === 'advance') ?? null;
   const final = (invoices ?? []).find((i) => i.kind === 'final') ?? null;
 
-  const view = (isCancelled = !booking, advanceStatus = advance?.status ?? null) => ({
+  const view = (isCancelled = !booking && !postponed, advanceStatus = advance?.status ?? null) => ({
     type: 'reservation',
     cancelled: isCancelled,
+    postponed: !!postponed,
     customer_name: row.name,
     visit: `${formatDate(row.reservation_date)} ${row.reservation_time ?? ''}`.trim(),
     sauna: row.sauna_type,
@@ -2064,6 +2143,7 @@ async function manageReservation(body: { reservation?: string; pin?: string; act
 
   if (action === 'cancel') {
     if (final) return json({ error: 'final_exists', ...view() }, 409);
+    if (postponed) return json({ error: 'postponed', ...view() }, 409);
     if (!booking) return json({ status: 'already_cancelled', ...view() });
     // The booking goes first, so the row in the list is marked cancelled when
     // the annulled invoice is filed.
@@ -2112,7 +2192,7 @@ async function removeFromCalendar(r: any) {
 // The office issues a final invoice. A visit's goes to the guest with the
 // thanks and review request; a gift card's, once it is paid by transfer, goes
 // with the gift card itself. Either is filed.
-async function officeFinal(type: SourceType, id?: string) {
+async function officeFinal(type: SourceType, id?: string, extra?: unknown) {
   if (!id || !uuidPattern.test(id)) return json({ error: 'not_found' }, 404);
   if (type === 'gift_card' && (await giftCardCancelled(id))) return json({ error: 'cancelled' }, 409);
   const { data: advance } = await db.from('invoices').select('*')
@@ -2121,8 +2201,30 @@ async function officeFinal(type: SourceType, id?: string) {
   const { data: final } = await db.from('invoices').select('number').eq('advance_id', advance.id).maybeSingle();
   if (final) return json({ error: 'final_exists', number: final.number }, 409);
   if (!(await guestUrl())) return json({ error: 'guest_mail_off' }, 409);
-  const result = await issueFinal(advance);
+  const extras = type === 'reservation' ? finalExtras(advance, extra) : [];
+  if (!extras) return json({ error: 'bad_extra' }, 400);
+  const result = await issueFinal(advance, extras);
   return json({ status: 'issued', ...result });
+}
+
+// What the office adds to a visit's final invoice: guests more than booked, at
+// a price each. On a premises rental the line says so too. Nothing added gives
+// no lines; anything malformed gives null.
+function finalExtras(advance: Invoice, extra: unknown): PricedItem[] | null {
+  if (extra === undefined || extra === null) return [];
+  const e = extra as { quantity?: unknown; price?: unknown; label?: unknown };
+  const quantity = Number(e.quantity ?? 1);
+  const price = Math.round(Number(e.price) * 100) / 100;
+  if (!Number.isInteger(quantity) || quantity < 1 || quantity > 50) return null;
+  if (!Number.isFinite(price) || price <= 0 || price > 10000) return null;
+  const label = typeof e.label === 'string' ? e.label.trim().slice(0, 120) : '';
+  const date = advance.details?.date ? formatDate(advance.details.date) : '';
+  const name = label
+    ? { lv: label, en: label, ru: label }
+    : advance.details?.premises
+    ? { lv: `Telpu noma ${date} – papildu viesis`, en: `Premises rental ${date} – additional guest`, ru: `Аренда помещения ${date} – дополнительный гость` }
+    : { lv: 'Papildu viesis', en: 'Additional guest', ru: 'Дополнительный гость' };
+  return [{ name, quantity, unit: 'person', unitPrice: price, amount: Math.round(price * quantity * 100) / 100 }];
 }
 
 // The office's page on the website (/birojs): upcoming bookings and recent
@@ -2132,7 +2234,7 @@ async function officeFinal(type: SourceType, id?: string) {
 async function office(body: {
   pin?: string; action?: string; reservation?: string; order?: string; a4?: boolean; light?: boolean; master_id?: string | null; master_ids?: unknown; master?: any;
   type?: string; id?: string; pay_link?: boolean; percent?: number; reason?: string; on?: boolean;
-  date?: string; time?: string; sauna?: string; notify?: boolean;
+  date?: string; time?: string; sauna?: string; notify?: boolean; extra?: unknown;
 }) {
   const pinResult = await pinCheck(body.pin);
   if (pinResult !== 'ok') return pinRefusal(pinResult);
@@ -2167,6 +2269,14 @@ async function office(body: {
       return json({ error: describe(e) }, 500);
     }
   }
+  if (body.action === 'postpone' || body.action === 'restore') {
+    try {
+      return body.action === 'postpone' ? await officePostpone(body.id) : await officeRestore(body);
+    } catch (e) {
+      console.error(e);
+      return json({ error: describe(e) }, 500);
+    }
+  }
   if (body.action === 'thanks') {
     try {
       return await officeThanks(body.id);
@@ -2193,7 +2303,7 @@ async function office(body: {
   }
   if (body.action === 'final') {
     try {
-      return body.order ? await officeFinal('gift_card', body.order) : await officeFinal('reservation', body.reservation);
+      return body.order ? await officeFinal('gift_card', body.order) : await officeFinal('reservation', body.reservation, body.extra);
     } catch (e) {
       console.error(e);
       return json({ error: describe(e) }, 500);
@@ -2226,8 +2336,12 @@ async function office(body: {
   if (bookings.error) return json({ error: describe(bookings.error) }, 500);
   if (cards.error) return json({ error: describe(cards.error) }, 500);
   if (past.error) return json({ error: describe(past.error) }, 500);
+  // Bookings put off with no new date yet, as they were when put off.
+  const { data: postponedRows } = await db.from('postponed_reservations').select('reservation, postponed_at').order('postponed_at');
+  // deno-lint-ignore no-explicit-any
+  const postponed = (postponedRows ?? []).map((p: any) => ({ ...p.reservation, postponed_at: p.postponed_at }));
 
-  const ids = [...(bookings.data ?? []), ...(cards.data ?? []), ...(past.data ?? [])].map((r) => r.id as string);
+  const ids = [...(bookings.data ?? []), ...(cards.data ?? []), ...(past.data ?? []), ...postponed].map((r) => r.id as string);
   const cardIds = (cards.data ?? []).map((g) => g.id as string);
   const [{ data: invoices, error }, { data: paidByCard }, { data: codes }, { data: discounts }, { data: premises }] = ids.length
     ? await Promise.all([
@@ -2241,7 +2355,7 @@ async function office(body: {
     : [{ data: [], error: null }, { data: [] }, { data: [] }, { data: [] }, { data: [] }];
   if (error) return json({ error: describe(error) }, 500);
   const cardPaid = new Set((paidByCard ?? []).map((p) => p.source_id));
-  const masters = await assignedMasters([...(bookings.data ?? []), ...(past.data ?? [])].map((r) => r.id as string));
+  const masters = await assignedMasters([...(bookings.data ?? []), ...(past.data ?? []), ...postponed].map((r) => r.id as string));
   const mastersOf = (id: string) => masters.get(id) ?? [];
   // Guests already thanked and asked for a review.
   const bookingIds = (bookings.data ?? []).map((r) => r.id as string);
@@ -2327,6 +2441,8 @@ async function office(body: {
     // Visits that happened, paid by card or transfer, whose final invoice
     // waits for the office.
     awaiting_final: (past.data ?? []).map(bookingView),
+    // Put off with no new date yet; the office gives them one.
+    postponed: postponed.map((r) => ({ ...bookingView(r), postponed_at: r.postponed_at })),
     gift_cards: (cards.data ?? []).map((g) => ({
       id: g.id,
       name: g.vards_uzvards,

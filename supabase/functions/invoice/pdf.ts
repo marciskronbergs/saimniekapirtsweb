@@ -50,6 +50,10 @@ export interface InvoiceDetails {
   company?: InvoiceCompany;
   // Invoiced by the office as premises rental: the visit is the rental period.
   premises?: boolean;
+  // A final invoice that bills more than its advance (a guest more than
+  // booked): what the advance paid, and what is still due.
+  advance_paid?: number;
+  balance?: number;
 }
 
 export interface InvoiceCompany {
@@ -159,6 +163,8 @@ export async function renderInvoicePdf(invoice: InvoiceRow): Promise<Uint8Array>
   const other = (en: string, ru: string) => (second === 'ru' ? ru : en);
   const money = (n: number) => formatMoney(n, invoice.locale);
   const total = Number(invoice.total);
+  // Still to pay on a final invoice that bills more than its advance.
+  const balance = final ? Number(invoice.details?.balance ?? 0) : 0;
   const seller = invoice.seller;
 
   const doc = await PDFDocument.create();
@@ -254,7 +260,7 @@ export async function renderInvoicePdf(invoice: InvoiceRow): Promise<Uint8Array>
   text(`${seller.web} · ${seller.email} · ${seller.phone}`, left, { size: 8.5, color: grey });
   text(`${L('Datums', 'Date', 'Дата')}: ${formatDate(invoice.issued_on)}`, right, { align: 'right' });
   y -= 14;
-  if (final || invoice.details?.payment === 'card' || invoice.details?.payment === 'gift_card') {
+  if ((final && balance <= 0) || invoice.details?.payment === 'card' || invoice.details?.payment === 'gift_card') {
     text(L('Apmaksāts', 'Paid', 'Оплачено'), right, { font: bold, color: brandGreen, align: 'right' });
   } else {
     text(`${L('Apmaksāt līdz', 'Due by', 'Оплатить до')}: ${formatDate(invoice.due_on)}`, right, { font: bold, align: 'right' });
@@ -384,11 +390,23 @@ export async function renderInvoicePdf(invoice: InvoiceRow): Promise<Uint8Array>
   text(final ? L('Kopā', 'Total', 'Итого') : L('Kopā apmaksai', 'Total due', 'Итого к оплате'), labelX, { font: bold, size: 11 });
   text(`${money(total)} EUR`, cols.amount, { font: bold, size: 11, align: 'right' });
   y -= 26;
+  if (balance > 0) {
+    const paid = Number(invoice.details?.advance_paid ?? total - balance);
+    y += 8;
+    // The advance invoice's number is above the lines.
+    text(L('Samaksāts avansā', 'Paid in advance', 'Оплачено авансом'), labelX);
+    text(`-${money(paid)} EUR`, cols.amount, { align: 'right' });
+    y -= 18;
+    text(L('Apmaksai', 'Balance due', 'К оплате'), labelX, { font: bold, size: 11 });
+    text(`${money(balance)} EUR`, cols.amount, { font: bold, size: 11, align: 'right' });
+    y -= 26;
+  }
 
-  text(`${L('Summa vārdiem', 'Amount in words', 'Сумма прописью')}: ${amountInWords(total, 'lv')}`, left, { size: 9 });
+  const inWords = balance > 0 ? balance : total;
+  text(`${L('Summa vārdiem', 'Amount in words', 'Сумма прописью')}: ${amountInWords(inWords, 'lv')}`, left, { size: 9 });
   if (bilingual) {
     y -= 12;
-    text(amountInWords(total, second === 'ru' ? 'ru' : 'en'), left, { size: 9, color: grey });
+    text(amountInWords(inWords, second === 'ru' ? 'ru' : 'en'), left, { size: 9, color: grey });
   }
   y -= 26;
 
@@ -405,8 +423,14 @@ export async function renderInvoicePdf(invoice: InvoiceRow): Promise<Uint8Array>
     L(`Apmaksāts ar dāvanu karti Nr. ${invoice.details?.gift_card ?? ''}. Paldies!`,
       `Paid with gift card no. ${invoice.details?.gift_card ?? ''}. Thank you!`,
       `Оплачено подарочной картой № ${invoice.details?.gift_card ?? ''}. Спасибо!`),
-  ] : final ? [
+  ] : final && balance <= 0 ? [
     L('Rēķins ir apmaksāts. Paldies!', 'This invoice has been paid in full. Thank you!', 'Счёт оплачен полностью. Спасибо!'),
+  ] : final ? [
+    L(`Atlikušo summu ${money(balance)} EUR lūdzam pārskaitīt līdz ${formatDate(invoice.due_on)}`,
+      `Please transfer the balance of ${money(balance)} EUR by ${formatDate(invoice.due_on)}`,
+      `Остаток ${money(balance)} EUR просим перечислить до ${formatDate(invoice.due_on)}`) +
+      ` – ${seller.name}, ${seller.iban}, ${seller.bank}.`,
+    L(`Maksājuma mērķī norādiet rēķina numuru ${invoice.number}.`, `Please quote invoice number ${invoice.number} as the payment reference.`, `В назначении платежа укажите номер счёта ${invoice.number}.`),
   ] : [
     L(`Ar pārskaitījumu līdz ${formatDate(invoice.due_on)}`, `By bank transfer by ${formatDate(invoice.due_on)}`, `Банковским переводом до ${formatDate(invoice.due_on)}`) +
       ` – ${seller.name}, ${seller.iban}, ${seller.bank}.`,

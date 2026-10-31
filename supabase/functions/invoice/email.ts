@@ -533,6 +533,9 @@ export function finalInvoiceGuestEmail(invoice: InvoiceRow, giftCard?: GiftCardN
       filename,
     };
   }
+  // Billed more than the advance (a guest more than booked): the rest is due.
+  const balance = Number(invoice.details?.balance ?? 0);
+  const paid = Number(invoice.details?.advance_paid ?? 0);
   const subject = visit
     ? t(`Paldies par apmeklējumu! Rēķins ${invoice.number} · SaimniekaPirts`, `Thank you for visiting! Invoice ${invoice.number} · SaimniekaPirts`,
       `Спасибо за визит! Счёт ${invoice.number} · SaimniekaPirts`)
@@ -544,9 +547,13 @@ export function finalInvoiceGuestEmail(invoice: InvoiceRow, giftCard?: GiftCardN
         'Thank you so much for visiting SaimniekaPirts! We hope the sauna left you rested and renewed.',
         'Большое спасибо, что побывали у нас в SaimniekaPirts! Надеемся, баня подарила вам отдых и новые силы.'))
       : p(t('Paldies par dāvanu kartes pirkumu!', 'Thank you for buying a gift card!', 'Спасибо за покупку подарочной карты!')),
-    p(t(`Pielikumā ir rēķins Nr. ${invoice.number} par ${eur(invoice.total)}. Tas ir apmaksāts – nekas vairs nav jādara.`,
-      `Attached is invoice ${invoice.number} for ${eur(invoice.total, 'en')}. It has been paid – there is nothing more you need to do.`,
-      `Во вложении счёт № ${invoice.number} на сумму ${eur(invoice.total, 'ru')}. Он оплачен – больше ничего делать не нужно.`)),
+    balance > 0
+      ? p(t(`Pielikumā ir rēķins Nr. ${invoice.number} par ${eur(invoice.total)}. Avansā ir samaksāti ${eur(paid)}, tāpēc atlikušos <strong>${eur(balance)}</strong> lūdzam pārskaitīt līdz ${formatDate(invoice.due_on)}, maksājuma mērķī norādot rēķina numuru.`,
+        `Attached is invoice ${invoice.number} for ${eur(invoice.total, 'en')}. ${eur(paid, 'en')} was paid in advance, so please transfer the remaining <strong>${eur(balance, 'en')}</strong> by ${formatDate(invoice.due_on)}, quoting the invoice number as the payment reference.`,
+        `Во вложении счёт № ${invoice.number} на сумму ${eur(invoice.total, 'ru')}. ${eur(paid, 'ru')} оплачено авансом, поэтому оставшиеся <strong>${eur(balance, 'ru')}</strong> просим перечислить до ${formatDate(invoice.due_on)}, указав номер счёта в назначении платежа.`))
+      : p(t(`Pielikumā ir rēķins Nr. ${invoice.number} par ${eur(invoice.total)}. Tas ir apmaksāts – nekas vairs nav jādara.`,
+        `Attached is invoice ${invoice.number} for ${eur(invoice.total, 'en')}. It has been paid – there is nothing more you need to do.`,
+        `Во вложении счёт № ${invoice.number} на сумму ${eur(invoice.total, 'ru')}. Он оплачен – больше ничего делать не нужно.`)),
     visit ? reviewRequest(t) : '',
   ].join('');
   const title = visit ? t('Paldies par apmeklējumu!', 'Thank you for visiting!', 'Спасибо за визит!') : t('Jūsu rēķins', 'Your invoice', 'Ваш счёт');

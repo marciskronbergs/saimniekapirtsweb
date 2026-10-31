@@ -4,6 +4,7 @@ import { PopupContext } from '../App';
 import { OfficeError, callInvoiceFunction, eur, useOfficePage } from '../lib/officeApi';
 import MastersSection, { type Master, type MasterDraft } from './birojs/MastersSection';
 import { DiscountDialog, InvoiceActions, PayLinkDialog, type DiscountTarget, type PayLink } from './birojs/InvoiceActions';
+import { SlotEditor, type Slot } from './birojs/SlotEditor';
 
 // The office's CRM: the booking calendar, new bookings through the website's
 // own forms, and the upcoming bookings with their invoices, each of which can
@@ -83,6 +84,8 @@ interface OfficeList {
   // Visits that happened, paid by card or transfer, whose final invoice waits
   // for the office: it goes to the guest only when issued here.
   awaiting_final?: Booking[];
+  // Put off with no new date yet (the guest will call); the invoice stays.
+  postponed?: (Booking & { postponed_at: string })[];
   gift_cards: GiftCard[];
   masters: Master[];
   // Whether guests can be sent a link to pay by card.
@@ -205,7 +208,11 @@ const BirojsPage = () => {
   const [busyId, setBusyId] = useState<string | null>(null);
   const [payLink, setPayLink] = useState<PayLink | null>(null);
   // A booking being moved to another day, time or sauna.
-  const [moving, setMoving] = useState<{ id: string; date: string; time: string; sauna: string; notify: boolean } | null>(null);
+  const [moving, setMoving] = useState<Slot | null>(null);
+  // A postponed booking being given its new day.
+  const [restoring, setRestoring] = useState<Slot | null>(null);
+  // Guests more than booked, added to a final invoice.
+  const [extraFor, setExtraFor] = useState<{ id: string; quantity: string; price: string; label: string } | null>(null);
   const [discountFor, setDiscountFor] = useState<DiscountTarget | null>(null);
   const [mode, setMode] = useState<string>('MONTH');
   const [query, setQuery] = useState('');
@@ -501,15 +508,73 @@ const BirojsPage = () => {
     }
   };
 
-  const issueFinal = async (b: Booking) => {
+  // Puts a booking off with no new date (the guest fell ill and will call):
+  // the time is free again and the calendar event goes, but the advance
+  // invoice stays in force.
+  const postpone = async (b: Booking) => {
     const when = `${longDate(b.date)} ${b.time}`;
-    if (!window.confirm(`Izrakstīt ${b.name} gala rēķinu (${when})?\n\nRēķins tiks atzīmēts kā apmaksāts un nosūtīts klientam kopā ar paldies un lūgumu atstāt atsauksmi. Pārliecinieties, ka maksājums ir saņemts.`)) return;
+    if (!window.confirm(`Atlikt ${b.name} rezervāciju (${when}) bez jauna datuma?\n\nLaiks mājaslapā atkal būs brīvs un notikums tiks izņemts no kalendāra, bet avansa rēķins paliek spēkā. Jauno datumu ieliksiet sadaļā “Atliktās rezervācijas”.`)) return;
     setBusyId(b.id);
     setError(null);
     setNotice(null);
     try {
-      const r = await callInvoiceFunction<{ number?: string }>({ office: { pin, action: 'final', reservation: b.id } });
-      setNotice(`Gala rēķins ${r.number ?? ''} izrakstīts un nosūtīts ${b.name}.`);
+      await callInvoiceFunction({ office: { pin, action: 'postpone', id: b.id } });
+      setNotice(`${b.name} rezervācija (${when}) atlikta. Avansa rēķins paliek spēkā; jauno datumu ielieciet sadaļā “Atliktās rezervācijas”.`);
+      await load(pin);
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setBusyId(null);
+    }
+  };
+
+  // Gives a postponed booking its new day, as moving does.
+  const restore = async (b: Booking) => {
+    if (!restoring) return;
+    const { date, time, sauna, notify } = restoring;
+    setBusyId(b.id);
+    setError(null);
+    setNotice(null);
+    try {
+      const r = await callInvoiceFunction<{ guest?: { status?: string; to?: string } }>({
+        office: { pin, action: 'restore', id: b.id, date, time, sauna, notify },
+      });
+      const told = r.guest?.status === 'sent' ? `klientam nosūtīts paziņojums uz ${r.guest.to}` : notify ? 'klientam paziņojumu neizdevās nosūtīt' : 'klientam nekas netika sūtīts';
+      setNotice(`${b.name} rezervācija ielikta ${longDate(date)} ${time}, ${sauna}. Kalendārs atjaunināts; ${told}.`);
+      setRestoring(null);
+      await load(pin);
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setBusyId(null);
+    }
+  };
+
+  const issueFinal = async (b: Booking) => {
+    const when = `${longDate(b.date)} ${b.time}`;
+    const extra = extraFor?.id === b.id
+      ? { quantity: Number(extraFor.quantity), price: Number(extraFor.price.replace(',', '.')), label: extraFor.label.trim() }
+      : null;
+    if (extra && (!Number.isInteger(extra.quantity) || extra.quantity < 1 || extra.quantity > 50 || !(extra.price > 0))) {
+      setError('Papildu pozīcijai norādiet skaitu (1–50) un cenu.');
+      return;
+    }
+    const added = extra ? Math.round(extra.quantity * extra.price * 100) / 100 : 0;
+    const question = extra
+      ? `Izrakstīt ${b.name} gala rēķinu (${when}) ar papildu pozīciju ${extra.quantity} × ${eur(extra.price)}?\n\nKopā ${eur((b.total ?? 0) + added)}. Avansā samaksātais ${eur(b.total ?? 0)} tiek ieskaitīts, un klientam 7 dienu laikā jāpārskaita ${eur(added)}. Rēķins tiks nosūtīts klientam kopā ar paldies un lūgumu atstāt atsauksmi.`
+      : `Izrakstīt ${b.name} gala rēķinu (${when})?\n\nRēķins tiks atzīmēts kā apmaksāts un nosūtīts klientam kopā ar paldies un lūgumu atstāt atsauksmi. Pārliecinieties, ka maksājums ir saņemts.`;
+    if (!window.confirm(question)) return;
+    setBusyId(b.id);
+    setError(null);
+    setNotice(null);
+    try {
+      const r = await callInvoiceFunction<{ number?: string }>({
+        office: { pin, action: 'final', reservation: b.id, ...(extra ? { extra } : {}) },
+      });
+      setNotice(extra
+        ? `Gala rēķins ${r.number ?? ''} izrakstīts un nosūtīts ${b.name}: jāpārskaita vēl ${eur(added)}.`
+        : `Gala rēķins ${r.number ?? ''} izrakstīts un nosūtīts ${b.name}.`);
+      setExtraFor(null);
       await load(pin);
     } catch (e) {
       setError((e as Error).message);
@@ -681,13 +746,118 @@ const BirojsPage = () => {
                     )}
                   </div>
                 </div>
-                <button
-                  onClick={() => issueFinal(b)}
-                  disabled={busyId !== null}
-                  className="rounded-lg bg-green-600 hover:bg-green-500 disabled:opacity-50 px-3 py-2 text-sm font-semibold text-black"
-                >
-                  {busyId === b.id ? 'Izraksta…' : 'Izrakstīt gala rēķinu'}
-                </button>
+                <div className="flex flex-wrap items-center gap-2">
+                  {extraFor?.id !== b.id && (
+                    <button
+                      onClick={() => setExtraFor({ id: b.id, quantity: '1', price: '', label: '' })}
+                      disabled={busyId !== null}
+                      className="rounded-lg border border-gray-600 text-gray-200 hover:bg-gray-800 disabled:opacity-50 px-3 py-2 text-sm"
+                    >
+                      + Papildu viesis
+                    </button>
+                  )}
+                  <button
+                    onClick={() => issueFinal(b)}
+                    disabled={busyId !== null}
+                    className="rounded-lg bg-green-600 hover:bg-green-500 disabled:opacity-50 px-3 py-2 text-sm font-semibold text-black"
+                  >
+                    {busyId === b.id ? 'Izraksta…' : 'Izrakstīt gala rēķinu'}
+                  </button>
+                </div>
+                {extraFor?.id === b.id && (
+                  <div className="w-full flex flex-wrap items-center gap-2 text-sm text-gray-300">
+                    <span>Papildu pozīcija:</span>
+                    <input
+                      type="number"
+                      min={1}
+                      max={50}
+                      value={extraFor.quantity}
+                      onChange={(e) => setExtraFor({ ...extraFor, quantity: e.target.value })}
+                      aria-label="Skaits"
+                      className="w-16 rounded-lg bg-gray-800 border border-gray-600 px-2 py-1.5 text-white"
+                    />
+                    <span>×</span>
+                    <input
+                      inputMode="decimal"
+                      placeholder="Cena, €"
+                      value={extraFor.price}
+                      onChange={(e) => setExtraFor({ ...extraFor, price: e.target.value })}
+                      aria-label="Cena par vienu, €"
+                      className="w-24 rounded-lg bg-gray-800 border border-gray-600 px-2 py-1.5 text-white"
+                    />
+                    <input
+                      placeholder={b.premises ? 'Telpu noma – papildu viesis' : 'Papildu viesis'}
+                      value={extraFor.label}
+                      onChange={(e) => setExtraFor({ ...extraFor, label: e.target.value })}
+                      aria-label="Nosaukums rēķinā"
+                      className="flex-1 min-w-[12rem] rounded-lg bg-gray-800 border border-gray-600 px-2 py-1.5 text-white"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setExtraFor(null)}
+                      className="rounded-lg border border-gray-600 px-3 py-1.5 text-gray-300 hover:bg-gray-800"
+                    >
+                      Noņemt
+                    </button>
+                  </div>
+                )}
+              </article>
+            ))}
+          </section>
+        )}
+
+        {(list.postponed?.length ?? 0) > 0 && (
+          <section className="rounded-xl border border-sky-500/40 bg-sky-500/5 p-4 space-y-3">
+            <h2 className="text-lg font-bold text-sky-300">
+              Atliktās rezervācijas <span className="text-gray-400 font-normal">· {list.postponed!.length}</span>
+            </h2>
+            <p className="text-sm text-gray-400">
+              Atliktas bez jauna datuma – laiks ir brīvs, bet avansa rēķins paliek spēkā. Kad klients piezvana, ielieciet jauno datumu.
+            </p>
+            {list.postponed!.map((b) => (
+              <article key={b.id} className="rounded-lg border border-gray-800 bg-[#0d0d0d] p-3 space-y-3">
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <div className="space-y-1">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="font-semibold text-white">{b.name}</span>
+                      {b.company && b.company !== b.name && <span className="text-sm text-gray-300">{b.company}</span>}
+                      <span className="text-sm text-gray-400">bija {longDate(b.date)} {b.time} · {b.sauna}</span>
+                    </div>
+                    <div className="flex flex-wrap items-center gap-2 text-sm text-gray-300">
+                      {b.service && <span>{b.service}</span>}
+                      {b.participants ? <span className="text-gray-400">{b.participants} pers.</span> : null}
+                      {b.total !== null && <span className="text-gray-400">{eur(b.total)}</span>}
+                      {b.advance?.paid && <Badge tone="green">Apmaksāts</Badge>}
+                      {b.advance && (
+                        <a href={b.advance.link} target="_blank" rel="noopener" className="text-green-400 hover:text-green-300 underline">
+                          {b.advance.number}
+                        </a>
+                      )}
+                      {b.phone && <a href={`tel:${b.phone}`} className="text-gray-400 hover:text-white">{b.phone}</a>}
+                    </div>
+                  </div>
+                  {restoring?.id !== b.id && (
+                    <button
+                      onClick={() => setRestoring({ id: b.id, date: '', time: b.time, sauna: b.sauna ?? 'Baltā pirts', notify: true })}
+                      disabled={busyId !== null}
+                      className="rounded-lg bg-sky-600 hover:bg-sky-500 disabled:opacity-50 px-3 py-2 text-sm font-semibold text-black"
+                    >
+                      Ielikt datumu
+                    </button>
+                  )}
+                </div>
+                {restoring?.id === b.id && (
+                  <SlotEditor
+                    title="Jaunais datums"
+                    slot={restoring}
+                    email={b.email}
+                    busy={busyId !== null}
+                    saving={busyId === b.id}
+                    onChange={setRestoring}
+                    onSave={() => restore(b)}
+                    onClose={() => setRestoring(null)}
+                  />
+                )}
               </article>
             ))}
           </section>
@@ -874,63 +1044,16 @@ const BirojsPage = () => {
                       </div>
                     )}
                     {moving?.id === b.id && (
-                      <form
-                        onSubmit={(e) => { e.preventDefault(); move(b); }}
-                        className="rounded-lg border border-gray-700 bg-black/40 p-3 space-y-3 text-sm"
-                      >
-                        <p className="font-semibold text-white">Pārcelt rezervāciju</p>
-                        <div className="flex flex-wrap gap-2">
-                          <input
-                            type="date"
-                            value={moving.date}
-                            onChange={(e) => setMoving({ ...moving, date: e.target.value })}
-                            required
-                            aria-label="Datums"
-                            className="rounded-lg bg-gray-800 border border-gray-600 px-2 py-1.5 text-white"
-                          />
-                          <input
-                            type="time"
-                            value={moving.time}
-                            onChange={(e) => setMoving({ ...moving, time: e.target.value })}
-                            required
-                            aria-label="Laiks"
-                            className="rounded-lg bg-gray-800 border border-gray-600 px-2 py-1.5 text-white"
-                          />
-                          <select
-                            value={moving.sauna}
-                            onChange={(e) => setMoving({ ...moving, sauna: e.target.value })}
-                            aria-label="Pirts"
-                            className="rounded-lg bg-gray-800 border border-gray-600 px-2 py-1.5 text-white"
-                          >
-                            <option>Baltā pirts</option>
-                            <option>Pelēkā pirts</option>
-                          </select>
-                        </div>
-                        <label className="flex items-center gap-2 text-gray-300">
-                          <input
-                            type="checkbox"
-                            checked={moving.notify}
-                            onChange={(e) => setMoving({ ...moving, notify: e.target.checked })}
-                          />
-                          Paziņot klientam uz {b.email}
-                        </label>
-                        <div className="flex flex-wrap gap-2">
-                          <button
-                            type="submit"
-                            disabled={busyId !== null}
-                            className="rounded-lg bg-green-600 hover:bg-green-500 disabled:opacity-50 px-3 py-1.5 font-semibold text-black"
-                          >
-                            {busyId === b.id ? 'Saglabā…' : 'Saglabāt'}
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => setMoving(null)}
-                            className="rounded-lg border border-gray-600 px-3 py-1.5 text-gray-300 hover:bg-gray-800"
-                          >
-                            Atpakaļ
-                          </button>
-                        </div>
-                      </form>
+                      <SlotEditor
+                        title="Pārcelt rezervāciju"
+                        slot={moving}
+                        email={b.email}
+                        busy={busyId !== null}
+                        saving={busyId === b.id}
+                        onChange={setMoving}
+                        onSave={() => move(b)}
+                        onClose={() => setMoving(null)}
+                      />
                     )}
                   </div>
                   <div className="sm:text-right flex sm:flex-col gap-2 items-start sm:items-end">
@@ -941,6 +1064,15 @@ const BirojsPage = () => {
                         className="rounded-lg border border-gray-600 text-gray-200 hover:bg-gray-800 disabled:opacity-50 px-3 py-2 text-sm"
                       >
                         Mainīt
+                      </button>
+                    )}
+                    {!b.final && (
+                      <button
+                        onClick={() => postpone(b)}
+                        disabled={busyId !== null}
+                        className="rounded-lg border border-sky-600/60 text-sky-300 hover:bg-sky-900/40 disabled:opacity-50 px-3 py-2 text-sm"
+                      >
+                        Atlikt
                       </button>
                     )}
                     {!b.final && (

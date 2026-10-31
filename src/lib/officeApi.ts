@@ -23,6 +23,8 @@ const messages: Record<string, string> = {
   not_yet: 'Apmeklējums vēl nav bijis – atsauksmi var lūgt no apmeklējuma dienas.',
   slot_taken: 'Šajā dienā un laikā šī pirts jau ir aizņemta.',
   bad_move: 'Pārbaudiet datumu, laiku un pirti.',
+  bad_extra: 'Papildu pozīcijai norādiet skaitu (1–50) un cenu.',
+  postponed: 'Rezervācija ir atlikta – jaunu datumu ieliek birojs.',
 };
 
 export class OfficeError extends Error {
