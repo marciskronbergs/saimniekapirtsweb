@@ -1,381 +1,186 @@
-import React, { useEffect, useRef, useState } from 'react';
+import { useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { MotionConfig, motion, useScroll, useTransform } from 'framer-motion';
+import { ArrowDown, ArrowRight, BedDouble, Bus, CookingPot, Flame, Moon } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import HeaderSection from '../components/HeaderSection';
 import FooterSection from '../components/FooterSection';
-import { ChevronLeft, ChevronRight, Check } from 'lucide-react';
-import { useTranslation } from 'react-i18next';
+import LeafBackdrop from '../components/leaves/LeafBackdrop';
+import StayRoom from '../components/naksnosana/StayRoom';
+import { WhiskSeam } from '../components/whisks/WhiskAccent';
+import { Reveal, SectionHeading, SpotlightCard } from '../components/pirtsRituali/ritualUi';
+import { EASE, ghostButton, glass, primaryButton } from '../components/pirtsRituali/ritualStyles';
+
+// "Nakšņošana": staying the night after the sauna. A full-bleed bedroom
+// photograph opens the page, drifting slowly and sinking as the page
+// scrolls, with the words on a glass card; then the two places to stay as
+// glass blocks with their photos; then the price and the way here, on the
+// drifting leaves. The booking button goes to /rezervet, as before.
+//
+// Photos: the 2023 shoot (house, living, attic, attic2, tub, herbroom,
+// kitchen) and the site's library (bildes/58, vel/76–80), as local WebP copies
+// in public/media/noma/stay-<n>-{560,960}.webp.
+
+const HERO = '/media/noma/stay-attic2-1920.webp';
 
 const NaksnosanaPage = () => {
-  const [isVisible, setIsVisible] = useState(false);
-  const [currentImageIndex, setCurrentImageIndex] = useState(0);
-  const [pusMelnaImageIndex, setPusMelnaImageIndex] = useState(0);
-  const sectionRef = useRef<HTMLDivElement>(null);
-  const navigate = useNavigate();
   const { t } = useTranslation('accommodation');
-
-  useEffect(() => {
-    const observer = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting) {
-            setIsVisible(true);
-          }
-        });
-      },
-      { threshold: 0.3 }
-    );
-
-    if (sectionRef.current) {
-      observer.observe(sectionRef.current);
-    }
-
-    return () => observer.disconnect();
-  }, []);
-
-  // Auto-rotate images for Baltā Pirts
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setCurrentImageIndex((prev) => (prev + 1) % baltaPirtsImages.length);
-    }, 5000);
-
-    return () => clearInterval(interval);
-  }, []);
-
-  const baltaPirtsImages = [
-    'https://wigoyeorqnssgbrgexku.supabase.co/storage/v1/object/public/websiteassets/bildes/58.png',
-    'https://wigoyeorqnssgbrgexku.supabase.co/storage/v1/object/public/websiteassets/bildes/56.png',
-    'https://wigoyeorqnssgbrgexku.supabase.co/storage/v1/object/public/websiteassets/bildes/57.png',
-    'https://wigoyeorqnssgbrgexku.supabase.co/storage/v1/object/public/websiteassets/vel/80.png'
-  ];
-
-  const pusMelnaImages = [
-    'https://wigoyeorqnssgbrgexku.supabase.co/storage/v1/object/public/websiteassets/vel/77.png',
-    'https://wigoyeorqnssgbrgexku.supabase.co/storage/v1/object/public/websiteassets/vel/76.png',
-    'https://wigoyeorqnssgbrgexku.supabase.co/storage/v1/object/public/websiteassets/vel/78.png',
-    'https://wigoyeorqnssgbrgexku.supabase.co/storage/v1/object/public/websiteassets/vel/79.png'
-  ];
-
-  // Auto-rotate images for Pus-Melnā Pirts
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setPusMelnaImageIndex((prev) => (prev + 1) % pusMelnaImages.length);
-    }, 5000);
-
-    return () => clearInterval(interval);
-  }, []);
-
-  const handlePrevImage = () => {
-    setCurrentImageIndex((prev) => (prev + baltaPirtsImages.length - 1) % baltaPirtsImages.length);
-  };
-
-  const handleNextImage = () => {
-    setCurrentImageIndex((prev) => (prev + 1) % baltaPirtsImages.length);
-  };
-
-  const handlePusMelnaPrevImage = () => {
-    setPusMelnaImageIndex((prev) => (prev + pusMelnaImages.length - 1) % pusMelnaImages.length);
-  };
-
-  const handlePusMelnaNextImage = () => {
-    setPusMelnaImageIndex((prev) => (prev + 1) % pusMelnaImages.length);
-  };
-
-  const handleOrderClick = () => {
-    navigate('/rezervet');
-  };
+  const navigate = useNavigate();
+  const heroRef = useRef<HTMLElement>(null);
+  const { scrollYProgress } = useScroll({ target: heroRef, offset: ['start start', 'end start'] });
+  const photoY = useTransform(scrollYProgress, [0, 1], [0, 140]);
+  const cardY = useTransform(scrollYProgress, [0, 1], [0, -60]);
+  const book = () => navigate('/rezervet');
+  const perks = t('perks', { returnObjects: true }) as Record<'beds' | 'atmosphere' | 'kitchen', string>;
 
   return (
-    <div className="min-h-screen bg-[#0a0a0a]">
-      <HeaderSection />
-      
-      <main className="pt-20">
-        {/* Hero Section */}
-        <section 
-          ref={sectionRef}
-          className="relative py-24 px-6 max-w-7xl mx-auto overflow-hidden"
-        >
-          {/* Subtle Background Texture */}
-          <div className="absolute inset-0 opacity-5">
-            <div className="absolute inset-0 bg-gradient-to-br from-green-900/20 via-transparent to-green-800/10"></div>
-            <div className="absolute inset-0" style={{
-              backgroundImage: `radial-gradient(circle at 25% 25%, rgba(34, 197, 94, 0.1) 0%, transparent 50%), 
-                               radial-gradient(circle at 75% 75%, rgba(34, 197, 94, 0.05) 0%, transparent 50%)`
-            }}></div>
-          </div>
+    <MotionConfig reducedMotion="user">
+      <div className="min-h-screen overflow-x-clip bg-[#0a0a0a]">
+        <HeaderSection />
+        <main>
+          {/* The bedroom, full bleed, with the words on glass. */}
+          <section ref={heroRef} aria-labelledby="stay-page-heading" className="relative isolate flex min-h-[92svh] items-end overflow-clip pt-20">
+            <motion.div aria-hidden className="absolute inset-0 -z-10" style={{ y: photoY }}>
+              <motion.img
+                src={HERO}
+                alt=""
+                decoding="async"
+                fetchPriority="high"
+                initial={{ scale: 1.12, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                transition={{ duration: 2.2, ease: EASE }}
+                className="h-full w-full object-cover"
+              />
+            </motion.div>
+            <div
+              aria-hidden
+              className="absolute inset-0 -z-10"
+              style={{
+                background:
+                  'linear-gradient(180deg, rgba(10,10,10,0.55) 0%, rgba(10,10,10,0.15) 35%, rgba(10,10,10,0.55) 70%, #0a0a0a 100%), radial-gradient(60% 50% at 20% 80%, rgba(34,197,94,0.18), transparent 70%)',
+              }}
+            />
 
-          <div className={`relative z-10 text-center transform transition-all duration-1000 ${
-            isVisible ? 'translate-y-0 opacity-100' : 'translate-y-12 opacity-0'
-          }`}>
-            <h1 className="text-5xl lg:text-7xl font-bold text-white mb-8 tracking-tight">
-              {t('title')}
-            </h1>
-            <p className="text-2xl text-gray-300 max-w-4xl mx-auto leading-relaxed">
-              {t('description')}
-            </p>
-          </div>
-        </section>
-
-        {/* Baltā Pirts Section */}
-        <section className="py-20 px-6 max-w-7xl mx-auto">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
-            {/* Left: Image Carousel */}
-            <div className={`transform transition-all duration-1000 ${
-              isVisible ? 'translate-x-0 opacity-100' : '-translate-x-12 opacity-0'
-            }`} style={{ transitionDelay: '200ms' }}>
-              <div className="relative rounded-3xl overflow-hidden shadow-2xl shadow-green-500/10 group">
-                {/* Images */}
-                {baltaPirtsImages.map((image, index) => (
-                  <div
-                    key={index}
-                    className={`absolute inset-0 transition-all duration-1000 ease-in-out ${
-                      index === currentImageIndex 
-                        ? 'opacity-100 scale-100' 
-                        : 'opacity-0 scale-105'
-                    }`}
-                  >
-                    <img
-                      src={image}
-                      alt={`Baltā Pirts ${index + 1}`}
-                      className="w-full h-[400px] lg:h-[500px] object-cover group-hover:scale-110 transition-transform duration-700"
-                    />
-                  </div>
-                ))}
-                
-                {/* First image for layout */}
-                <img
-                  src={baltaPirtsImages[0]}
-                  alt="Baltā Pirts"
-                  className="w-full h-[400px] lg:h-[500px] object-cover opacity-0"
-                />
-
-                {/* Gradient Overlay */}
-                <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-black/10"></div>
-
-                {/* Navigation Arrows */}
-                <button
-                  onClick={handlePrevImage}
-                  className="absolute left-4 top-1/2 transform -translate-y-1/2 w-12 h-12 bg-black/60 hover:bg-black/80 rounded-full flex items-center justify-center transition-all duration-300 opacity-0 group-hover:opacity-100 hover:scale-110"
-                  aria-label="Previous image"
-                >
-                  <ChevronLeft className="w-6 h-6 text-white" />
-                </button>
-                
-                <button
-                  onClick={handleNextImage}
-                  className="absolute right-4 top-1/2 transform -translate-y-1/2 w-12 h-12 bg-black/60 hover:bg-black/80 rounded-full flex items-center justify-center transition-all duration-300 opacity-0 group-hover:opacity-100 hover:scale-110"
-                  aria-label="Next image"
-                >
-                  <ChevronRight className="w-6 h-6 text-white" />
-                </button>
-
-                {/* Glowing Indicators */}
-                <div className="absolute bottom-6 left-1/2 transform -translate-x-1/2 flex gap-2 md:gap-3">
-                  {baltaPirtsImages.map((_, index) => (
-                    <button
-                      key={index}
-                      onClick={() => setCurrentImageIndex(index)}
-                      className={`w-8 h-8 md:w-3 md:h-3 rounded-full transition-all duration-300 cursor-pointer ${
-                        index === currentImageIndex 
-                          ? 'bg-green-500 shadow-lg shadow-green-500/50 scale-110 md:scale-125 ring-2 ring-white/30' 
-                          : 'bg-white/50 hover:bg-white/75 border border-white/20'
-                      }`}
-                      aria-label={`Go to image ${index + 1}`}
-                    />
-                  ))}
-                </div>
-              </div>
-            </div>
-
-            {/* Right: Content */}
-            <div className={`transform transition-all duration-1000 ${
-              isVisible ? 'translate-x-0 opacity-100' : 'translate-x-12 opacity-0'
-            }`} style={{ transitionDelay: '400ms' }}>
-              <div className="bg-[#132d13] rounded-3xl p-8 lg:p-12 shadow-xl shadow-green-500/10 hover:shadow-green-500/15 transition-all duration-500 hover:scale-[1.02]">
-                <h2 className="text-3xl lg:text-4xl font-bold text-white mb-6">
-                  {t('whiteSauna.title')}
-                </h2>
-                
-                <p className="text-xl text-gray-300 leading-relaxed">
-                  {t('whiteSauna.description')}
+            <motion.div style={{ y: cardY }} className="mx-auto w-full max-w-7xl px-4 pb-14 sm:px-6 sm:pb-20">
+              <motion.div
+                initial={{ opacity: 0, y: 40, filter: 'blur(8px)' }}
+                animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
+                transition={{ duration: 1.1, ease: EASE, delay: 0.35 }}
+                className={`relative max-w-2xl overflow-hidden rounded-[2rem] p-7 sm:p-10 ${glass}`}
+              >
+                <div aria-hidden className="pointer-events-none absolute -left-20 -top-20 h-64 w-64 rounded-full bg-green-500/20 blur-3xl" />
+                <span className="relative inline-flex items-center gap-2 rounded-full bg-green-600/20 px-4 py-1.5 text-xs font-semibold uppercase tracking-[0.2em] text-green-300 ring-1 ring-green-400/30">
+                  <Moon aria-hidden className="h-3.5 w-3.5" />
+                  {t('ui.eyebrow')}
+                </span>
+                <h1 id="stay-page-heading" className="relative mt-5 text-5xl font-bold tracking-tight text-white sm:text-6xl lg:text-7xl">
+                  {t('title')}
+                </h1>
+                <p className="relative mt-5 text-lg leading-relaxed text-white/80 sm:text-xl">{t('description')}</p>
+                <p className="relative mt-6 flex flex-wrap items-baseline gap-x-3 gap-y-1">
+                  <span className="text-3xl font-bold text-white">{t('price')}</span>
+                  <span className="text-base text-white/65">{t('priceNote')}</span>
+                  <span className="text-sm text-white/50">{t('priceMin')}</span>
                 </p>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {/* Pus-Melnā Pirts Section */}
-        <section className="py-20 px-6 max-w-7xl mx-auto">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
-            {/* Left: Image */}
-            <div className={`lg:order-1 transform transition-all duration-1000 ${
-              isVisible ? 'translate-x-0 opacity-100' : '-translate-x-12 opacity-0'
-            }`} style={{ transitionDelay: '600ms' }}>
-              <div className="relative rounded-3xl overflow-hidden shadow-2xl shadow-green-500/10 group">
-                {/* Images */}
-                {pusMelnaImages.map((image, index) => (
-                  <div
-                    key={index}
-                    className={`absolute inset-0 transition-all duration-1000 ease-in-out ${
-                      index === pusMelnaImageIndex 
-                        ? 'opacity-100 scale-100' 
-                        : 'opacity-0 scale-105'
-                    }`}
-                  >
-                    <img
-                      src={image}
-                      alt={`Pelēkā Pirts ${index + 1}`}
-                      className="w-full h-[400px] lg:h-[500px] object-cover group-hover:scale-110 transition-transform duration-700"
-                    />
-                  </div>
-                ))}
-                
-                {/* First image for layout */}
-                <img
-                  src={pusMelnaImages[0]}
-                  alt="Pelēkā Pirts"
-                  className="w-full h-[400px] lg:h-[500px] object-cover opacity-0"
-                />
-
-                {/* Gradient Overlay */}
-                <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-black/10"></div>
-
-                {/* Navigation Arrows */}
-                <button
-                  onClick={handlePusMelnaPrevImage}
-                  className="absolute left-4 top-1/2 transform -translate-y-1/2 w-12 h-12 bg-black/60 hover:bg-black/80 rounded-full flex items-center justify-center transition-all duration-300 opacity-0 group-hover:opacity-100 hover:scale-110"
-                  aria-label="Previous image"
-                >
-                  <ChevronLeft className="w-6 h-6 text-white" />
-                </button>
-                
-                <button
-                  onClick={handlePusMelnaNextImage}
-                  className="absolute right-4 top-1/2 transform -translate-y-1/2 w-12 h-12 bg-black/60 hover:bg-black/80 rounded-full flex items-center justify-center transition-all duration-300 opacity-0 group-hover:opacity-100 hover:scale-110"
-                  aria-label="Next image"
-                >
-                  <ChevronRight className="w-6 h-6 text-white" />
-                </button>
-
-                {/* Glowing Indicators */}
-                <div className="absolute bottom-6 left-1/2 transform -translate-x-1/2 flex gap-2 md:gap-3">
-                  {pusMelnaImages.map((_, index) => (
-                    <button
-                      key={index}
-                      onClick={() => setPusMelnaImageIndex(index)}
-                      className={`w-8 h-8 md:w-3 md:h-3 rounded-full transition-all duration-300 cursor-pointer ${
-                        index === pusMelnaImageIndex 
-                          ? 'bg-green-500 shadow-lg shadow-green-500/50 scale-110 md:scale-125 ring-2 ring-white/30' 
-                          : 'bg-white/50 hover:bg-white/75 border border-white/20'
-                      }`}
-                      aria-label={`Go to image ${index + 1}`}
-                    />
-                  ))}
-                </div>
-              </div>
-            </div>
-
-            {/* Right: Content */}
-            <div className={`lg:order-0 transform transition-all duration-1000 ${
-              isVisible ? 'translate-x-0 opacity-100' : 'translate-x-12 opacity-0'
-            }`} style={{ transitionDelay: '800ms' }}>
-              <div className="bg-[#132d13] rounded-3xl p-8 lg:p-12 shadow-xl shadow-green-500/10 hover:shadow-green-500/15 transition-all duration-500 hover:scale-[1.02]">
-                <h2 className="text-3xl lg:text-4xl font-bold text-white mb-6">
-                  {t('blackSauna.title')}
-                </h2>
-                
-                <p className="text-xl text-gray-300 leading-relaxed">
-                  {t('blackSauna.description')}
-                </p>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {/* Unified Benefits & Pricing Section */}
-        <section className="py-20 px-6 max-w-7xl mx-auto">
-          <div className={`max-w-4xl mx-auto transform transition-all duration-1000 ${
-            isVisible ? 'translate-y-0 opacity-100' : 'translate-y-12 opacity-0'
-          }`} style={{ transitionDelay: '1000ms' }}>
-            <div className="bg-gradient-to-br from-[#132d13] to-[#1a3d2e] rounded-3xl p-8 lg:p-12 shadow-lg shadow-green-500/10 hover:shadow-green-500/15 transition-all duration-500 hover:scale-[1.01] relative overflow-hidden">
-              {/* Subtle Background Pattern */}
-              <div className="absolute inset-0 opacity-5">
-                <div className="absolute inset-0" style={{
-                  backgroundImage: `radial-gradient(circle at 20% 20%, rgba(34, 197, 94, 0.2) 0%, transparent 50%), 
-                                   radial-gradient(circle at 80% 80%, rgba(34, 197, 94, 0.1) 0%, transparent 50%)`
-                }}></div>
-              </div>
-
-              <div className="relative z-10">
-                {/* Benefits Section - Horizontal Layout */}
-                <div className="mb-12">
-                  {/* Desktop: Horizontal Layout */}
-                  <div className="hidden md:flex items-center justify-center gap-8 lg:gap-12">
-                    {Object.values(t('perks', { returnObjects: true })).map((benefit: string, index: number) => (
-                      <React.Fragment key={index}>
-                        <div className="flex items-center gap-3">
-                          <div className="w-6 h-6 bg-green-600 rounded-full flex items-center justify-center flex-shrink-0">
-                            <Check className="w-4 h-4 text-white" />
-                          </div>
-                          <span className="text-lg lg:text-xl text-white font-medium whitespace-nowrap">{benefit}</span>
-                        </div>
-                        {index < 2 && (
-                          <div className="w-px h-8 bg-gradient-to-b from-transparent via-green-500/40 to-transparent"></div>
-                        )}
-                      </React.Fragment>
-                    ))}
-                  </div>
-
-                  {/* Mobile: Vertical Layout */}
-                  <div className="md:hidden space-y-6">
-                    {Object.values(t('perks', { returnObjects: true })).map((benefit: string, index: number) => (
-                      <div key={index}>
-                        <div className="flex items-center gap-4 py-2">
-                          <div className="w-6 h-6 bg-green-600 rounded-full flex items-center justify-center flex-shrink-0">
-                            <Check className="w-4 h-4 text-white" />
-                          </div>
-                          <span className="text-lg text-white font-medium">{benefit}</span>
-                        </div>
-                        {index < 2 && (
-                          <div className="ml-10 h-px bg-gradient-to-r from-green-500/30 via-green-500/10 to-transparent"></div>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Full-Width Horizontal Divider */}
-                <div className="h-px bg-gradient-to-r from-transparent via-green-500/40 to-transparent mb-12"></div>
-
-                {/* Pricing Section */}
-                <div className="text-center">
-                  <h2 className="text-3xl lg:text-4xl font-bold text-white mb-6">
-                    {t('priceTitle')}
-                  </h2>
-                  
-                  <div className="text-4xl lg:text-5xl font-bold text-green-400 mb-4 tracking-tight">
-                    {t('price')} <span className="text-xl lg:text-2xl text-gray-400">{t('priceNote')}</span>
-                  </div>
-                  
-                  <p className="text-lg text-gray-300 mb-10">
-                    {t('priceMin')}
-                  </p>
-
-                  <button 
-                    onClick={handleOrderClick}
-                    className="bg-green-600 hover:bg-green-500 text-white px-12 py-4 rounded-2xl text-lg font-bold transition-all duration-300 transform hover:scale-105 hover:shadow-xl hover:shadow-green-500/25 relative overflow-hidden group"
-                  >
-                    <span className="relative z-10">{t('cta')}</span>
-                    <div className="absolute inset-0 bg-gradient-to-r from-green-400 to-green-600 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                <div className="relative mt-8 flex flex-col gap-3 sm:flex-row">
+                  <button type="button" onClick={book} className={primaryButton}>
+                    {t('cta')}
+                    <ArrowRight aria-hidden className="h-5 w-5" />
                   </button>
+                  <a href="#naktsmitnes" className={ghostButton}>
+                    {t('ui.see')}
+                    <ArrowDown aria-hidden className="h-5 w-5" />
+                  </a>
+                </div>
+              </motion.div>
+            </motion.div>
+          </section>
+
+          {/* An oak whisk from the right, beside "Kur pārnakšņot" (the
+              birch leaf that sat there is left out). */}
+          <WhiskSeam asset="oak-right" width="29vw" shiftY="-22%" rotate={2} phone={{ width: '50vw', shiftY: '-48%' }} />
+          <LeafBackdrop className="!bg-[#0a0a0a]" clear={[{ side: 'right', top: 2 }]}>
+            {/* The two places to stay. */}
+            <section id="naktsmitnes" aria-labelledby="rooms-heading" className="scroll-mt-20 px-4 py-20 sm:px-6 sm:py-24">
+              <div className="mx-auto max-w-7xl">
+                <SectionHeading id="rooms-heading" eyebrow={t('ui.roomsEyebrow')} title={t('ui.roomsTitle')} />
+                <div className="mt-12 space-y-8 lg:mt-16 lg:space-y-10">
+                  <StayRoom
+                    index={0}
+                    title={t('whiteSauna.title')}
+                    description={t('whiteSauna.description')}
+                    photos={['house', 'living', 'attic', 'attic2', '58', '80']}
+                    perks={[
+                      { label: perks.beds, Icon: BedDouble },
+                      { label: perks.atmosphere, Icon: Flame },
+                    ]}
+                  />
+                  <StayRoom
+                    index={1}
+                    flip
+                    title={t('blackSauna.title')}
+                    description={t('blackSauna.description')}
+                    photos={['herbroom', '76', 'kitchen', '79']}
+                    perks={[
+                      { label: perks.beds, Icon: BedDouble },
+                      { label: perks.kitchen, Icon: CookingPot },
+                      { label: perks.atmosphere, Icon: Flame },
+                    ]}
+                  />
                 </div>
               </div>
-            </div>
-          </div>
-        </section>
-      </main>
+            </section>
 
-      <FooterSection />
-    </div>
+
+            {/* The price, and the way here. */}
+            <section aria-labelledby="stay-price-heading" className="px-4 pb-24 sm:px-6 sm:pb-28">
+              <div className="mx-auto grid max-w-6xl gap-6 lg:grid-cols-[1.1fr_1fr]">
+                <Reveal y={36}>
+                  <SpotlightCard tone="green" className="h-full" contentClassName="flex h-full flex-col p-8 sm:p-10">
+                    <h2 id="stay-price-heading" className="text-sm font-semibold uppercase tracking-[0.22em] text-green-200">
+                      {t('priceTitle')}
+                    </h2>
+                    <p className="mt-4 flex flex-wrap items-baseline gap-x-3">
+                      <span className="text-6xl font-bold tracking-tight text-white sm:text-7xl">{t('price')}</span>
+                      <span className="text-xl text-white/70">{t('priceNote')}</span>
+                    </p>
+                    <p className="mt-2 text-base text-white/60">{t('priceMin')}</p>
+                    <ul className="mt-8 flex flex-wrap gap-2">
+                      {[
+                        { label: perks.beds, Icon: BedDouble },
+                        { label: perks.atmosphere, Icon: Flame },
+                        { label: perks.kitchen, Icon: CookingPot },
+                      ].map(({ label, Icon }) => (
+                        <li key={label} className="flex items-center gap-2 rounded-full bg-black/25 px-4 py-2 text-sm text-white/90 ring-1 ring-white/15">
+                          <Icon aria-hidden className="h-4 w-4 text-green-300" />
+                          {label}
+                        </li>
+                      ))}
+                    </ul>
+                    <div className="mt-10 lg:mt-auto lg:pt-10">
+                      <button type="button" onClick={book} className={`${primaryButton} w-full sm:w-auto`}>
+                        {t('cta')}
+                        <ArrowRight aria-hidden className="h-5 w-5" />
+                      </button>
+                    </div>
+                  </SpotlightCard>
+                </Reveal>
+                <Reveal y={36} delay={0.1}>
+                  <SpotlightCard className="h-full" contentClassName="flex h-full flex-col p-8 sm:p-10">
+                    <span className="flex h-14 w-14 items-center justify-center rounded-2xl bg-green-600/20 ring-1 ring-green-400/30">
+                      <Bus aria-hidden className="h-7 w-7 text-green-300" strokeWidth={1.7} />
+                    </span>
+                    <h2 className="mt-6 text-2xl font-bold text-white">{t('transport.title').replace(/:$/, '')}</h2>
+                    <p className="mt-4 text-base leading-relaxed text-white/75">{t('transport.description')}</p>
+                  </SpotlightCard>
+                </Reveal>
+              </div>
+            </section>
+          </LeafBackdrop>
+        </main>
+        <FooterSection />
+      </div>
+    </MotionConfig>
   );
 };
 

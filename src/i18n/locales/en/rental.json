@@ -1,6 +1,5 @@
 {
   "title": "Sauna Rental (With or Without Herbal Hot Tub)",
-  "subtitle": "Find the sauna that suits you – our offers are designed for a range of tastes and occasions.",
   "baltaPirts": {
     "title": "White Sauna",
     "description": "The right choice for larger groups, with plenty of seating and nature all around. Ideal for family and friends' celebrations."
@@ -13,5 +12,12 @@
     "title": "Herbal Hot Tub",
     "description": "Add a herbal hot tub with fragrant medicinal plants: pine needles in winter, birch and oak leaves in summer."
   },
-  "cta": "Learn More"
+  "cta": "Learn More",
+  "more": "Learn more",
+  "prevPhoto": "Previous photo",
+  "nextPhoto": "Next photo",
+  "showPhoto": "Show photo {{n}}: {{title}}",
+  "interlude": {
+    "alt": "Two wooden saunas at the forest edge: the large log sauna with wide windows and the small dark sauna with its chimney and woodpile."
+  }
 }

@@ -1,104 +1,106 @@
-import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Check } from 'lucide-react';
-import { TabType } from '../../pages/GrupuRitualiPage';
+import { ArrowRight, X } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import { TabType } from '../../pages/GrupuRitualiPage';
+import { Reveal, SectionHeading, SpotlightCard } from './ritualUi';
+import { primaryButton } from './ritualStyles';
+import PhotoCarousel from './PhotoCarousel';
+
+// "Grupu Pirts Rituāli": a carousel of group photographs in a glass frame,
+// and beside it the three group options, each with its own photograph fading
+// in behind it. What an option leaves out is listed plainly under it (the
+// translations mark those with ❌, shown here as an icon instead).
+//
+// Photos: public/media/rituals/group/, WebP copies of the Supabase
+// pirtnieki/grupu.png and bildes/61, 64, 62 (slides) and 65, 60, 31 (options).
+
+const GROUP = '/media/rituals/group';
+const SLIDES = [1, 2, 3, 4].map((n) => `${GROUP}/slide-${n}.webp`);
+const TABS: TabType[] = ['meistaru', 'draugu', 'draugu-plus'];
+
+interface Option {
+  title: string;
+  price: string;
+  description: string;
+  restrictions?: string[];
+}
+
+// "70€ /no personas" → "70€" and "/no personas".
+const splitPrice = (price: string) => {
+  const i = price.indexOf('/');
+  return i > 0 ? { amount: price.slice(0, i).trim(), unit: price.slice(i).trim() } : { amount: price, unit: '' };
+};
 
 const GroupOptions = () => {
-  const [isVisible, setIsVisible] = useState(false);
-  const sectionRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
   const { t } = useTranslation('rituali');
   const { t: tCommon } = useTranslation('common');
-
-  useEffect(() => {
-    const observer = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting) {
-            setIsVisible(true);
-          }
-        });
-      },
-      { threshold: 0.3 }
-    );
-
-    if (sectionRef.current) {
-      observer.observe(sectionRef.current);
-    }
-
-    return () => observer.disconnect();
-  }, []);
-
-  const handleNavigateToRitual = (tab: TabType) => {
-    navigate('/grupu-rituali', { state: { tab } });
-  };
-
-  const groupOptions = t('groupOptions.options', { returnObjects: true }).map((option: any, index: number) => ({
-    ...option,
-    tab: ['meistaru', 'draugu', 'draugu-plus'][index] as TabType,
-    translatedRestrictions: option.restrictions?.map((key: string) => t(`groupOptions.${key}`)) || []
-  }));
+  const options = t('groupOptions.options', { returnObjects: true }) as Option[];
 
   return (
-    <section 
-      ref={sectionRef}
-      className="py-24 px-4 sm:px-6 max-w-7xl mx-auto overflow-x-hidden"
-    >
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-16 items-stretch">
-        {/* Left: Image */}
-        <div className={`transform transition-all duration-1000 ${
-          isVisible ? 'translate-x-0 opacity-100' : '-translate-x-12 opacity-0'
-        }`}>
-          <img
-            src="https://wigoyeorqnssgbrgexku.supabase.co/storage/v1/object/public/websiteassets/pirtnieki/grupu.png"
-            alt={tCommon('imageAlt.group')}
-            className="w-full h-64 sm:h-full object-cover rounded-2xl"
-          />
-        </div>
+    <section aria-labelledby="groups-heading" className="relative px-4 py-20 sm:px-6 sm:py-24 lg:py-28">
+      <div className="mx-auto max-w-7xl">
+        <SectionHeading id="groups-heading" eyebrow={t('ui.groupEyebrow')} title={t('groupOptions.title')} />
 
-        {/* Right: Three Cards */}
-        <div className={`flex flex-col gap-6 transform transition-all duration-1000 bg-transparent ${
-          isVisible ? 'translate-x-0 opacity-100' : 'translate-x-12 opacity-0'
-        }`}>
-          {groupOptions.map((option, index) => (
-            <div
-              key={index}
-              className="bg-[#132d13] rounded-lg p-4 sm:p-6 flex flex-col justify-between h-full text-white w-full"
-            >
-              <div>
-                <div className="text-xl sm:text-2xl font-bold text-green-400 mb-2 break-words">{option.price}</div>
-                <div className="text-base sm:text-lg font-semibold text-white mb-4 break-words">{option.title}</div>
-                
-                <p className="text-gray-300 mb-3 leading-relaxed text-sm sm:text-base break-words">
-                  {option.description}
-                </p>
-                
-                {option.details && (
-                  <p className="text-gray-300 mb-3 leading-relaxed text-sm sm:text-base break-words">
-                    {option.details}
-                  </p>
-                )}
-                
-                {option.translatedRestrictions.length > 0 && (
-                  <div className="space-y-1 mb-4">
-                    {option.translatedRestrictions.map((restriction, restrictionIndex) => (
-                      <div key={restrictionIndex} className="text-red-400 text-xs sm:text-sm break-words">
-                        {restriction}
+        <div className="mt-14 grid gap-8 lg:mt-16 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)] lg:gap-10">
+          <Reveal y={40}>
+            <PhotoCarousel slides={SLIDES} alt={tCommon('imageAlt.group')} />
+          </Reveal>
+
+          <div className="flex flex-col gap-5">
+            {options.map((option, i) => {
+              const { amount, unit } = splitPrice(option.price);
+              const missing = (option.restrictions ?? []).map((key) => t(`groupOptions.${key}`).replace(/^❌\s*/, ''));
+              return (
+                <Reveal key={option.title} delay={0.08 * i} y={32}>
+                  <SpotlightCard className="group/opt" contentClassName="p-6 sm:p-7">
+                    {/* The option's photograph, fading in from the right. */}
+                    <div aria-hidden className="pointer-events-none absolute -inset-6 left-auto w-[62%] sm:-inset-7 sm:left-auto">
+                      <img
+                        src={`${GROUP}/option-${i + 1}.webp`}
+                        alt=""
+                        loading="lazy"
+                        decoding="async"
+                        className="h-full w-full object-cover opacity-40 transition-[opacity,transform] duration-[1200ms] ease-out [mask-image:linear-gradient(to_left,black_15%,transparent_95%)] group-hover/opt:scale-105 group-hover/opt:opacity-55"
+                      />
+                    </div>
+                    <div className="relative flex flex-col gap-4 sm:flex-row sm:items-start sm:gap-7">
+                      <div className="shrink-0 sm:w-32">
+                        <p className="text-3xl font-bold tracking-tight text-white">{amount}</p>
+                        {unit && <p className="mt-1 text-sm text-white/65">{unit}</p>}
                       </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-              
-              <button 
-                onClick={() => handleNavigateToRitual(option.tab)}
-                className="w-full bg-green-600 hover:bg-green-500 text-white px-4 sm:px-6 py-3 rounded-lg text-xs sm:text-sm font-semibold transition-all duration-300 transform hover:scale-105 mt-4"
-              >
-                {t('groupOptions.cta')}
-              </button>
-            </div>
-          ))}
+                      <div className="min-w-0 flex-1">
+                        <h3 className="text-base font-bold uppercase leading-snug tracking-[0.08em] text-green-400">{option.title}</h3>
+                        <p className="mt-2 max-w-md text-base leading-relaxed text-white/85">{option.description}</p>
+                        {missing.length > 0 && (
+                          <ul className="mt-4 flex flex-wrap gap-2" aria-label={t('ui.notIncluded')}>
+                            {missing.map((item) => (
+                              <li
+                                key={item}
+                                className="inline-flex items-center gap-1.5 rounded-full bg-black/40 px-3 py-1.5 text-sm text-white/80 ring-1 ring-white/10 backdrop-blur-md"
+                              >
+                                <X aria-hidden className="h-3.5 w-3.5 text-red-400" />
+                                <span className="sr-only">{t('ui.notIncluded')}: </span>
+                                {item}
+                              </li>
+                            ))}
+                          </ul>
+                        )}
+                        <button
+                          type="button"
+                          onClick={() => navigate('/grupu-rituali', { state: { tab: TABS[i] } })}
+                          className={`group mt-5 !px-5 !py-2.5 !text-sm ${primaryButton}`}
+                        >
+                          {t('groupOptions.cta')}
+                          <ArrowRight aria-hidden className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-1" />
+                        </button>
+                      </div>
+                    </div>
+                  </SpotlightCard>
+                </Reveal>
+              );
+            })}
+          </div>
         </div>
       </div>
     </section>

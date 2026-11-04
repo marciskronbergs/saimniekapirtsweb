@@ -15,7 +15,9 @@ trackContactLinks();
 
 const app = (
   <StrictMode>
-    <BrowserRouter basename={routerBasename(pathname)}>
+    {/* Navigations as transitions: the page stays on screen until the next
+        one's chunk has arrived, instead of blanking while it loads. */}
+    <BrowserRouter basename={routerBasename(pathname)} future={{ v7_startTransition: true }}>
       <App />
     </BrowserRouter>
   </StrictMode>

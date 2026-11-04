@@ -6,5 +6,23 @@
     "Relaxing Herbal Hot Tubs with the Healing Power of Nature",
     "A Refreshing Pond All Year Round"
   ],
-  "cta": "Learn More"
+  "cta": "Learn More",
+  "videos": {
+    "eyebrow": "The ritual in motion",
+    "region": "Sauna ritual videos",
+    "play": "Play: {{title}}",
+    "pause": "Pause: {{title}}",
+    "soon": "Coming soon",
+    "items": [
+      {
+        "title": "The full sauna ritual, video 1"
+      },
+      {
+        "title": "The full sauna ritual, video 2"
+      },
+      {
+        "title": "The full sauna ritual, video 3"
+      }
+    ]
+  }
 }

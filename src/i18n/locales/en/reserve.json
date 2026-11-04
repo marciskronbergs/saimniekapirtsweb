@@ -15,5 +15,18 @@
   "companyName": "Company",
   "companyReg": "Reg. No.",
   "companyBank": "Bank",
-  "companyIBAN": "Account number"
+  "companyIBAN": "Account number",
+  "ui": {
+    "eyebrow": "Book online",
+    "subtitle": "Choose what you would like to book – the calendar opens below.",
+    "open": "Pick a date",
+    "opened": "Open",
+    "contactEyebrow": "Contact"
+  },
+  "hero": {
+    "title": "Your moment of calm.",
+    "subtitle": "Choose your sauna experience and book your visit.",
+    "cta": "Choose a date",
+    "alt": "A forest still life on a mossy log: a bowl of honey, herbal salt, dried herbs, a birch whisk and a honey dipper."
+  }
 }

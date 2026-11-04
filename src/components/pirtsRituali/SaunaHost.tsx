@@ -1,179 +1,95 @@
-import React, { useState, useEffect } from 'react';
+import { motion } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
+import { CountUp, Reveal, SectionHeading, SpotlightCard } from './ritualUi';
+import { EASE, glass } from './ritualStyles';
+
+// "Pirts Saimnieks": the host's portrait in a glass frame with his name on
+// it, his story and two numbers that count up, and the sauna masters
+// beside him. Photos: public/media/rituals/host/, WebP copies of the
+// Supabase pirtnieki/70, 67, 68 and bildes/"Your paragraph text (3)".
+
+const HOST = '/media/rituals/host';
+const TEAM = ['host67', 'host68', 'host-extra'];
+
+interface Stat {
+  number: string;
+  title: string;
+  description: string;
+}
 
 const SaunaHost = () => {
-  const [isVisible, setIsVisible] = useState(false);
-  const [yearsCount, setYearsCount] = useState(0);
-  const [ritualsCount, setRitualsCount] = useState(0);
-  const sectionRef = React.useRef<HTMLDivElement>(null);
   const { t } = useTranslation('rituali');
   const { t: tCommon } = useTranslation('common');
-
-  useEffect(() => {
-    const observer = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting) {
-            setIsVisible(true);
-          }
-        });
-      },
-      { threshold: 0.3 }
-    );
-
-    if (sectionRef.current) {
-      observer.observe(sectionRef.current);
-    }
-
-    return () => observer.disconnect();
-  }, []);
-
-  // Animate counters when visible
-  useEffect(() => {
-    if (isVisible) {
-      // Animate years counter
-      const yearsInterval = setInterval(() => {
-        setYearsCount(prev => {
-          if (prev >= 7) {
-            clearInterval(yearsInterval);
-            return 7;
-          }
-          return prev + 1;
-        });
-      }, 200);
-
-      // Animate rituals counter
-      const ritualsInterval = setInterval(() => {
-        setRitualsCount(prev => {
-          if (prev >= 1500) {
-            clearInterval(ritualsInterval);
-            return 1500;
-          }
-          return prev + 50;
-        });
-      }, 50);
-
-      return () => {
-        clearInterval(yearsInterval);
-        clearInterval(ritualsInterval);
-      };
-    }
-  }, [isVisible]);
-
-  // Static main image (first image from the original array)
-  const mainImage = 'https://wigoyeorqnssgbrgexku.supabase.co/storage/v1/object/public/websiteassets/pirtnieki/70.png';
-  
-  // Three additional images for desktop static display / mobile carousel
-  const additionalImages = [
-    'https://wigoyeorqnssgbrgexku.supabase.co/storage/v1/object/public/websiteassets/pirtnieki/67.png',
-    'https://wigoyeorqnssgbrgexku.supabase.co/storage/v1/object/public/websiteassets/pirtnieki/68.png',
-    'https://wigoyeorqnssgbrgexku.supabase.co/storage/v1/object/public/websiteassets/bildes/Your%20paragraph%20text%20(3).png'
-  ];
+  const stats = t('saunaHost.stats', { returnObjects: true }) as Stat[];
 
   return (
-    <section 
-      ref={sectionRef}
-      className="py-12 sm:py-16 md:py-20 px-4 sm:px-6 max-w-7xl mx-auto overflow-x-hidden"
-    >
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8 lg:gap-16 items-center mb-12 sm:mb-16">
-        {/* Left: Main Static Image */}
-        <div className={`transform transition-all duration-1000 ${
-          isVisible ? 'translate-x-0 opacity-100' : '-translate-x-12 opacity-0'
-        }`}>
-          <div className="relative rounded-2xl overflow-hidden mb-8 lg:mb-0">
-            <img
-              src={mainImage}
-              alt={tCommon('imageAlt.host')}
-              className="w-full h-[250px] sm:h-[300px] lg:h-[400px] object-cover transition-all duration-500"
-            />
-          </div>
-        </div>
-
-        {/* Right: Content */}
-        <div className={`transform transition-all duration-1000 ${
-          isVisible ? 'translate-x-0 opacity-100' : 'translate-x-12 opacity-0'
-        }`}>
-          <h2 className="text-xl sm:text-2xl lg:text-4xl xl:text-5xl font-bold text-white mb-6 sm:mb-8 break-words">
-            {t('saunaHost.title')}
-          </h2>
-          
-          <p className="text-sm sm:text-base lg:text-xl text-gray-300 mb-6 sm:mb-8 leading-relaxed break-words">
-            {t('saunaHost.description')}
-          </p>
-
-          {/* Animated Statistics */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6 mb-6 sm:mb-8">
-            <div className="text-center md:text-left">
-              <div className="text-xl sm:text-2xl lg:text-4xl font-bold text-green-400 mb-2">
-                {t('saunaHost.stats.0.number').replace('+', '')}+
-              </div>
-              <div className="text-white font-semibold mb-2 text-xs sm:text-sm lg:text-base break-words">{t('saunaHost.stats.0.title')}</div>
-              <div className="text-xs text-gray-400 leading-relaxed break-words">
-                {t('saunaHost.stats.0.description')}
-              </div>
-            </div>
-            
-            <div className="text-center md:text-left">
-              <div className="text-xl sm:text-2xl lg:text-4xl font-bold text-green-400 mb-2">
-                {t('saunaHost.stats.1.number').replace('+', '')}+
-              </div>
-              <div className="text-white font-semibold mb-2 text-xs sm:text-sm lg:text-base break-words">{t('saunaHost.stats.1.title')}</div>
-              <div className="text-xs text-gray-400 leading-relaxed break-words">
-                {t('saunaHost.stats.1.description')}
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Desktop: Three Static Images Side by Side */}
-      <div className={`hidden md:flex justify-center gap-6 transform transition-all duration-1000 ${
-        isVisible ? 'translate-y-0 opacity-100' : 'translate-y-12 opacity-0'
-      }`} style={{ transitionDelay: '400ms' }}>
-        {additionalImages.map((image, index) => (
-          <div
-            key={index}
-            className="w-[140px] lg:w-[180px] h-[140px] lg:h-[180px] rounded-xl overflow-hidden shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105"
-          >
-            <img
-              src={image}
-              alt={`${tCommon('imageAlt.hostExtra')} ${index + 2}`}
-              className="w-full h-full object-cover transition-all duration-300 hover:brightness-110"
-            />
-          </div>
-        ))}
-      </div>
-
-      {/* Mobile: Horizontal Scrollable Carousel with smaller cards */}
-      <div className={`md:hidden transform transition-all duration-1000 ${
-        isVisible ? 'translate-y-0 opacity-100' : 'translate-y-12 opacity-0'
-      }`} style={{ transitionDelay: '400ms' }}>
-        <div className="flex overflow-x-auto space-x-3 pb-4 scrollbar-hide px-1">
-          {additionalImages.map((image, index) => (
-            <div
-              key={index}
-              className="flex-shrink-0 w-[100px] h-[100px] rounded-lg overflow-hidden shadow-lg"
-            >
+    <section aria-labelledby="host-heading" className="relative px-4 py-20 sm:px-6 sm:py-24 lg:py-28">
+      <div className="mx-auto grid max-w-7xl items-center gap-10 lg:grid-cols-2 lg:gap-16">
+        <Reveal y={40} className="relative mx-auto w-full max-w-xl">
+          <div className={`rounded-[2rem] p-2.5 ${glass}`}>
+            <div className="relative aspect-square overflow-hidden rounded-[1.5rem]">
               <img
-                src={image}
-                alt={`${tCommon('imageAlt.hostExtra')} ${index + 2}`}
-                className="w-full h-full object-cover"
+                src={`${HOST}/host-main.webp`}
+                alt={tCommon('imageAlt.host')}
+                loading="lazy"
+                decoding="async"
+                className="h-full w-full object-cover"
               />
+              <div aria-hidden className="absolute inset-0 bg-gradient-to-t from-black/55 via-transparent to-transparent" />
             </div>
-          ))}
+          </div>
+          <motion.div
+            initial={{ opacity: 0, y: 16 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, amount: 0.6 }}
+            transition={{ duration: 0.7, ease: EASE, delay: 0.3 }}
+            className={`absolute -bottom-5 left-6 right-6 rounded-2xl px-5 py-4 sm:left-auto sm:right-8 sm:w-auto ${glass}`}
+          >
+            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-green-300">{t('saunaHost.title')}</p>
+            <p className="mt-0.5 text-lg font-semibold text-white">Mārcis Kronbergs</p>
+          </motion.div>
+        </Reveal>
+
+        <div className="pt-6 lg:pt-0">
+          <SectionHeading id="host-heading" align="left" eyebrow={t('ui.hostEyebrow')} title={t('saunaHost.title')} />
+          <Reveal delay={0.1}>
+            <p className="mt-6 text-lg leading-relaxed text-white/80">{t('saunaHost.description')}</p>
+          </Reveal>
+
+          <div className="mt-8 grid gap-4 sm:grid-cols-2">
+            {stats.map((stat, i) => {
+              const to = parseInt(stat.number.replace(/\D/g, ''), 10) || 0;
+              const suffix = stat.number.replace(/[\d\s]/g, '');
+              return (
+                <Reveal key={stat.title} delay={0.15 + 0.08 * i}>
+                  <SpotlightCard className="h-full" contentClassName="p-6">
+                    <CountUp to={to} suffix={suffix} className="block text-4xl font-bold tracking-tight text-green-300" />
+                    <p className="mt-2 text-base font-semibold text-white">{stat.title}</p>
+                    <p className="mt-1.5 text-sm leading-relaxed text-white/65">{stat.description}</p>
+                  </SpotlightCard>
+                </Reveal>
+              );
+            })}
+          </div>
+
+          <Reveal delay={0.3} className="mt-10">
+            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-white/60">{t('ui.team')}</p>
+            <ul className="mt-4 flex gap-3 sm:gap-4">
+              {TEAM.map((name, i) => (
+                <li key={name} className={`w-24 overflow-hidden rounded-2xl p-1 transition-transform duration-500 hover:-translate-y-1 sm:w-28 ${glass}`}>
+                  <img
+                    src={`${HOST}/${name}.webp`}
+                    alt={`${tCommon('imageAlt.hostExtra')} ${i + 2}`}
+                    loading="lazy"
+                    decoding="async"
+                    className="aspect-[4/5] w-full rounded-xl object-cover"
+                  />
+                </li>
+              ))}
+            </ul>
+          </Reveal>
         </div>
       </div>
-
-      {/* Custom Scrollbar Styles */}
-      <style jsx>{`
-        .scrollbar-hide {
-          -ms-overflow-style: none;
-          scrollbar-width: none;
-        }
-        .scrollbar-hide::-webkit-scrollbar {
-          display: none;
-        }
-      `}</style>
     </section>
   );
 };

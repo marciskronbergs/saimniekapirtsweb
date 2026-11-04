@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { User, Mail, Phone, MessageSquare, Home, Plus } from 'lucide-react';
+import { User, Mail, Phone, MessageSquare, Home, Plus, Minus, Clock } from 'lucide-react';
+import { ChoicePicker, Field, FormTitle, Notice, OptionCard, Step, SubLabel, fieldClass, splitOption, submitClass } from './bookingUi';
 import { supabase } from '../../lib/supabase';
 import { sameSlot } from './timeSlots';
 import { useTranslation } from 'react-i18next';
@@ -27,13 +28,38 @@ const rentalOptions = priceCatalog.rental.map((r) => r.label);
 const baseExtraOptions = priceCatalog.extras.filter((e) => !e.overnight).map((e) => e.label);
 const overnightOption = priceCatalog.extras.find((e) => e.overnight)!.label;
 
+// Photographs for the cards (public/media/booking): each sauna, and a rental
+// with the herbal tub or without it (by the price list's own wording); the
+// tub for two shows the two of them in it.
+const SAUNA_PHOTOS: Record<string, string> = {
+  'Baltā pirts': '/media/booking/balta.webp',
+  'Pelēkā pirts': '/media/booking/peleka.webp',
+};
+const rentalPhoto = (index: number) => {
+  const lv = priceCatalog.rental[index]?.lv ?? '';
+  if (/bez kubla/i.test(lv)) return '/media/booking/sauna.webp';
+  return /diviem/i.test(lv) ? '/media/booking/two-tub.webp' : '/media/booking/tub.webp';
+};
+
+// "4h – 150€ (Pirts & Kubls diviem)" as its parts, for a card; the price may
+// have a space in it ("150 €" in Russian).
+const splitRental = (text: string) => {
+  const m = text.match(/^(.+?)\s+[–-]\s+([^(]+?)\s*\((.*)\)\s*$/);
+  if (m) return { duration: m[1], price: m[2], what: m[3] };
+  const { name, price } = splitOption(text);
+  return { duration: '', price, what: name };
+};
+
 interface FormNomaProps {
   selectedDate: Date | null;
   selectedTime: string | null;
   onClose: () => void;
+  // What was already chosen where the booking was opened: a sauna ('Baltā
+  // pirts') or a rental (a price list label), picked in the form to start with.
+  initialChoice?: string;
 }
 
-const FormNoma: React.FC<FormNomaProps> = ({ selectedDate, selectedTime, onClose }) => {
+const FormNoma: React.FC<FormNomaProps> = ({ selectedDate, selectedTime, onClose, initialChoice }) => {
   const { t, i18n } = useTranslation('forms');
   // A message in the visitor's language.
   const say = (lv: string, en: string, ru: string) => ({ lv, en, ru })[asLanguage(i18n.language)];
@@ -41,8 +67,8 @@ const FormNoma: React.FC<FormNomaProps> = ({ selectedDate, selectedTime, onClose
     name: '',
     email: '',
     phone: '',
-    saunaType: '',
-    rentalType: '',
+    saunaType: initialChoice && allSaunaTypes.includes(initialChoice) ? initialChoice : '',
+    rentalType: initialChoice && rentalOptions.includes(initialChoice) ? initialChoice : '',
     extras: [] as string[],
     message: '',
     transport: '',
@@ -109,10 +135,19 @@ const FormNoma: React.FC<FormNomaProps> = ({ selectedDate, selectedTime, onClose
 
       const filtered = allSaunaTypes.filter(type => (saunaCount[type] || 0) < 1);
       setAvailableSaunas(filtered);
+      // A sauna chosen earlier that is taken at this time is let go.
+      setFormData(prev => (prev.saunaType && !filtered.includes(prev.saunaType) ? { ...prev, saunaType: '' } : prev));
     };
 
     fetchAvailability();
   }, [selectedDate, selectedTime]);
+
+  // Another option picked on the page while the form is open: choose it here.
+  useEffect(() => {
+    if (!initialChoice) return;
+    if (allSaunaTypes.includes(initialChoice)) setFormData(prev => ({ ...prev, saunaType: initialChoice }));
+    if (rentalOptions.includes(initialChoice)) setFormData(prev => ({ ...prev, rentalType: initialChoice }));
+  }, [initialChoice]);
 
   const handleCheckboxChange = (option: string) => {
     setFormData(prev => {
@@ -136,6 +171,12 @@ const FormNoma: React.FC<FormNomaProps> = ({ selectedDate, selectedTime, onClose
     setExtraQuantities(prev => ({ ...prev, [option]: quantity }));
   };
 
+  // The overnight stay is only offered from the evening slots.
+  const cleanedExtras = formData.extras.filter(extra =>
+    extra !== overnightOption || (selectedTime === '17:00' || selectedTime === '18:00')
+  );
+
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedDate || !selectedTime) {
@@ -150,9 +191,6 @@ const FormNoma: React.FC<FormNomaProps> = ({ selectedDate, selectedTime, onClose
 
     try {
       if (!(await contact.confirmBeforeSubmit())) return;
-      const cleanedExtras = formData.extras.filter(extra =>
-        extra !== overnightOption || (selectedTime === '17:00' || selectedTime === '18:00')
-      );
 
       // The id is made here rather than read back after saving: it is the
       // secret in the office's cancel link, so the public cannot read ids.
@@ -242,200 +280,211 @@ const FormNoma: React.FC<FormNomaProps> = ({ selectedDate, selectedTime, onClose
     return <BookingConfirmation booking={confirmed} onClose={onClose} />;
   }
 
+  const extraOptions = [...baseExtraOptions, ...(selectedTime === '17:00' || selectedTime === '18:00' ? [overnightOption] : [])];
+
   return (
-    <div className="space-y-6">
-      <div className="flex items-center gap-3 mb-6">
-        <Home className="w-6 h-6 text-green-400" />
-        <h3 className="text-xl font-bold text-white">{t('noma.title')}</h3>
-      </div>
+    <div className="space-y-7">
+      <FormTitle icon={Home}>{t('noma.title')}</FormTitle>
 
       {submitError && (
-        <div ref={errorRef} className="mb-4 p-4 bg-red-600/20 border border-red-500 rounded-lg">
-          <p className="text-red-400">{submitError}</p>
-        </div>
+        <Notice tone="error" innerRef={errorRef}>{submitError}</Notice>
       )}
 
       {(!selectedDate || !selectedTime) && (
-        <div className="mb-4 p-4 bg-yellow-600/20 border border-yellow-500 rounded-lg">
-          <p className="text-yellow-400">{t('noma.date_warning')}</p>
-        </div>
+        <Notice tone="warn">{t('noma.date_warning')}</Notice>
       )}
 
-      <form onSubmit={handleSubmit} className="space-y-6">
-        {/* Personal Info */}
-        <div className="space-y-4">
-          <h4 className="text-lg font-semibold text-green-400">{t('noma.personal_info')}</h4>
-
-          <div className="relative">
-            <User className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
-            <input
-              type="text"
-              placeholder={t('noma.name_placeholder')}
-              value={formData.name}
-              onChange={(e) => handleInputChange('name', e.target.value)}
-              required
-              className="w-full pl-10 pr-4 py-3 bg-gray-800 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:border-green-500 focus:ring-2 focus:ring-green-500/20"
-            />
-          </div>
-
-          <div className="relative">
-            <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
-            <input
-              type="email"
-              placeholder={t('noma.email_placeholder')}
-              value={formData.email}
-              onChange={(e) => handleInputChange('email', e.target.value)}
-              onBlur={contact.onEmailBlur}
-              required
-              className="w-full pl-10 pr-4 py-3 bg-gray-800 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:border-green-500 focus:ring-2 focus:ring-green-500/20"
-            />
-          </div>
-
-          <div className="relative">
-            <Phone className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
-            <input
-              type="tel"
-              placeholder={t('noma.phone_placeholder')}
-              value={formData.phone}
-              onChange={(e) => handleInputChange('phone', e.target.value)}
-              className="w-full pl-10 pr-4 py-3 bg-gray-800 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:border-green-500 focus:ring-2 focus:ring-green-500/20"
-            />
+      <form onSubmit={handleSubmit} className="space-y-8">
+        {/* As in the earlier form: who is booking first, then what. */}
+        <Step n={1} title={t('noma.personal_info')}>
+          <div className="grid gap-3">
+            <Field icon={User}>
+              <input
+                type="text"
+                placeholder={t('noma.name_placeholder')}
+                value={formData.name}
+                onChange={(e) => handleInputChange('name', e.target.value)}
+                autoComplete="name"
+                required
+                className={fieldClass}
+              />
+            </Field>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <Field icon={Mail}>
+                <input
+                  type="email"
+                  placeholder={t('noma.email_placeholder')}
+                  value={formData.email}
+                  onChange={(e) => handleInputChange('email', e.target.value)}
+                  onBlur={contact.onEmailBlur}
+                  autoComplete="email"
+                  required
+                  className={fieldClass}
+                />
+              </Field>
+              <Field icon={Phone}>
+                <input
+                  type="tel"
+                  placeholder={t('noma.phone_placeholder')}
+                  value={formData.phone}
+                  onChange={(e) => handleInputChange('phone', e.target.value)}
+                  autoComplete="tel"
+                  className={fieldClass}
+                />
+              </Field>
+            </div>
           </div>
 
           <ContactCheckNotice notice={contact.notice} onUse={(email) => handleInputChange('email', email)} />
 
           <CompanyChoice value={company} onChange={setCompany} />
-        </div>
+        </Step>
 
-        {/* Booking Details */}
-<div className="space-y-4">
-  <h4 className="text-lg font-semibold text-green-400">{t('noma.details')}</h4>
-
-  {/* Sauna Selection */}
-  <div>
-    <label className="block text-sm font-medium text-gray-300 mb-2">{t('noma.select_sauna_label')}</label>
-    <select
-      value={formData.saunaType}
-      onChange={(e) => handleInputChange('saunaType', e.target.value)}
-      required
-      className="w-full px-4 py-3 bg-gray-800 border border-gray-600 rounded-lg text-white focus:border-green-500 focus:ring-2 focus:ring-green-500/20"
-    >
-      <option value="">{t('noma.select_sauna_placeholder')}</option>
-      {availableSaunas.length > 0 ? (
-        availableSaunas.map(type => (
-          <option key={type} value={type}>
-            {type === 'Baltā pirts' ? t('noma.saunas.baltā') : t('noma.saunas.pelēkā')}
-          </option>
-        ))
-      ) : (
-        <option disabled>{t('noma.no_saunas_available')}</option>
-      )}
-    </select>
-  </div>
-
-  {/* Rental Type */}
-  <div>
-    <label className="block text-sm font-medium text-gray-300 mb-2">{t('noma.select_type_label')}</label>
-    <select
-      value={formData.rentalType}
-      onChange={(e) => handleInputChange('rentalType', e.target.value)}
-      required
-      className="w-full px-4 py-3 bg-gray-800 border border-gray-600 rounded-lg text-white focus:border-green-500 focus:ring-2 focus:ring-green-500/20"
-    >
-      <option value="">{t('noma.select_type_placeholder')}</option>
-      {rentalOptions.map((option, index) => (
-        <option key={option} value={option}>
-          {t(`noma.rentalOptions.option${index + 1}`)}
-        </option>
-      ))}
-    </select>
-  </div>
-
-  {/* Extras */}
-  <div>
-    <label className="flex items-center text-gray-300 font-medium mb-4">
-      <Plus className="w-5 h-5 mr-2 text-green-400" />
-      {t('noma.addons')}
-    </label>
-    <div className="space-y-3">
-      {[...baseExtraOptions, ...(selectedTime === '17:00' || selectedTime === '18:00' ? [overnightOption] : [])].map(option => {
-        const checked = formData.extras.includes(option);
-        const isOvernight = option === overnightOption;
-        return (
-          <div key={option} className="flex flex-wrap items-center gap-x-3 gap-y-2">
-            <label className="flex items-center">
-              <input
-                type="checkbox"
-                checked={checked}
-                onChange={() => handleCheckboxChange(option)}
-                className="w-5 h-5 text-green-600 bg-gray-800 border-gray-600 rounded focus:ring-green-500 focus:ring-2"
-              />
-              <span className="ml-3 text-white">
-                {option === baseExtraOptions[0] ? t('noma.extras.whisks') :
-                 option === baseExtraOptions[1] ? t('noma.extras.scrubs') :
-                 isOvernight ? t('noma.extras.overnight') :
-                 option}
-              </span>
-            </label>
-            {checked && (
-              <label className="flex items-center gap-2 text-sm text-gray-300">
-                {isOvernight ? t('noma.extras.people') : t('noma.extras.quantity')}
-                <input
-                  type="number"
-                  min={1}
-                  max={20}
-                  inputMode="numeric"
-                  value={extraQuantities[option] ?? 1}
-                  onChange={(e) => handleQuantityChange(option, e.target.value)}
-                  className="w-20 px-3 py-2 bg-gray-800 border border-gray-600 rounded-lg text-white focus:border-green-500 focus:ring-2 focus:ring-green-500/20"
-                />
-              </label>
+        {/* Booking Details: the sauna, the rental, the extras. */}
+        <Step n={2} title={t('noma.details')}>
+          {/* Sauna Selection: only the saunas still free at the chosen time. */}
+          <div>
+            <SubLabel icon={Home}>{t('noma.select_sauna_label')}</SubLabel>
+            {availableSaunas.length > 0 ? (
+              <div role="radiogroup" aria-label={t('noma.select_sauna_label')} className="grid gap-2 sm:grid-cols-2">
+                {availableSaunas.map((type) => (
+                  <OptionCard
+                    key={type}
+                    name="saunaType"
+                    checked={formData.saunaType === type}
+                    onChange={() => handleInputChange('saunaType', type)}
+                    required
+                    title={type === 'Baltā pirts' ? t('noma.saunas.baltā') : t('noma.saunas.pelēkā')}
+                    image={SAUNA_PHOTOS[type]}
+                  />
+                ))}
+              </div>
+            ) : (
+              <>
+                <Notice tone="warn">{t('noma.no_saunas_available')}</Notice>
+                {/* As with the dropdown it replaces: no sauna, no booking. */}
+                <input aria-hidden tabIndex={-1} required value="" onChange={() => {}} className="pointer-events-none absolute h-px w-px opacity-0" />
+              </>
             )}
           </div>
-        );
-      })}
-    </div>
-  </div>
-</div>
 
-
-        <TransportChoice value={formData.transport} onChange={(label) => setFormData((prev) => ({ ...prev, transport: label }))} />
-
-        <GiftCardChoice value={giftCard} onChange={setGiftCard} date={selectedDate ? selectedDate.toLocaleDateString('en-CA') : null} />
-
-        {withGiftCard ? (
-          <p className="text-sm text-gray-400">{t('forms:giftCard.paymentNote')}</p>
-        ) : (
-          <PaymentChoice
-            card={cardPayments}
-            value={formData.paymentMethod}
-            onChange={(method) => setFormData((prev) => ({ ...prev, paymentMethod: method }))}
-          />
-        )}
-
-        {/* Message */}
-        <div>
-          <label className="block text-sm font-medium text-gray-300 mb-2">{t('noma.message_label')}</label>
-          <div className="relative">
-            <MessageSquare className="absolute left-3 top-3 w-5 h-5 text-gray-400" />
-            <textarea
-              placeholder={t('noma.message_placeholder')}
-              value={formData.message}
-              onChange={(e) => handleInputChange('message', e.target.value)}
-              rows={4}
-              className="w-full pl-10 pr-4 py-3 bg-gray-800 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:border-green-500 focus:ring-2 focus:ring-green-500/20 resize-none"
+          {/* Rental Type: the price list's order, as a dropdown. */}
+          <div>
+            <SubLabel icon={Clock}>{t('noma.select_type_label')}</SubLabel>
+            <ChoicePicker
+              name="rentalType"
+              label={t('noma.select_type_label')}
+              placeholder={t('noma.select_type_placeholder')}
+              value={formData.rentalType}
+              onChange={(option) => handleInputChange('rentalType', option)}
+              required
+              options={rentalOptions.map((option, index) => {
+                const { duration, price, what } = splitRental(t(`noma.rentalOptions.option${index + 1}`));
+                return { value: option, title: what, meta: duration, price, image: rentalPhoto(index) };
+              })}
             />
           </div>
-        </div>
 
+          {/* Extras */}
+          <div>
+            <SubLabel icon={Plus}>{t('noma.addons')}</SubLabel>
+            <div className="space-y-2">
+              {extraOptions.map(option => {
+                const checked = formData.extras.includes(option);
+                const isOvernight = option === overnightOption;
+                const { name, price } = splitOption(
+                  option === baseExtraOptions[0] ? t('noma.extras.whisks') :
+                  option === baseExtraOptions[1] ? t('noma.extras.scrubs') :
+                  isOvernight ? t('noma.extras.overnight') :
+                  option
+                );
+                const quantity = extraQuantities[option] ?? 1;
+                return (
+                  <div key={option}>
+                    <OptionCard
+                      type="checkbox"
+                      name="extras"
+                      checked={checked}
+                      onChange={() => handleCheckboxChange(option)}
+                      title={name}
+                      price={price}
+                    />
+                    {checked && (
+                      <div className="mt-1.5 flex items-center justify-between gap-3 rounded-xl bg-white/[0.03] px-3.5 py-1.5 ring-1 ring-white/10">
+                        <span className="text-sm text-white/70">{isOvernight ? t('noma.extras.people') : t('noma.extras.quantity')}</span>
+                        <div className="flex items-center gap-2">
+                          <button
+                            type="button"
+                            onClick={() => handleQuantityChange(option, String(quantity - 1))}
+                            aria-label="−"
+                            className="flex h-8 w-8 items-center justify-center rounded-full bg-white/[0.07] text-white ring-1 ring-white/15 transition hover:bg-white/[0.14]"
+                          >
+                            <Minus className="h-4 w-4" />
+                          </button>
+                          <input
+                            type="number"
+                            min={1}
+                            max={20}
+                            inputMode="numeric"
+                            value={quantity}
+                            onChange={(e) => handleQuantityChange(option, e.target.value)}
+                            className="w-12 rounded-lg bg-black/30 py-1.5 text-center text-base font-semibold tabular-nums text-white ring-1 ring-white/15 outline-none focus:ring-2 focus:ring-green-400/60 [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => handleQuantityChange(option, String(quantity + 1))}
+                            aria-label="+"
+                            className="flex h-8 w-8 items-center justify-center rounded-full bg-green-500/20 text-green-200 ring-1 ring-green-400/40 transition hover:bg-green-500/30"
+                          >
+                            <Plus className="h-4 w-4" />
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </Step>
+
+        <Step n={3} title={say('Ceļš un apmaksa', 'Getting here and payment', 'Дорога и оплата')}>
+          <TransportChoice value={formData.transport} onChange={(label) => setFormData((prev) => ({ ...prev, transport: label }))} />
+
+          <GiftCardChoice value={giftCard} onChange={setGiftCard} date={selectedDate ? selectedDate.toLocaleDateString('en-CA') : null} />
+
+          {withGiftCard ? (
+            <p className="text-sm text-white/60">{t('forms:giftCard.paymentNote')}</p>
+          ) : (
+            <PaymentChoice
+              card={cardPayments}
+              value={formData.paymentMethod}
+              onChange={(method) => setFormData((prev) => ({ ...prev, paymentMethod: method }))}
+            />
+          )}
+
+          {/* Message */}
+          <div>
+            <SubLabel icon={MessageSquare}>{t('noma.message_label')}</SubLabel>
+            <Field icon={MessageSquare} top>
+              <textarea
+                placeholder={t('noma.message_placeholder')}
+                value={formData.message}
+                onChange={(e) => handleInputChange('message', e.target.value)}
+                rows={4}
+                className={`${fieldClass} resize-none`}
+              />
+            </Field>
+          </div>
+        </Step>
 
         {/* Submit */}
         <button
           type="submit"
           disabled={isSubmitting || !selectedDate || !selectedTime}
-          className="w-full bg-green-600 hover:bg-green-500 disabled:bg-gray-600 disabled:cursor-not-allowed text-white py-4 px-6 rounded-lg font-semibold transition-all duration-300 transform hover:scale-105 hover:shadow-lg hover:shadow-green-500/25"
+          className={submitClass}
         >
-          {isSubmitting ? t('noma.submitting') : t('noma.submit')}
+          <span className="relative">{isSubmitting ? t('noma.submitting') : t('noma.submit')}</span>
         </button>
       </form>
     </div>

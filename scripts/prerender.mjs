@@ -314,6 +314,23 @@ const stripPageTags = (head) =>
     // The homepage LocalBusiness block is replaced by the per-route graph.
     .replace(/<script type="application\/ld\+json">[\s\S]*?<\/script>/g, '')
 
+// The homepage hero's forest and the log with the bowls, fetched with the
+// page rather than once the script has run, so the hero opens on its own
+// picture. The sizes match the hero's <img> tags (hero/WhiskPosterHero.tsx).
+const HERO_PRELOADS = [
+  [
+    '/media/hero/clearing-800.webp 800w, /media/hero/clearing-1280.webp 1280w, /media/hero/clearing-1850.webp 1850w',
+    '(orientation: portrait) 1850px, 145vw',
+  ],
+  [
+    '/media/hero/bowls-800.webp 800w, /media/hero/bowls-1400.webp 1400w, /media/hero/bowls-1842.webp 1842w',
+    '(orientation: portrait) 130vw, 52vw',
+  ],
+].map(
+  ([srcset, sizes]) =>
+    `<link rel="preload" as="image" imagesrcset="${srcset}" imagesizes="${sizes}" fetchpriority="high" />`
+)
+
 function documentFor({ route, seo, head, body, schema, language }) {
   const url = urlForLanguage(route.path, language)
   const robots = route.noindexHint
@@ -341,6 +358,7 @@ function documentFor({ route, seo, head, body, schema, language }) {
     `<meta property="og:type" content="${route.home ? 'website' : 'article'}" />`,
     `<meta name="twitter:title" content="${esc(seo.twitterTitle)}" />`,
     `<meta name="twitter:description" content="${esc(seo.twitterDescription)}" />`,
+    ...(route.home ? HERO_PRELOADS : []),
     ...schema.map(
       (s) => `<script type="application/ld+json">${JSON.stringify(s)}</script>`
     ),

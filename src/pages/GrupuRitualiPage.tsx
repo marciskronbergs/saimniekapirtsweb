@@ -1,111 +1,133 @@
-import React, { useState, useEffect } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
-import HeaderSection from '../components/HeaderSection';
-import FooterSection from '../components/FooterSection';
-import GrupuRitualsTabs from '../components/grupuRituali/GrupuRitualsTabs';
-import GrupuPirtsMeistaru from '../components/grupuRituali/GrupuPirtsMeistaru';
-import GrupuPirtsDraugu from '../components/grupuRituali/GrupuPirtsDraugu';
-import GrupuPirtsDrauguPlus from '../components/grupuRituali/GrupuPirtsDrauguPlus';
+import { useEffect, useRef, useState } from 'react';
+import { Link, useLocation } from 'react-router-dom';
+import { AnimatePresence, MotionConfig, motion } from 'framer-motion';
 import { ArrowLeft } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import { asLanguage } from '../utils/locale';
+import HeaderSection from '../components/HeaderSection';
+import FooterSection from '../components/FooterSection';
+import LeafBackdrop from '../components/leaves/LeafBackdrop';
+import { WhiskSeam } from '../components/whisks/WhiskAccent';
+import GroupHero from '../components/grupuRituali/GroupHero';
+import GroupTabs, { type GroupId } from '../components/grupuRituali/GroupTabs';
+import GroupPanel from '../components/grupuRituali/GroupPanel';
+import { Reveal } from '../components/pirtsRituali/ritualUi';
+import { EASE, glass } from '../components/pirtsRituali/ritualStyles';
 
-export type TabType = 'meistaru' | 'draugu' | 'draugu-plus';
+// "Grupu Pirts Rituāli", built like "Īpašie Pirts Piedzīvojumi": the group
+// hero, the three group rituals as tabs, and the chosen one's programme
+// opening below them. Arriving from the rituals page's group cards
+// (state.tab) opens that ritual and scrolls to it; arriving otherwise opens
+// none.
+
+export type TabType = GroupId;
+const PANEL_ID = 'group-panel';
 
 const GrupuRitualiPage = () => {
-  const [activeTab, setActiveTab] = useState<TabType>('meistaru');
-  const [isVisible, setIsVisible] = useState(false);
+  const { t } = useTranslation('groupRituals');
   const location = useLocation();
-  const navigate = useNavigate();
-  const { t, i18n } = useTranslation('groupRituals');
+  const asked = (location.state as { tab?: GroupId } | null)?.tab ?? null;
+  const [selected, setSelected] = useState<GroupId | null>(asked);
+  const panelRef = useRef<HTMLDivElement>(null);
+  // Scroll to the programme only when it was asked for (a deep link, a click).
+  const reveal = useRef(asked !== null);
 
-  // Auto-load selected tab from router state
   useEffect(() => {
-    const state = location.state as { tab?: TabType } | null;
-    if (state?.tab) {
-      setActiveTab(state.tab);
+    if (asked) {
+      setSelected(asked);
+      reveal.current = true;
     }
-    setIsVisible(true);
-    
-    // Scroll to top on load
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  }, [location.state]);
+  }, [asked]);
 
-  const handleTabChange = (tab: TabType) => {
-    setActiveTab(tab);
-  };
+  useEffect(() => {
+    if (!selected || !reveal.current) return;
+    reveal.current = false;
+    const timer = window.setTimeout(() => panelRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 450);
+    return () => window.clearTimeout(timer);
+  }, [selected]);
 
-  const handleBackClick = () => {
-    navigate('/pirts-rituali');
-  };
-
-  const renderActiveTabContent = () => {
-    switch (activeTab) {
-      case 'meistaru':
-        return <GrupuPirtsMeistaru />;
-      case 'draugu':
-        return <GrupuPirtsDraugu />;
-      case 'draugu-plus':
-        return <GrupuPirtsDrauguPlus />;
-      default:
-        return <GrupuPirtsMeistaru />;
+  const choose = (id: GroupId) => {
+    if (id === selected) {
+      panelRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      return;
     }
+    reveal.current = selected === null;
+    setSelected(id);
   };
 
   return (
-    <div className="min-h-screen bg-[#0a0a0a]">
-      <HeaderSection />
-      
-      <main className="pt-20">
-        {/* Hero Section with Back Button */}
-        <section className="py-20 px-6 max-w-7xl mx-auto">
-          <div className={`transform transition-all duration-1000 ${
-            isVisible ? 'translate-y-0 opacity-100' : 'translate-y-12 opacity-0'
-          }`}>
-            {/* Back Button */}
-            <div className="mb-8">
-              <button
-                onClick={handleBackClick}
-                className="flex items-center gap-3 text-gray-300 hover:text-green-400 transition-colors duration-300 group"
-              >
-                <ArrowLeft className="w-5 h-5 group-hover:-translate-x-1 transition-transform duration-300" />
-                <span className="text-lg">
-                  {({ lv: 'Atpakaļ uz pirts rituāliem', en: 'Back to sauna rituals', ru: 'Назад к банным ритуалам' })[asLanguage(i18n.language)]}
+    <MotionConfig reducedMotion="user">
+      <div className="min-h-screen overflow-x-clip bg-[#0a0a0a]">
+        <HeaderSection />
+        <main>
+          {/* The site's drifting leaves, behind the whole page. */}
+          <LeafBackdrop className="!bg-transparent">
+          <GroupHero>
+            <div className="mx-auto max-w-7xl px-4 pb-16 pt-10 sm:px-6 sm:pt-16 lg:pb-24 lg:pt-20">
+              <Reveal className="max-w-2xl">
+                <Link
+                  to="/pirts-rituali"
+                  className="tap-area group inline-flex items-center gap-2 text-sm font-medium text-white/60 transition-colors hover:text-green-300"
+                >
+                  <ArrowLeft aria-hidden className="h-4 w-4 transition-transform duration-300 group-hover:-translate-x-1" />
+                  {t('ui.back')}
+                </Link>
+                <span className={`mt-6 flex w-max items-center gap-2 rounded-full px-4 py-1.5 text-xs font-semibold uppercase tracking-[0.2em] text-green-300 ${glass}`}>
+                  <span aria-hidden className="h-1.5 w-1.5 rounded-full bg-green-500" />
+                  {t('ui.eyebrow')}
                 </span>
-              </button>
+                <h1 className="mt-6 text-4xl font-bold tracking-tight text-white sm:text-5xl lg:text-6xl">{t('hero.title')}</h1>
+                <p className="mt-5 text-lg leading-relaxed text-white/80 sm:text-xl">{t('hero.subtitle')}</p>
+                <p className="mt-8 text-sm font-medium text-white/60">{t('ui.pick')}</p>
+              </Reveal>
+              <div className="mt-6 lg:mt-8">
+                <GroupTabs selected={selected} onSelect={choose} panelId={PANEL_ID} />
+              </div>
             </div>
+          </GroupHero>
+          {/* A birch whisk from the left, behind the group tabs' glass (the
+              photo has the right side). */}
+          <WhiskSeam behind asset="birch-left" width="33vw" shiftY="-114%" rotate={3} hideOnPhones />
 
-            <div className="text-center mb-16">
-              <h1 className="text-4xl lg:text-6xl font-bold text-white mb-8">
-                {t('hero.title')}
-              </h1>
-              <p className="text-xl text-gray-300 max-w-4xl mx-auto leading-relaxed">
-                {t('hero.subtitle')}
-              </p>
-            </div>
+          {/* The chosen programme, opening below the tabs. */}
+          <div
+            ref={panelRef}
+            id={PANEL_ID}
+            role="tabpanel"
+            aria-labelledby={selected ? `tab-${selected}` : undefined}
+            hidden={!selected}
+            className="scroll-mt-20"
+          >
+            <AnimatePresence initial={false}>
+              {selected && (
+                <motion.div
+                  key="panel"
+                  initial={{ height: 0 }}
+                  animate={{ height: 'auto' }}
+                  exit={{ height: 0 }}
+                  transition={{ duration: 0.7, ease: EASE }}
+                  className="overflow-hidden"
+                >
+                  <AnimatePresence mode="wait" initial={false}>
+                    <motion.div
+                      key={selected}
+                      initial={{ y: 24 }}
+                      animate={{ y: 0 }}
+                      exit={{ y: -12, opacity: 0, transition: { duration: 0.2 } }}
+                      transition={{ duration: 0.45, ease: EASE }}
+                      className="mx-auto max-w-7xl px-4 pb-20 pt-10 sm:px-6 sm:pb-28"
+                    >
+                      <GroupPanel id={selected} />
+                    </motion.div>
+                  </AnimatePresence>
+                </motion.div>
+              )}
+            </AnimatePresence>
           </div>
-
-          {/* Tab Navigation */}
-          <div className={`transform transition-all duration-1000 ${
-            isVisible ? 'translate-y-0 opacity-100' : 'translate-y-12 opacity-0'
-          }`} style={{ transitionDelay: '200ms' }}>
-            <GrupuRitualsTabs 
-              activeTab={activeTab} 
-              onTabChange={handleTabChange} 
-            />
-          </div>
-        </section>
-
-        {/* Tab Content */}
-        <section className={`transform transition-all duration-1000 ${
-          isVisible ? 'translate-y-0 opacity-100' : 'translate-y-12 opacity-0'
-        }`} style={{ transitionDelay: '400ms' }}>
-          {renderActiveTabContent()}
-        </section>
-      </main>
-
-      <FooterSection />
-    </div>
+          </LeafBackdrop>
+        </main>
+        <FooterSection />
+      </div>
+    </MotionConfig>
   );
 };
 

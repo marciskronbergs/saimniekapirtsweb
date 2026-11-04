@@ -52,21 +52,33 @@
         "title": "INDIVIDUAL",
         "price": "220€ – 280€",
         "description": "Ideal if you are looking for quiet relaxation on your own. (Without the hot tub – 220€)",
-        "features": ["Certified sauna master", "Up to 3 h", "Sauna and herbal hot tub included"],
+        "features": [
+          "Certified sauna master",
+          "Up to 3 h",
+          "Sauna and herbal hot tub included"
+        ],
         "popular": false
       },
       {
         "title": "FOR TWO",
         "price": "300€ – 360€",
         "description": "Ideal for a couple or two friends who want to share a ritual in a calm atmosphere. (Without the hot tub – 300€)",
-        "features": ["Certified sauna master", "Up to 4 h", "Sauna and herbal hot tub included"],
+        "features": [
+          "Certified sauna master",
+          "Up to 4 h",
+          "Sauna and herbal hot tub included"
+        ],
         "popular": true
       },
       {
         "title": "FOR THE FAMILY",
         "price": "380€",
         "description": "Ideal for time together as a family, sharing new sensations and experiences. (2 adults + 3 children)",
-        "features": ["Certified sauna master", "Up to 5 h", "Sauna and herbal hot tub included"],
+        "features": [
+          "Certified sauna master",
+          "Up to 5 h",
+          "Sauna and herbal hot tub included"
+        ],
         "popular": false
       }
     ],
@@ -81,7 +93,7 @@
         "description": "With a shared scrub, the herbal hot tub and a hot-and-cold contrast in the pond.",
         "details": "Individual whisking and an individual scrub are not included.",
         "restrictions": [
-          "noIndividualWhiskBeating",
+          "noIndividualBeating",
           "noIndividualScrub"
         ]
       },
@@ -101,7 +113,7 @@
       }
     ],
     "cta": "Learn More",
-    "noIndividualWhiskBeating": "❌ Individual whisking",
+    "noIndividualBeating": "❌ Individual whisking",
     "noIndividualScrub": "❌ Individual scrub"
   },
   "specialExperiences": {
@@ -157,5 +169,20 @@
       "An unforgettable surprise"
     ],
     "cta": "Learn More"
+  },
+  "tubScene": {
+    "title": "Sauna Ritual Prices",
+    "alt": "Two guests in the herbal tub holding cups while the host pours them a drink from a clay jug."
+  },
+  "ui": {
+    "experienceEyebrow": "The ritual, step by step",
+    "step": "Step",
+    "popular": "Most popular",
+    "groupEyebrow": "With friends",
+    "included": "Included",
+    "notIncluded": "Not included",
+    "hostEyebrow": "Meet the host",
+    "team": "Our sauna masters",
+    "accommodationEyebrow": "Stay the night"
   }
 }

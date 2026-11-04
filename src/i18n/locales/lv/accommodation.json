@@ -22,5 +22,13 @@
   "transport": {
     "title": "Sabiedriskais Transports:",
     "description": "No Rīgas ar autobusu līdz pieturai \"Dzimtmisa\" – tur Jūs savāksim bez maksas (atzīmējiet to, rezervējot). Vai izvēlieties transfēru no Rīgas un atpakaļ – 60 € līdz 4 cilvēkiem, 120 € līdz 8 cilvēkiem; lielākām grupām cena pēc vienošanās."
+  },
+  "ui": {
+    "eyebrow": "Paliec pa nakti",
+    "roomsEyebrow": "Divas naktsmītnes",
+    "roomsTitle": "Kur pārnakšņot",
+    "see": "Skatīt naktsmītnes",
+    "book": "Rezervēt",
+    "photo": "Rādīt {{n}}. attēlu"
   }
 }

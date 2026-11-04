@@ -6,9 +6,9 @@ import {
   Phone,
   MessageSquare,
   Sparkles,
-  Users,
-  Home
+  Users
 } from 'lucide-react';
+import { ChipOption, ChoicePicker, Field, FormTitle, Notice, OptionCard, Step, SubLabel, fieldClass, splitOption, submitClass } from './bookingUi';
 import { supabase } from '../../lib/supabase';
 import { sameSlot } from './timeSlots';
 
@@ -38,13 +38,31 @@ const groupRituals = [...groupRitualsLarge, ...groupRitualsSmall];
 
 const timeSlotsForStay = ['17:00', '18:00'];
 
+// A photograph for each of the price list's rituals, in its order
+// (public/media/booking): alone, for two, the family, the groups, the parties.
+const RITUAL_PHOTOS = [
+  '/media/booking/solo-tub.webp',
+  '/media/booking/solo.webp',
+  '/media/booking/two-tub.webp',
+  '/media/booking/two.webp',
+  '/media/booking/family.webp',
+  '/media/booking/master.webp',
+  '/media/booking/friends.webp',
+  '/media/booking/friends-plus.webp',
+  '/media/booking/bachelorette.webp',
+  '/media/booking/bachelor.webp',
+];
+
 interface FormRitualProps {
   selectedDate: Date | null;
   selectedTime: string | null;
   onClose: () => void;
+  // The ritual already chosen where the booking was opened (a price card's
+  // button): one of the price list's labels, picked in the form to start with.
+  initialRitualType?: string;
 }
 
-const FormRitual: React.FC<FormRitualProps> = ({ selectedDate, selectedTime, onClose }) => {
+const FormRitual: React.FC<FormRitualProps> = ({ selectedDate, selectedTime, onClose, initialRitualType }) => {
   const { t, i18n } = useTranslation(['forms', 'common']);
   // A message in the visitor's language.
   const say = (lv: string, en: string, ru: string) => ({ lv, en, ru })[asLanguage(i18n.language)];
@@ -52,7 +70,7 @@ const FormRitual: React.FC<FormRitualProps> = ({ selectedDate, selectedTime, onC
     name: '',
     email: '',
     phone: '',
-    ritualType: '',
+    ritualType: initialRitualType && ritualTypes.includes(initialRitualType) ? initialRitualType : '',
     participants: '',
     overnightStay: false,
     message: '',
@@ -82,6 +100,13 @@ const FormRitual: React.FC<FormRitualProps> = ({ selectedDate, selectedTime, onC
   }, [submitError]);
 
 
+  // Another ritual picked on the page while the form is open: choose it here.
+  useEffect(() => {
+    if (initialRitualType && ritualTypes.includes(initialRitualType)) {
+      setFormData((prev) => ({ ...prev, ritualType: initialRitualType }));
+    }
+  }, [initialRitualType]);
+
   // Auto-reset overnightStay if time is changed to a non-evening slot
 React.useEffect(() => {
   if (!timeSlotsForStay.includes(selectedTime || '') && formData.overnightStay) {
@@ -102,6 +127,7 @@ React.useEffect(() => {
 
   const isGroupRitual = groupRituals.includes(formData.ritualType);
   const showOvernight = timeSlotsForStay.includes(selectedTime || '');
+
 
 
   const fetchSaunaType = async (): Promise<string> => {
@@ -268,170 +294,159 @@ const reservationData = {
     return <BookingConfirmation booking={confirmed} onClose={onClose} />;
   }
 
+  const participantCounts = groupRitualsLarge.includes(formData.ritualType)
+    ? Array.from({ length: 14 }, (_, i) => i + 3) // 3–16
+    : groupRitualsSmall.includes(formData.ritualType)
+    ? Array.from({ length: 6 }, (_, i) => i + 3)  // 3–8
+    : [];
+  const overnight = splitOption(t('forms:ritual.overnight'));
+
   return (
-    <div className="space-y-6">
-      <div className="flex items-center gap-3 mb-6">
-        <Sparkles className="w-6 h-6 text-green-400" />
-        <h3 className="text-xl font-bold text-white">{t('forms:ritual.title')}</h3>
-      </div>
+    <div className="space-y-7">
+      <FormTitle icon={Sparkles}>{t('forms:ritual.title')}</FormTitle>
 
       {submitError && (
-        <div ref={errorRef} className="mb-4 p-4 bg-red-600/20 border border-red-500 rounded-lg">
-          <p className="text-red-400">{submitError}</p>
-        </div>
+        <Notice tone="error" innerRef={errorRef}>{submitError}</Notice>
       )}
 
       {(!selectedDate || !selectedTime) && (
-        <div className="mb-4 p-4 bg-yellow-600/20 border border-yellow-500 rounded-lg">
-          <p className="text-yellow-400">{t('common:calendar.please_select_date_time')}</p>
-        </div>
+        <Notice tone="warn">{t('common:calendar.please_select_date_time')}</Notice>
       )}
 
-      <form onSubmit={handleSubmit} className="space-y-6">
-        {/* Personal Information */}
-        <div className="space-y-4">
-          <h4 className="text-lg font-semibold text-green-400">{t('forms:ritual.personal_info')}</h4>
-
-          <div className="relative">
-            <User className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
-            <input
-              type="text"
-              placeholder={t('forms:ritual.name_placeholder')}
-              value={formData.name}
-              onChange={(e) => handleInputChange('name', e.target.value)}
-              className="w-full pl-10 pr-4 py-3 bg-gray-800 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:border-green-500 focus:ring-2 focus:ring-green-500/20"
-              required
-            />
-          </div>
-
-          <div className="relative">
-            <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
-            <input
-              type="email"
-              placeholder={t('forms:ritual.email_placeholder')}
-              value={formData.email}
-              onChange={(e) => handleInputChange('email', e.target.value)}
-              onBlur={contact.onEmailBlur}
-              className="w-full pl-10 pr-4 py-3 bg-gray-800 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:border-green-500 focus:ring-2 focus:ring-green-500/20"
-              required
-            />
-          </div>
-
-          <div className="relative">
-            <Phone className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
-            <input
-              type="tel"
-              placeholder={t('forms:ritual.phone_placeholder')}
-              value={formData.phone}
-              onChange={(e) => handleInputChange('phone', e.target.value)}
-              className="w-full pl-10 pr-4 py-3 bg-gray-800 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:border-green-500 focus:ring-2 focus:ring-green-500/20"
-            />
+      <form onSubmit={handleSubmit} className="space-y-8">
+        {/* As in the earlier form: who is booking first, then what. */}
+        <Step n={1} title={t('forms:ritual.personal_info')}>
+          <div className="grid gap-3">
+            <Field icon={User}>
+              <input
+                type="text"
+                placeholder={t('forms:ritual.name_placeholder')}
+                value={formData.name}
+                onChange={(e) => handleInputChange('name', e.target.value)}
+                autoComplete="name"
+                className={fieldClass}
+                required
+              />
+            </Field>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <Field icon={Mail}>
+                <input
+                  type="email"
+                  placeholder={t('forms:ritual.email_placeholder')}
+                  value={formData.email}
+                  onChange={(e) => handleInputChange('email', e.target.value)}
+                  onBlur={contact.onEmailBlur}
+                  autoComplete="email"
+                  className={fieldClass}
+                  required
+                />
+              </Field>
+              <Field icon={Phone}>
+                <input
+                  type="tel"
+                  placeholder={t('forms:ritual.phone_placeholder')}
+                  value={formData.phone}
+                  onChange={(e) => handleInputChange('phone', e.target.value)}
+                  autoComplete="tel"
+                  className={fieldClass}
+                />
+              </Field>
+            </div>
           </div>
 
           <ContactCheckNotice notice={contact.notice} onUse={(email) => handleInputChange('email', email)} />
 
           <CompanyChoice value={company} onChange={setCompany} />
-        </div>
+        </Step>
 
-        {/* Ritual Type */}
-        <div className="space-y-4">
-          <h4 className="text-lg font-semibold text-green-400">{t('forms:ritual.ritual_details')}</h4>
-
+        {/* Ritual Type: the price list's rituals, in its order, as a dropdown. */}
+        <Step n={2} title={t('forms:ritual.ritual_details')}>
           <div>
-            <label className="block text-sm font-medium text-gray-300 mb-2">{t('forms:ritual.ritual_type')}</label>
-            <select
-  value={formData.ritualType}
-  onChange={(e) => handleInputChange('ritualType', e.target.value)}
-  className="w-full max-w-full truncate px-4 py-3 bg-gray-800 border border-gray-600 rounded-lg text-white focus:border-green-500 focus:ring-2 focus:ring-green-500/20"
-  required
->
-              <option value="">{t('forms:ritual.ritual_type_placeholder')}</option>
-              {ritualTypes.map((option, index) => (
-                <option key={option} value={option}>
-                  {t(`forms:ritual.options.option${index + 1}`)}
-                </option>
-              ))}
-            </select>
-          </div>
-
-         {isGroupRitual && (
-  <div>
-    <label className="block text-sm font-medium text-gray-300 mb-2">{t('forms:ritual.participants')}</label>
-    <select
-      value={formData.participants}
-      onChange={(e) => handleInputChange('participants', e.target.value)}
-      className="w-full px-4 py-3 bg-gray-800 border border-gray-600 rounded-lg text-white focus:border-green-500 focus:ring-2 focus:ring-green-500/20 appearance-none"
-      required
-    >
-      <option value="">{t('forms:ritual.participants_placeholder')}</option>
-      {(groupRitualsLarge.includes(formData.ritualType)
-        ? Array.from({ length: 14 }, (_, i) => i + 3) // 3–16
-        : groupRitualsSmall.includes(formData.ritualType)
-        ? Array.from({ length: 6 }, (_, i) => i + 3)  // 3–8
-        : []).map((num) => {
-          const valueKey = `${num} cilvēki`;
-          return (
-          <option key={num} value={valueKey}>
-            {t(`forms:ritual.people.${num}`)}
-          </option>
-        );
-      })}
-    </select>
-  </div>
-)}
-
-
-
-          {showOvernight && (
-            <div className="flex items-center space-x-3">
-              <input
-                type="checkbox"
-                id="overnightStay"
-                checked={formData.overnightStay}
-                onChange={(e) => handleInputChange('overnightStay', e.target.checked)}
-                className="w-5 h-5 text-green-600 bg-gray-800 border-gray-600 rounded focus:ring-green-500 focus:ring-2"
-              />
-              <label htmlFor="overnightStay" className="text-gray-300">{t('forms:ritual.overnight')}</label>
-            </div>
-          )}
-        </div>
-
-        <TransportChoice value={formData.transport} onChange={(label) => handleInputChange('transport', label)} />
-
-        <GiftCardChoice value={giftCard} onChange={setGiftCard} date={selectedDate ? selectedDate.toLocaleDateString('en-CA') : null} />
-
-        {withGiftCard ? (
-          <p className="text-sm text-gray-400">{t('forms:giftCard.paymentNote')}</p>
-        ) : (
-          <PaymentChoice
-            card={cardPayments}
-            value={formData.paymentMethod}
-            onChange={(method) => setFormData((prev) => ({ ...prev, paymentMethod: method }))}
-          />
-        )}
-
-        {/* Message */}
-        <div>
-          <label className="block text-sm font-medium text-gray-300 mb-2">{t('forms:ritual.message')}</label>
-          <div className="relative">
-            <MessageSquare className="absolute left-3 top-3 w-5 h-5 text-gray-400" />
-            <textarea
-              placeholder={t('forms:ritual.message_placeholder')}
-              value={formData.message}
-              onChange={(e) => handleInputChange('message', e.target.value)}
-              rows={4}
-              className="w-full pl-10 pr-4 py-3 bg-gray-800 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:border-green-500 focus:ring-2 focus:ring-green-500/20 resize-none"
+            <SubLabel icon={Sparkles}>{t('forms:ritual.ritual_type')}</SubLabel>
+            <ChoicePicker
+              name="ritualType"
+              label={t('forms:ritual.ritual_type')}
+              placeholder={t('forms:ritual.ritual_type_placeholder')}
+              value={formData.ritualType}
+              onChange={(option) => handleInputChange('ritualType', option)}
+              required
+              options={ritualTypes.map((option, index) => {
+                const { name, price } = splitOption(t(`forms:ritual.options.option${index + 1}`));
+                return { value: option, title: name, price, image: RITUAL_PHOTOS[index] };
+              })}
             />
           </div>
-       
-        </div>
+
+          {isGroupRitual && (
+            <div>
+              <SubLabel icon={Users}>{t('forms:ritual.participants')}</SubLabel>
+              <div role="radiogroup" aria-label={t('forms:ritual.participants')} className="flex flex-wrap gap-2">
+                {participantCounts.map((num) => {
+                  const valueKey = `${num} cilvēki`;
+                  return (
+                    <ChipOption
+                      key={num}
+                      name="participants"
+                      checked={formData.participants === valueKey}
+                      onChange={() => handleInputChange('participants', valueKey)}
+                      required
+                      label={String(num)}
+                      title={t(`forms:ritual.people.${num}`)}
+                    />
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {showOvernight && (
+            <OptionCard
+              type="checkbox"
+              name="overnightStay"
+              checked={formData.overnightStay}
+              onChange={() => handleInputChange('overnightStay', !formData.overnightStay)}
+              title={overnight.name}
+              price={overnight.price}
+            />
+          )}
+        </Step>
+
+        <Step n={3} title={say('Ceļš un apmaksa', 'Getting here and payment', 'Дорога и оплата')}>
+          <TransportChoice value={formData.transport} onChange={(label) => handleInputChange('transport', label)} />
+
+          <GiftCardChoice value={giftCard} onChange={setGiftCard} date={selectedDate ? selectedDate.toLocaleDateString('en-CA') : null} />
+
+          {withGiftCard ? (
+            <p className="text-sm text-white/60">{t('forms:giftCard.paymentNote')}</p>
+          ) : (
+            <PaymentChoice
+              card={cardPayments}
+              value={formData.paymentMethod}
+              onChange={(method) => setFormData((prev) => ({ ...prev, paymentMethod: method }))}
+            />
+          )}
+
+          {/* Message */}
+          <div>
+            <SubLabel icon={MessageSquare}>{t('forms:ritual.message')}</SubLabel>
+            <Field icon={MessageSquare} top>
+              <textarea
+                placeholder={t('forms:ritual.message_placeholder')}
+                value={formData.message}
+                onChange={(e) => handleInputChange('message', e.target.value)}
+                rows={4}
+                className={`${fieldClass} resize-none`}
+              />
+            </Field>
+          </div>
+        </Step>
 
         <button
           type="submit"
           disabled={isSubmitting || !selectedDate || !selectedTime}
-          className="w-full bg-green-600 hover:bg-green-500 disabled:bg-gray-600 disabled:cursor-not-allowed text-white py-4 px-6 rounded-lg font-semibold transition-all duration-300 transform hover:scale-105 hover:shadow-lg hover:shadow-green-500/25"
+          className={submitClass}
         >
-          {isSubmitting ? t('forms:ritual.submitting') : t('forms:ritual.submit')}
+          <span className="relative">{isSubmitting ? t('forms:ritual.submitting') : t('forms:ritual.submit')}</span>
         </button>
       </form>
     </div>

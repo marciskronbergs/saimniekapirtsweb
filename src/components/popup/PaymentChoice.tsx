@@ -1,6 +1,7 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { CreditCard } from 'lucide-react';
+import { OptionCard, SubLabel } from './bookingUi';
 
 export type PaymentMethod = 'transfer' | 'cash' | 'card';
 
@@ -24,23 +25,22 @@ const PaymentChoice: React.FC<PaymentChoiceProps> = ({ value, onChange, card, ca
   ];
   return (
     <div>
-      <label className="block text-sm font-medium text-gray-300 mb-2">
-        <CreditCard className="inline w-4 h-4 mr-2 text-green-400" />
-        {t('payment.label')}
-      </label>
-      <div className="space-y-2">
-        {options.map((option) => (
-          <label key={option.method} className="flex items-start gap-3 text-gray-300 cursor-pointer">
-            <input
-              type="radio"
+      <SubLabel icon={CreditCard}>{t('payment.label')}</SubLabel>
+      <div className="grid gap-2.5">
+        {options.map((option) => {
+          // "By card now – safely through Stripe": the way, then the detail.
+          const at = option.text.indexOf(' – ');
+          return (
+            <OptionCard
+              key={option.method}
               name="payment"
               checked={value === option.method}
               onChange={() => onChange(option.method)}
-              className="mt-1 w-4 h-4 text-green-600 bg-gray-800 border-gray-600 focus:ring-green-500"
+              title={at > 0 ? option.text.slice(0, at) : option.text}
+              meta={at > 0 ? option.text.slice(at + 3) : undefined}
             />
-            <span>{option.text}</span>
-          </label>
-        ))}
+          );
+        })}
       </div>
     </div>
   );

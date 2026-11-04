@@ -1,4 +1,15 @@
 {
   "title": "Unikāla Atpūtas Vieta",
-  "subtitle": "Latvijas Dabas Sirdī!"
+  "subtitle": "Latvijas Dabas Sirdī!",
+  "poster": {
+    "tagline": "Pirts rituāli un atpūta Latvijas dabas sirdī.",
+    "primary": "Izvēlies rituālu",
+    "secondary": "Iepazīsti pakalpojumus",
+    "scroll": "Ritināt uz leju"
+  },
+  "cinematic": {
+    "title": "Pirts rituāli",
+    "scrollCue": "Ritini, lai sajustu",
+    "alt": "Pirtnieka rokas virs bļodas gatavo pirts procedūru; aiz tām bērzu slotas un koka pirts siena."
+  }
 }

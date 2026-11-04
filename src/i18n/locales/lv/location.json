@@ -10,5 +10,8 @@
   "companyReg": "Reģ. Nr.",
   "companyBank": "Banka",
   "companyIBAN": "Konta numurs",
-  "reserveNow": "Rezervēt Tagad"
+  "reserveNow": "Rezervēt Tagad",
+  "heading": "Kā mūs atrast",
+  "copy": "Kopēt konta numuru",
+  "copied": "Konta numurs nokopēts"
 }

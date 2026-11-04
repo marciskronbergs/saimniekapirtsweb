@@ -4,5 +4,12 @@
   "bachelorette": "Bachelorette Sauna",
   "bachelorette_desc": "A traditional bachelorette sauna ritual in a warm, feminine atmosphere.",
   "bachelor": "Bachelor Sauna",
-  "bachelor_desc": "A masculine sauna experience for bachelor parties in a relaxed setting."
+  "bachelor_desc": "A masculine sauna experience for bachelor parties in a relaxed setting.",
+  "ui": {
+    "eyebrow": "Before the wedding",
+    "pick": "Pick an experience – its programme opens below",
+    "open": "See the programme",
+    "opened": "Open",
+    "photos": "Photos"
+  }
 }

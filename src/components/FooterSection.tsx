@@ -1,33 +1,16 @@
 import React from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { Facebook, Instagram, Youtube } from 'lucide-react';
+import { Link, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { openCookieSettings } from '../lib/consent';
-
-// Custom TikTok Icon Component
-const TikTokIcon = ({ className }: { className?: string }) => (
-  <svg className={className} viewBox="0 0 24 24" fill="currentColor">
-    <path d="M19.59 6.69a4.83 4.83 0 01-3.77-4.25V2h-2.08v5.73a3.87 3.87 0 01-3.87 3.87 3.87 3.87 0 01-3.87-3.87 3.87 3.87 0 013.87-3.87c.21 0 .42.01.62.05V1.83c-.2-.02-.4-.03-.62-.03A5.94 5.94 0 003.93 7.74a5.94 5.94 0 005.94 5.94 5.94 5.94 0 005.94-5.94V9.35a6.7 6.7 0 003.92 1.26V8.84c-1.05 0-2.05-.43-2.76-1.15z"/>
-  </svg>
-);
+import BrandIcon, { type Brand } from './BrandIcon';
 
 const FooterSection = () => {
-  const navigate = useNavigate();
   const { t } = useTranslation('footer');
-
-  const handlePolicyLinkClick = (path: string) => {
-    navigate(path);
-    // Use setTimeout to ensure navigation completes before scrolling
-    setTimeout(() => {
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-    }, 100);
-  };
-
-  const handleRegularLinkClick = (path: string) => {
-    navigate(path);
-    setTimeout(() => {
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-    }, 100);
+  const location = useLocation();
+  // A new page opens at its top by itself (ScrollToTop in App.tsx); a link
+  // to the page already open goes back up to its top instead of doing nothing.
+  const toTopIfHere = (path: string) => () => {
+    if (location.pathname === path) window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const pakalpojumiLinks = [
@@ -48,35 +31,38 @@ const FooterSection = () => {
     { name: t('policies.rules'), path: '/ieksejas-kartibas-noteikumi' }
   ];
 
-  const socialLinks = [
-    { 
-      icon: Facebook, 
-      href: 'https://www.facebook.com/SarmaspaSaimniekapirts/?locale=lv_LV', 
-      label: 'Facebook', 
-      color: 'hover:text-blue-400' 
+  // Each network's mark, lit in its own colour on hover.
+  const socialLinks: { brand: Brand; href: string; label: string; hover: string }[] = [
+    {
+      brand: 'facebook',
+      href: 'https://www.facebook.com/SarmaspaSaimniekapirts/?locale=lv_LV',
+      label: 'Facebook',
+      hover: 'hover:bg-[#0866FF] hover:ring-[#0866FF] hover:shadow-[0_10px_28px_-8px_#0866FF]'
     },
-    { 
-      icon: Youtube, 
-      href: 'https://www.youtube.com/@SaimniekaPirts', 
-      label: 'YouTube', 
-      color: 'hover:text-red-400' 
+    {
+      brand: 'youtube',
+      href: 'https://www.youtube.com/@SaimniekaPirts',
+      label: 'YouTube',
+      hover: 'hover:bg-[#FF0000] hover:ring-[#FF0000] hover:shadow-[0_10px_28px_-8px_#FF0000]'
     },
-    { 
-      icon: Instagram, 
-      href: 'https://www.instagram.com/saimniekapirts/', 
-      label: 'Instagram', 
-      color: 'hover:text-pink-400' 
+    {
+      brand: 'instagram',
+      href: 'https://www.instagram.com/saimniekapirts/',
+      label: 'Instagram',
+      hover: 'hover:bg-[linear-gradient(45deg,#F58529,#DD2A7B_50%,#8134AF_80%,#515BD4)] hover:ring-[#DD2A7B] hover:shadow-[0_10px_28px_-8px_#DD2A7B]'
     },
-    { 
-      icon: TikTokIcon,
-      href: 'https://www.tiktok.com/@saimniekapirts', 
-      label: 'TikTok', 
-      color: 'hover:text-white' 
+    {
+      brand: 'tiktok',
+      href: 'https://www.tiktok.com/@saimniekapirts',
+      label: 'TikTok',
+      hover: 'hover:bg-black hover:ring-white/40 hover:shadow-[-3px_-3px_0_-1px_#25F4EE,3px_3px_0_-1px_#FE2C55]'
     }
   ];
 
   return (
-    <footer className="bg-[#0a0a0a]">
+    // Solid and above what comes before it: the moss scene's ledge hangs past
+    // its own foot (GiftCardBuySection on the rituals and rental pages).
+    <footer className="relative z-20 flow-root bg-[#0a0a0a]">
       {/* Main Footer Content with proper mobile spacing */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-10 mt-12 sm:mt-16 lg:mt-20">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6 sm:gap-8 lg:gap-12">
@@ -84,8 +70,9 @@ const FooterSection = () => {
           {/* Column 1: Logo + Description */}
           <div className="text-left sm:col-span-2 lg:col-span-1">
             <div className="mb-4 sm:mb-6">
-              <button
-                onClick={() => handleRegularLinkClick('/')}
+              <Link
+                to="/"
+                onClick={toTopIfHere('/')}
                 className="block mb-4 hover:opacity-80 transition-opacity duration-300"
               >
                 <img
@@ -93,7 +80,7 @@ const FooterSection = () => {
                   alt="SaimniekaPirts"
                   className="h-10 sm:h-12"
                 />
-              </button>
+              </Link>
               <p className="text-white font-light leading-snug text-sm sm:text-base">
                 {t('tagline')}
               </p>
@@ -106,12 +93,13 @@ const FooterSection = () => {
             <ul className="space-y-2 sm:space-y-3">
               {pakalpojumiLinks.map((link, index) => (
                 <li key={index}>
-                  <button
-                    onClick={() => handleRegularLinkClick(link.path)}
+                  <Link
+                    to={link.path}
+                    onClick={toTopIfHere(link.path)}
                     className="text-gray-300 hover:text-green-400 transition-colors duration-300 text-sm sm:text-base text-left"
                   >
                     {link.name}
-                  </button>
+                  </Link>
                 </li>
               ))}
             </ul>
@@ -123,12 +111,13 @@ const FooterSection = () => {
             <ul className="space-y-2 sm:space-y-3">
               {rezervetLinks.map((link, index) => (
                 <li key={index}>
-                  <button
-                    onClick={() => handleRegularLinkClick(link.path)}
+                  <Link
+                    to={link.path}
+                    onClick={toTopIfHere(link.path)}
                     className="text-gray-300 hover:text-green-400 transition-colors duration-300 text-sm sm:text-base text-left"
                   >
                     {link.name}
-                  </button>
+                  </Link>
                 </li>
               ))}
             </ul>
@@ -144,7 +133,7 @@ const FooterSection = () => {
                     <Link
                       to="/privatuma-politika"
                       className="text-gray-300 hover:text-green-400 transition-colors duration-300 text-sm sm:text-base"
-                      onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+                      onClick={toTopIfHere('/privatuma-politika')}
                     >
                       {link.name}
                     </Link>
@@ -152,7 +141,7 @@ const FooterSection = () => {
                     <Link
                       to={link.path}
                       className="text-gray-300 hover:text-green-400 transition-colors duration-300 text-sm sm:text-base"
-                      onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+                      onClick={toTopIfHere(link.path)}
                     >
                       {link.name}
                     </Link>
@@ -163,7 +152,7 @@ const FooterSection = () => {
                 <button
                   type="button"
                   onClick={openCookieSettings}
-                  className="text-gray-300 hover:text-green-400 transition-colors duration-300 text-sm sm:text-base text-left"
+                  className="tap-area text-gray-300 hover:text-green-400 transition-colors duration-300 text-sm sm:text-base text-left"
                 >
                   {t('cookies.footerLink', { ns: 'common' })}
                 </button>
@@ -174,22 +163,20 @@ const FooterSection = () => {
           {/* Column 5: Social Icons */}
           <div className="text-left sm:col-span-2 lg:col-span-1">
             <h4 className="text-white font-bold mb-4 sm:mb-6 text-base sm:text-lg">{t('sections.social')}</h4>
-            <div className="flex gap-2 sm:gap-3">
-              {socialLinks.map((social, index) => {
-                const IconComponent = social.icon;
-                return (
-                  <a
-                    key={index}
-                    href={social.href}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    aria-label={`Follow us on ${social.label}`}
-                    className={`w-9 h-9 sm:w-10 sm:h-10 bg-gray-800 rounded-lg flex items-center justify-center transition-all duration-300 hover:scale-110 hover:shadow-lg text-gray-400 ${social.color}`}
-                  >
-                    <IconComponent className="w-4 h-4 sm:w-5 sm:h-5" />
-                  </a>
-                );
-              })}
+            <div className="flex gap-2.5 sm:gap-3">
+              {socialLinks.map((social) => (
+                <a
+                  key={social.brand}
+                  href={social.href}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label={`Follow us on ${social.label}`}
+                  title={social.label}
+                  className={`flex h-11 w-11 items-center justify-center rounded-full bg-white/[0.06] text-white/80 ring-1 ring-white/15 shadow-[inset_0_1px_0_rgba(255,255,255,0.12)] backdrop-blur-md transition-all duration-300 hover:-translate-y-0.5 hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-green-300 ${social.hover}`}
+                >
+                  <BrandIcon brand={social.brand} className="h-5 w-5" />
+                </a>
+              ))}
             </div>
           </div>
         </div>
@@ -197,7 +184,8 @@ const FooterSection = () => {
 
       {/* Bottom Bar */}
       <div className="border-t border-gray-800">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4 sm:py-6">
+        {/* Room under the copyright line on phones for the floating Rezervēt button. */}
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 pt-4 pb-24 sm:py-6">
           <div className="text-center">
             <p className="text-gray-500 text-xs sm:text-sm">
               {t('copyright')}

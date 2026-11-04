@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Check, ChevronLeft, ChevronRight, Bed } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import priceCatalog from '../../data/priceCatalog.json';
 
 const GrupuPirtsMeistaru = () => {
   const [isVisible, setIsVisible] = useState(false);
@@ -30,7 +31,7 @@ const GrupuPirtsMeistaru = () => {
   };
 
   const handleReserveClick = () => {
-    (window as any).openCustomPopup?.('ritual');
+    (window as any).openCustomPopup?.('ritual', priceCatalog.ritual[5].label);
   };
 
   return (

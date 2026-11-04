@@ -15,5 +15,18 @@
   "companyName": "Uzņēmums",
   "companyReg": "Reģ. Nr.",
   "companyBank": "Banka",
-  "companyIBAN": "Konta numurs"
+  "companyIBAN": "Konta numurs",
+  "ui": {
+    "eyebrow": "Rezervācija tiešsaistē",
+    "subtitle": "Izvēlies, ko vēlies rezervēt – kalendārs atvērsies zemāk.",
+    "open": "Izvēlēties datumu",
+    "opened": "Atvērts",
+    "contactEyebrow": "Kontakti"
+  },
+  "hero": {
+    "title": "Tavs brīdis mieram.",
+    "subtitle": "Izvēlies savu pirts pieredzi un rezervē apmeklējumu.",
+    "cta": "Izvēlēties datumu",
+    "alt": "Klusā daba mežā uz sūnaina baļķa: medus bļoda, zāļu sāls, kaltētas zāles, bērza slota un medus karote."
+  }
 }

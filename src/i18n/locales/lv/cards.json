@@ -6,5 +6,33 @@
     "Vari izvēlēties specifiskus rituālus",
     "Neaizmirstams pārsteigums"
   ],
-  "cta": "Iegādāties Dāvanu Karti"
+  "cta": "Iegādāties Dāvanu Karti",
+  "eyebrow": "Dāvana, kas paliek atmiņā",
+  "scene": {
+    "alt": "Zalktis ar zeltītiem latviešu rakstiem uz sūnainām saknēm vakara mežā",
+    "home": {
+      "title": "Dāvanu kartes",
+      "text": "Uzdāvini kādam neaizmirstamu pirts pieredzi."
+    },
+    "rituals": {
+      "title": "Dāvanu karte",
+      "text": "Uzdāvini pirts rituālu – pieredzi, kas paliek atmiņā."
+    },
+    "rental": {
+      "title": "Dāvanu karte",
+      "text": "Uzdāvini pirts vakaru, ko pavadīt kopā ar savējiem."
+    }
+  },
+  "giftCard": {
+    "eyebrow": "Dāvanu karte",
+    "cta": "Pirkt",
+    "ritual": {
+      "title": "Pirts rituāls",
+      "text": "Rituāls ar pirts meistaru – vienam, diviem vai ģimenei"
+    },
+    "value": {
+      "title": "Pirts priekiem",
+      "text": "Summa pēc izvēles – pirts rituālam vai pirts nomai"
+    }
+  }
 }

@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import HeaderSection from '../components/HeaderSection';
 import FooterSection from '../components/FooterSection';
+import LeafBackdrop from '../components/leaves/LeafBackdrop';
+import { WhiskSeam } from '../components/whisks/WhiskAccent';
 import { HelpCircle, ChevronDown, Phone } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
@@ -27,6 +29,13 @@ const FaqPage = () => {
       <HeaderSection />
 
       <main className="pt-20">
+        {/* The site's drifting leaves, behind the whole page. */}
+        <LeafBackdrop className="!bg-transparent">
+        {/* A maple whisk from the left, beside the heading. */}
+        <WhiskSeam asset="maple-left" width="26vw" top="40px" shiftY="0%" rotate={4} hideOnPhones />
+        {/* Further down, behind the questions, from alternate sides. */}
+        <WhiskSeam behind asset="oak-right" width="31vw" top="1150px" shiftY="0%" rotate={3} hideOnPhones />
+        <WhiskSeam behind asset="birch-left" width="29vw" top="2250px" shiftY="0%" rotate={4} hideOnPhones />
         <section className="py-24 px-6 max-w-7xl mx-auto">
           <div className="text-center mb-20">
             <div className="flex justify-center mb-8">
@@ -42,7 +51,7 @@ const FaqPage = () => {
             </p>
           </div>
 
-          <div className="max-w-5xl mx-auto space-y-10">
+          <div className="max-w-4xl mx-auto space-y-10">
             {Array.isArray(groups) &&
               groups.map((group, groupIndex) => (
                 <div
@@ -102,6 +111,7 @@ const FaqPage = () => {
             </div>
           </div>
         </section>
+        </LeafBackdrop>
       </main>
 
       <FooterSection />

@@ -67,6 +67,7 @@
     "details": "Reservation Details",
     "select_sauna_label": "Which Sauna",
     "select_sauna_placeholder": "Choose available sauna",
+    "no_saunas_available": "No saunas are free at the chosen time",
     "select_type_label": "Rental Type",
     "select_type_placeholder": "Choose rental type",
     "addons": "Additional Services",

@@ -14,5 +14,10 @@
   "giftCards": {
     "title": "Dāvanu Kartes",
     "description": "Labākā dāvana – pozitīvas sajūtas un neaizmirstama pieredze SaimniekaPirtī!"
-  }
+  },
+  "eyebrow": "Ko piedāvājam",
+  "heading": "Izvēlies savu pirts pieredzi",
+  "more": "Uzzināt vairāk",
+  "previous": "Iepriekšējā kartīte",
+  "next": "Nākamā kartīte"
 }

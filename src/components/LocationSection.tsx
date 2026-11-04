@@ -1,141 +1,184 @@
-import React, { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { MapPin, Phone, Mail, Building } from 'lucide-react';
+import { ArrowUpRight, Building, Bus, Check, Copy, Hash, Landmark, Mail, MapPin, Phone, type LucideIcon } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import ConsentGatedMap from './shared/ConsentGatedMap';
 
-const LocationSection = () => {
-  const [isVisible, setIsVisible] = useState(false);
-  const sectionRef = useRef<HTMLDivElement>(null);
+// Where to find us: the map in a glass frame with how to get here below it;
+// beside it the contact details as glass rows you can press (map, call,
+// write) and the company details, with the account number to copy.
+
+const PHONE = '+371 26 752 661';
+const EMAIL = 'info@saimniekapirts.lv';
+
+// The glass every block here is made of.
+const glass =
+  'relative overflow-hidden rounded-[1.75rem] bg-white/[0.06] ring-1 ring-white/15 backdrop-blur-xl shadow-[inset_0_1px_0_rgba(255,255,255,0.25),0_30px_70px_-35px_rgba(0,0,0,0.9)]';
+const iconChip =
+  'flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-green-500/15 text-green-300 ring-1 ring-green-400/25 shadow-[inset_0_1px_0_rgba(255,255,255,0.2)]';
+
+// `onMoss`: on the gift cards' mossy forest floor (the homepage), not on
+// black: a shade behind the words and blocks instead of the green glow.
+const LocationSection = ({ onMoss = false }: { onMoss?: boolean }) => {
   const { t } = useTranslation('location');
   const { t: tCommon } = useTranslation('common');
+  const sectionRef = useRef<HTMLElement>(null);
+  const [shown, setShown] = useState(false);
+  const [copied, setCopied] = useState(false);
 
   useEffect(() => {
-    const observer = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting) {
-            setIsVisible(true);
-          }
-        });
+    const el = sectionRef.current;
+    if (!el) return;
+    const io = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setShown(true);
+          io.disconnect();
+        }
       },
-      { threshold: 0.3 }
+      { threshold: 0.12 }
     );
-
-    if (sectionRef.current) {
-      observer.observe(sectionRef.current);
-    }
-
-    return () => observer.disconnect();
+    io.observe(el);
+    return () => io.disconnect();
   }, []);
 
-  const contactInfo = [
+  const rise = `transition-all duration-700 ease-out motion-reduce:transition-none ${
+    shown ? 'translate-y-0 opacity-100' : 'translate-y-8 opacity-0 motion-reduce:translate-y-0 motion-reduce:opacity-100'
+  }`;
+  const delay = (ms: number) => ({ transitionDelay: shown ? `${ms}ms` : '0ms' });
+
+  const contacts: { icon: LucideIcon; label: string; value: string; href: string; external?: boolean }[] = [
     {
       icon: MapPin,
-      title: t('contactAddress'),
-      content: '"Sarma Nr. 123", Baldones pagasts, Ķekavas novads, LV-2125'
+      label: t('contactAddress'),
+      value: tCommon('company.siteAddress'),
+      // The same point the embedded map shows.
+      href: 'https://www.google.com/maps/search/?api=1&query=56.6841314,24.2903839',
+      external: true,
     },
-    {
-      icon: Phone,
-      title: t('contactPhone'),
-      content: '+371 26 752 661'
-    },
-    {
-      icon: Mail,
-      title: t('contactEmail'),
-      content: 'info@saimniekapirts.lv'
-    }
+    { icon: Phone, label: t('contactPhone'), value: PHONE, href: `tel:${PHONE.replace(/\s/g, '')}` },
+    { icon: Mail, label: t('contactEmail'), value: EMAIL, href: `mailto:${EMAIL}` },
   ];
 
-  return (
-    <section ref={sectionRef} className="py-12 sm:py-16 md:py-24 bg-black relative overflow-hidden">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-16">
-          {/* Left Column - Map */}
-          <div className={`transform transition-all duration-1000 ${
-            isVisible ? 'translate-x-0 opacity-100' : '-translate-x-12 opacity-0'
-          }`}>
-            {/* Google Map Embed */}
-            <div className="rounded-xl shadow-md overflow-hidden h-[250px] sm:h-[300px] lg:h-[350px] mb-4 sm:mb-6">
-              <ConsentGatedMap height="100%" />
-            </div>
+  const company: { icon: LucideIcon; label: string; value: string }[] = [
+    { icon: Building, label: t('companyName'), value: tCommon('company.legalName') },
+    { icon: MapPin, label: t('contactAddress'), value: tCommon('company.legalAddress') },
+    { icon: Hash, label: t('companyReg'), value: tCommon('company.regNumber') },
+    { icon: Landmark, label: t('companyBank'), value: tCommon('company.bank') },
+  ];
+  const iban = tCommon('company.iban');
 
-            {/* Transport Info */}
-            <div className="text-gray-300 text-sm sm:text-base lg:text-lg leading-relaxed mb-8 lg:mb-0">
-              <p>
-                <strong>{t('transport')}</strong> {t('transportDesc')}
+  const copyIban = async () => {
+    try {
+      await navigator.clipboard.writeText(iban);
+      setCopied(true);
+      window.setTimeout(() => setCopied(false), 1800);
+    } catch {
+      // Clipboard refused: the number is on screen to select by hand.
+    }
+  };
+
+  return (
+    <section
+      ref={sectionRef}
+      id="vieta"
+      aria-labelledby="location-heading"
+      className={`scroll-mt-20 relative overflow-hidden py-16 sm:py-20 lg:py-24 ${onMoss ? '' : 'bg-black'}`}
+    >
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-0"
+        style={{
+          background: onMoss
+            ? 'radial-gradient(75% 55% at 50% 48%, rgba(3,6,3,0.5), rgba(3,6,3,0.22) 70%, transparent 100%)'
+            : 'radial-gradient(45% 50% at 25% 45%, rgba(34,197,94,0.1), transparent 70%)',
+        }}
+      />
+
+      <div className="relative mx-auto max-w-[1440px] px-4 sm:px-6 lg:px-10">
+        <div className={`mb-8 sm:mb-12 ${rise}`}>
+          <p className="text-xs sm:text-sm font-semibold uppercase tracking-[0.22em] text-green-400">{t('location')}</p>
+          <h2 id="location-heading" className="mt-3 text-3xl sm:text-4xl lg:text-5xl font-bold tracking-tight text-white [text-shadow:0_2px_24px_rgba(0,0,0,0.6)]">
+            {t('heading')}
+          </h2>
+        </div>
+
+        <div className="grid grid-cols-1 gap-5 lg:grid-cols-12 lg:gap-6">
+          {/* The map in a glass frame, and how to get here. */}
+          <div className="flex flex-col gap-5 lg:col-span-7 lg:gap-6">
+            <div className={`${glass} p-2 sm:p-2.5 ${rise}`} style={delay(100)}>
+              <div className="h-[280px] overflow-hidden rounded-[1.35rem] sm:h-[360px] lg:h-[440px]">
+                <ConsentGatedMap height="100%" />
+              </div>
+            </div>
+            <div className={`${glass} flex gap-4 p-5 sm:p-6 ${rise}`} style={delay(200)}>
+              <span className={iconChip}>
+                <Bus className="h-5 w-5" aria-hidden />
+              </span>
+              <p className="text-sm sm:text-base leading-relaxed text-gray-300">
+                <strong className="block text-white">{t('transport')}</strong>
+                {t('transportDesc')}
               </p>
             </div>
           </div>
 
-          {/* Right Column - Contact Info */}
-          <div className={`transform transition-all duration-1000 ${
-            isVisible ? 'translate-x-0 opacity-100' : 'translate-x-12 opacity-0'
-          }`} style={{ transitionDelay: '200ms' }}>
-            
-            {/* Contact Info Cards */}
-            <div className="space-y-3 sm:space-y-4 mb-8 sm:mb-10 lg:mb-12">
-              {contactInfo.map((info, index) => {
-                const IconComponent = info.icon;
-                return (
-                  <div
-                    key={index}
-                    className={`bg-[#111] rounded-lg px-3 sm:px-4 py-3 text-white flex items-center gap-3 transform transition-all duration-500 ${
-                      isVisible ? 'translate-y-0 opacity-100' : 'translate-y-8 opacity-0'
-                    }`}
-                    style={{ transitionDelay: `${400 + index * 100}ms` }}
+          {/* Contact, company details and the way to book. */}
+          <div className="flex flex-col gap-5 lg:col-span-5 lg:gap-6">
+            <ul className={`${glass} divide-y divide-white/10 p-2 ${rise}`} style={delay(150)}>
+              {contacts.map(({ icon: Icon, label, value, href, external }) => (
+                <li key={label}>
+                  <a
+                    href={href}
+                    {...(external ? { target: '_blank', rel: 'noreferrer' } : {})}
+                    className="group flex items-center gap-4 rounded-[1.35rem] p-3 sm:p-4 transition-colors hover:bg-white/[0.06] focus:outline-none focus-visible:ring-2 focus-visible:ring-green-400"
                   >
-                    <IconComponent className="w-5 h-5 text-green-400 flex-shrink-0" />
-                    <div>
-                      <span className="font-semibold text-gray-300 text-xs sm:text-sm">{info.title}:</span>
-                      <span className="ml-2 text-sm sm:text-base break-all">{info.content}</span>
+                    <span className={iconChip}>
+                      <Icon className="h-5 w-5" aria-hidden />
+                    </span>
+                    <span className="min-w-0 flex-1">
+                      <span className="block text-xs font-semibold uppercase tracking-[0.16em] text-gray-400">{label}</span>
+                      <span className="mt-0.5 block text-sm sm:text-base font-medium text-white break-words">{value}</span>
+                    </span>
+                    <ArrowUpRight className="h-5 w-5 shrink-0 text-white/40 transition-[color,transform] duration-300 group-hover:-translate-y-0.5 group-hover:translate-x-0.5 group-hover:text-green-300" aria-hidden />
+                  </a>
+                </li>
+              ))}
+            </ul>
+
+            <div className={`${glass} p-5 sm:p-6 ${rise}`} style={delay(250)}>
+              <h3 className="text-lg sm:text-xl font-bold text-white">{t('companyInfo')}</h3>
+              <dl className="mt-4 space-y-3">
+                {company.map(({ icon: Icon, label, value }) => (
+                  <div key={label} className="flex items-start gap-3">
+                    <Icon className="mt-0.5 h-4 w-4 shrink-0 text-green-400" aria-hidden />
+                    <div className="min-w-0">
+                      <dt className="text-xs font-semibold uppercase tracking-[0.16em] text-gray-400">{label}</dt>
+                      <dd className="text-sm sm:text-base text-white">{value}</dd>
                     </div>
                   </div>
-                );
-              })}
+                ))}
+                {/* The account number, in a glass well with a copy button. */}
+                <div className="mt-2 flex items-center gap-3 rounded-2xl bg-black/30 p-3 ring-1 ring-white/10">
+                  <div className="min-w-0 flex-1">
+                    <dt className="text-xs font-semibold uppercase tracking-[0.16em] text-gray-400">{t('companyIBAN')}</dt>
+                    <dd className="font-mono text-sm sm:text-base tracking-wide text-white break-all">{iban}</dd>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={copyIban}
+                    aria-label={copied ? t('copied') : t('copy')}
+                    className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white/10 text-white ring-1 ring-white/20 transition-colors hover:bg-white/20 focus:outline-none focus-visible:ring-2 focus-visible:ring-green-400"
+                  >
+                    {copied ? <Check className="h-4 w-4 text-green-300" /> : <Copy className="h-4 w-4" />}
+                  </button>
+                </div>
+              </dl>
             </div>
 
-            {/* Company Information */}
-            <div className={`transform transition-all duration-1000 ${
-              isVisible ? 'translate-y-0 opacity-100' : 'translate-y-8 opacity-0'
-            }`} style={{ transitionDelay: '700ms' }}>
-              <h4 className="text-white font-bold text-lg sm:text-xl mb-4 sm:mb-6">{t('companyInfo')}</h4>
-              
-              <div className="space-y-2 sm:space-y-3">
-                <div className="bg-[#111] rounded-lg px-3 sm:px-4 py-3 text-white flex items-center gap-3">
-                  <Building className="w-5 h-5 text-green-400 flex-shrink-0" />
-                  <span className="text-sm sm:text-base">{tCommon('company.legalName')}</span>
-                </div>
-                
-                <div className="bg-[#111] rounded-lg px-3 sm:px-4 py-3 text-white flex items-start gap-3">
-                  <MapPin className="w-5 h-5 text-green-400 flex-shrink-0" />
-                  <span className="text-sm sm:text-base">{tCommon('company.legalAddress')}</span>
-                </div>
-                
-                <div className="bg-[#111] rounded-lg px-3 sm:px-4 py-3 text-white flex items-center gap-3">
-                  <span className="w-5 h-5 text-green-400 flex-shrink-0 text-center font-bold">#</span>
-                  <span className="text-sm sm:text-base">{t('companyReg')}: {tCommon('company.regNumber')}</span>
-                </div>
-                
-                <div className="bg-[#111] rounded-lg px-3 sm:px-4 py-3 text-white flex items-center gap-3">
-                  <span className="w-5 h-5 text-green-400 flex-shrink-0 text-center font-bold">$</span>
-                  <span className="text-sm sm:text-base">{tCommon('company.bank')}</span>
-                </div>
-                
-                <div className="bg-[#111] rounded-lg px-3 sm:px-4 py-3 text-white flex items-start gap-3">
-                  <span className="w-5 h-5 text-green-400 flex-shrink-0 text-center font-bold">№</span>
-                  <span className="text-sm sm:text-base break-all">{t('companyIBAN')}: {tCommon('company.iban')}</span>
-                </div>
-              </div>
-            </div>
-
-            {/* CTA Button */}
-            <div className={`mt-8 sm:mt-10 lg:mt-12 transform transition-all duration-1000 ${
-              isVisible ? 'translate-y-0 opacity-100' : 'translate-y-8 opacity-0'
-            }`} style={{ transitionDelay: '900ms' }}>
-              <Link 
+            <div className={rise} style={delay(350)}>
+              <Link
                 to="/rezervet"
-                className="block w-full bg-green-600 hover:bg-green-500 text-white py-4 sm:py-5 px-6 sm:px-8 rounded-xl text-base sm:text-lg font-semibold transition-all duration-300 transform hover:scale-105 hover:shadow-2xl hover:shadow-green-500/25 text-center"
+                className="flex w-full items-center justify-center rounded-full bg-green-600 px-8 py-4 sm:py-5 text-lg font-semibold text-white shadow-[0_12px_32px_-12px_rgba(34,197,94,0.8),inset_0_1px_0_rgba(255,255,255,0.35)] transition-colors hover:bg-green-500 focus:outline-none focus-visible:ring-4 focus-visible:ring-green-300/60"
               >
                 {t('reserveNow')}
               </Link>

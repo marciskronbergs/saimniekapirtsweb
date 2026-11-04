@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Building2 } from 'lucide-react';
 import { emptyCompany, type CompanyEntry } from './companyEntry';
+import { OptionCard, fieldClass } from './bookingUi';
 
 // "Invoice to a company" on a booking form: the company's name, registration
 // number and legal address, which the invoice then carries as its recipient.
@@ -24,24 +25,17 @@ const CompanyChoice: React.FC<CompanyChoiceProps> = ({ value, onChange }) => {
   const update = (field: keyof CompanyEntry, text: string) =>
     onChange({ ...(value ?? emptyCompany), [field]: text });
 
-  const input = 'w-full px-4 py-3 bg-black/30 border border-green-500/30 rounded-xl text-white placeholder-gray-500 focus:border-green-500 focus:ring-2 focus:ring-green-500/20 transition-all';
+  const input = fieldClass.replace('pl-11', 'pl-4');
 
   return (
-    <div className="rounded-xl border border-green-500/30 bg-green-500/5 p-4 space-y-3">
-      <label className="flex items-center gap-3 text-gray-200 cursor-pointer">
-        <input
-          type="checkbox"
-          checked={open}
-          onChange={toggle}
-          className="w-4 h-4 text-green-600 bg-gray-800 border-gray-600 rounded focus:ring-green-500"
-        />
-        <Building2 className="w-5 h-5 text-green-400" />
-        <span>{t('company.toggle')}</span>
-      </label>
+    <div className="space-y-3">
+      <OptionCard type="checkbox" name="company" checked={open} onChange={toggle} title={t('company.toggle')}>
+        <Building2 aria-hidden className="absolute right-3.5 top-1/2 h-5 w-5 -translate-y-1/2 text-green-300/70" />
+      </OptionCard>
 
       {open && value && (
-        <div className="space-y-3">
-          <p className="text-sm text-gray-400">{t('company.note')}</p>
+        <div className="space-y-3 rounded-2xl bg-white/[0.03] p-4 ring-1 ring-white/10">
+          <p className="text-sm text-white/60">{t('company.note')}</p>
           <input
             type="text"
             placeholder={t('company.name')}

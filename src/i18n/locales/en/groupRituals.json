@@ -92,5 +92,16 @@
     "ctaTitle": "Book the \"FRIENDS' SAUNA +\"",
     "ctaSubtitle": "Enjoy an unforgettable sauna experience with friends – book today!",
     "ctaButton": "Reserve"
+  },
+  "ui": {
+    "eyebrow": "Sauna among friends",
+    "pick": "Choose a ritual – its programme opens below",
+    "open": "See the programme",
+    "opened": "Open",
+    "back": "Back to sauna rituals",
+    "included": "Included",
+    "notIncluded": "Not included",
+    "min": "Minimum price",
+    "book": "Book"
   }
 }

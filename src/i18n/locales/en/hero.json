@@ -1,4 +1,15 @@
 {
   "title": "A Unique Place to Unwind",
-  "subtitle": "In the Heart of Latvian Nature!"
+  "subtitle": "In the Heart of Latvian Nature!",
+  "poster": {
+    "tagline": "Sauna rituals and rest in the heart of Latvian nature.",
+    "primary": "Choose a ritual",
+    "secondary": "Explore our services",
+    "scroll": "Scroll down"
+  },
+  "cinematic": {
+    "title": "Sauna rituals",
+    "scrollCue": "Scroll to feel it",
+    "alt": "A sauna master’s hands prepare a treatment over a bowl, with birch whisks and the wooden sauna wall behind."
+  }
 }

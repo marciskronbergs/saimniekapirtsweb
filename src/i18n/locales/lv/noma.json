@@ -15,7 +15,7 @@
       "checklist": [
         "Atpūtas Telpa Ar Zāļu Paklāju Aromātu",
         "Divstāvu Pirts Māja",
-        "Iespējams Pasūtījumam Pievienot Zāļu Kubulu"
+        "Iespējams Pasūtījumam Pievienot Zāļu Kublu"
       ]
     },
     {
@@ -24,7 +24,7 @@
       "checklist": [
         "Pirtnieka Dizainēta Pirts Telpa",
         "Atpūtas Telpa Ar Virtuves Zonu",
-        "Iespējams Pasūtījumam Pievienot Zāļu Kubulu"
+        "Iespējams Pasūtījumam Pievienot Zāļu Kublu"
       ]
     }
   ],
@@ -92,5 +92,32 @@
       "Neaizmirstams pārsteigums"
     ],
     "cta": "Uzzināt Vairāk"
+  },
+  "page": {
+    "heroAlt": "Divas koka pirtis meža malā pie dīķa: lielā guļbaļķu pirts un mazā tumšā pirts ar skursteni un malkas grēdu.",
+    "heroScroll": "Ritini tālāk",
+    "saunasEyebrow": "Izvēlies savu pirti",
+    "saunasTitle": "Divas pirtis, divi raksturi",
+    "book": "Rezervēt",
+    "herbEyebrow": "Papildus nomai",
+    "herbFeatures": [
+      "Ārstniecisko augu lapas",
+      "Silts ūdens zem klajas debess",
+      "Pievienojams jebkurai nomai"
+    ],
+    "placeEyebrow": "Apkārtne",
+    "placeTitle": "Mežs, dīķis un klusums",
+    "placeText": "Pēc pirts karstuma – dīķis, mežs un miers. Ritini, lai apskatītu vietu.",
+    "pricingEyebrow": "Cenas",
+    "withoutTub": "Bez kubla",
+    "withTub": "Ar kubliņu",
+    "popular": "Populārākais",
+    "pricingNote": "Cena ir par visu pirti, nevis par cilvēku.",
+    "extrasEyebrow": "Pēc izvēles",
+    "photo": "Rādīt {{n}}. attēlu",
+    "prevPhoto": "Iepriekšējais attēls",
+    "nextPhoto": "Nākamais attēls",
+    "stayEyebrow": "Paliec pa nakti",
+    "stayPhoto": "Rādīt {{n}}. istabas attēlu"
   }
 }

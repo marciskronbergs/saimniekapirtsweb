@@ -1,7 +1,12 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import HeaderSection from '../components/HeaderSection';
 import FooterSection from '../components/FooterSection';
-import { Gift, ChevronDown, ChevronUp, Check, Eye } from 'lucide-react';
+import { useSearchParams } from 'react-router-dom';
+import LeafBackdrop from '../components/leaves/LeafBackdrop';
+import GiftCardVisual from '../components/giftcards/GiftCardVisual';
+import ZalktisScene, { HERO_AFTER } from '../components/zalktis/ZalktisScene';
+import { ChevronDown, ChevronUp, Check, Eye, Gift, Mail, Phone, User } from 'lucide-react';
+import { Accent, ChoicePicker, Field, FormTitle, Step, goldFieldClass, goldSubmitClass, splitOption } from '../components/popup/bookingUi';
 import { supabase } from '../lib/supabase';
 import { useTranslation } from 'react-i18next';
 import priceCatalog from '../data/priceCatalog.json';
@@ -14,6 +19,27 @@ import GiftCardPreview from '../components/giftcards/GiftCardPreview';
 import { preloadGiftCard } from '../components/giftcards/giftCardAssets';
 import { trackGiftCardOrdered, trackGiftCardStart } from '../lib/analytics';
 import { asLanguage } from '../utils/locale';
+
+// A photograph for each ritual in the order form's dropdown, as the booking
+// form shows them (public/media/booking).
+const RITUAL_PHOTOS: Record<string, string> = {
+  'individuali-ar': '/media/booking/solo-tub.webp',
+  'individuali-bez': '/media/booking/solo.webp',
+  'diviem-ar': '/media/booking/two-tub.webp',
+  'diviem-bez': '/media/booking/two.webp',
+  gimenei: '/media/booking/family.webp',
+};
+
+// The cards and the order forms on glass.
+const GLASS_CARD =
+  'group relative h-full overflow-hidden rounded-[2rem] bg-white/[0.05] ring-1 ring-white/[0.12] backdrop-blur-xl shadow-[inset_0_1px_0_rgba(255,255,255,0.14),0_30px_70px_-30px_rgba(0,0,0,0.9)] transition-[opacity,box-shadow] duration-700 hover:ring-white/20';
+const GLASS_FORM =
+  'relative overflow-hidden rounded-[2rem] bg-white/[0.045] ring-1 ring-amber-300/20 backdrop-blur-2xl shadow-[inset_0_1px_0_rgba(255,255,255,0.14),0_40px_90px_-40px_rgba(0,0,0,0.95),0_0_80px_-40px_rgba(217,119,6,0.5)]';
+
+// On wide screens the two cards rise further into the hero than its own
+// overlap takes them (HERO_AFTER: its 240 px tail and 110 px more), so their
+// tops are in view on arrival: a third of the window more.
+const CARDS_UP = 'lg:!mt-[calc(-350px_-_33svh)]';
 
 const DavanuKartesPage = () => {
   const [isVisible, setIsVisible] = useState(false);
@@ -63,16 +89,28 @@ const DavanuKartesPage = () => {
     return () => observer.disconnect();
   }, []);
 
+  // Arriving from a gift card elsewhere on the site (GiftCardVisual): its
+  // order form open, ?forma=ritual or ?forma=custom.
+  const [searchParams] = useSearchParams();
+  const asked = searchParams.get('forma');
+  useEffect(() => {
+    if (asked !== 'ritual' && asked !== 'custom') return;
+    setActiveSection(asked);
+    setShowSuccess(false);
+    trackGiftCardStart(asked);
+  }, [asked]);
+
   // Smooth scroll to form when section changes
   useEffect(() => {
     if (activeSection !== 'none' && formRef.current) {
-      setTimeout(() => {
-        formRef.current?.scrollIntoView({ 
-          behavior: 'smooth', 
-          block: 'start',
-          inline: 'nearest'
-        });
-      }, 300);
+      // The form grows as it opens (and the hero settles on arrival), moving
+      // the target: aimed once now and again when it is open.
+      const go = () => {
+        const form = formRef.current;
+        if (form) window.scrollTo({ top: form.getBoundingClientRect().top + window.scrollY - 80, behavior: 'smooth' });
+      };
+      const timers = [window.setTimeout(go, 300), window.setTimeout(go, 1100)];
+      return () => timers.forEach((id) => window.clearTimeout(id));
     }
   }, [activeSection]);
 
@@ -243,46 +281,113 @@ const DavanuKartesPage = () => {
     }
   };
 
+  // The rituals as the booking form shows them: a photo, the name, the price;
+  // in the price list's order, as the dropdown had them.
+  // The price list spells the tub "kubulu"; shown as "kublu". Only the words
+  // on screen change: the order still records the price list's label, which
+  // the invoice function finds the ritual by.
+  const ritualPickerOptions = ritualOptions.map((option) => {
+    const { name, price } = splitOption(option.label);
+    return { value: option.value, title: name.replace(/([Kk])ubulu/g, '$1ublu'), price, image: RITUAL_PHOTOS[option.value] };
+  });
+
+  // Who is buying, as both order forms ask it: the booking form's fields.
+  const phoneSelect = goldFieldClass.replace('w-full', 'w-auto').replace('pl-11', 'pl-3').replace('pr-4', 'pr-2');
+  const contactStep = (
+    <Step n={2} title={({ lv: 'Jūsu kontaktinformācija', en: 'Your contact details', ru: 'Ваши контактные данные' })[locale]}>
+      <div className="grid gap-3">
+        <Field icon={User}>
+          <input
+            type="text"
+            value={formData.name}
+            onChange={(e) => handleInputChange('name', e.target.value)}
+            placeholder={t('form.name')}
+            autoComplete="name"
+            required
+            className={goldFieldClass}
+          />
+        </Field>
+        <div className="grid gap-3 sm:grid-cols-2">
+          <Field icon={Mail}>
+            <input
+              type="email"
+              value={formData.email}
+              onChange={(e) => handleInputChange('email', e.target.value)}
+              onBlur={contact.onEmailBlur}
+              placeholder={t('form.email')}
+              autoComplete="email"
+              required
+              className={goldFieldClass}
+            />
+          </Field>
+          <div className="flex gap-2">
+            <select
+              value={formData.countryCode}
+              onChange={(e) => handleInputChange('countryCode', e.target.value)}
+              aria-label={t('form.phone')}
+              className={`${phoneSelect} shrink-0 country-select-dropdown`}
+            >
+              {europeanCountries.map((country) => (
+                <option key={country.code} value={country.code}>
+                  {country.code} ({country.country})
+                </option>
+              ))}
+            </select>
+            <div className="min-w-0 flex-1">
+              <Field icon={Phone}>
+                <input
+                  type="tel"
+                  value={formData.phone}
+                  onChange={(e) => handleInputChange('phone', e.target.value)}
+                  placeholder={t('form.phone')}
+                  autoComplete="tel-national"
+                  required
+                  className={goldFieldClass}
+                />
+              </Field>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <ContactCheckNotice notice={contact.notice} onUse={(email) => handleInputChange('email', email)} />
+
+      <CompanyChoice value={company} onChange={setCompany} />
+
+      {cardPayments && (
+        <PaymentChoice
+          card
+          cash={false}
+          value={paymentMethod}
+          onChange={(method) => setChosenPayment(method === 'card' ? 'card' : 'transfer')}
+        />
+      )}
+    </Step>
+  );
+
   return (
     <div className="min-h-screen bg-[#0a0a0a]">
       <HeaderSection />
       
-      <main className="pt-20">
-        {/* Hero Section */}
-        <section ref={sectionRef} className="py-12 sm:py-16 md:py-24 px-4 sm:px-6 max-w-7xl mx-auto">
-          <div className={`text-center mb-12 sm:mb-16 lg:mb-20 transform transition-all duration-1000 ${
-            isVisible ? 'translate-y-0 opacity-100' : 'translate-y-12 opacity-0'
-          }`}>
-            <h1 className="text-3xl sm:text-4xl lg:text-5xl xl:text-6xl 2xl:text-7xl font-bold text-white mb-6 sm:mb-8 tracking-tight">
-              {t('title')}
-            </h1>
-            <p className="text-lg sm:text-xl lg:text-2xl text-gray-300 max-w-4xl mx-auto leading-relaxed">
-              {t('description')}
-            </p>
-          </div>
-
+      <main>
+        {/* The zalktis as the hero, the heading in its glass; the two cards
+            rise out of its darkening lower edge, as the booking page's
+            choices do. */}
+        <ZalktisScene hero edge="#0a0a0a" headingId="giftcards-page-heading" title={t('title')} text={t('description')} />
+        {/* The site's drifting leaves, behind the whole page; transparent, so
+            the hero shows through. */}
+        <LeafBackdrop className={`!bg-transparent ${HERO_AFTER} ${CARDS_UP}`}>
+        <section ref={sectionRef} className="pb-12 sm:pb-16 md:pb-24 px-4 sm:px-6 max-w-7xl mx-auto">
           {/* Two-Column Layout */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12 mb-12 sm:mb-16">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12 mb-2">
             {/* Left Block - Pirts Rituāls Gift Card */}
             <div className={`transform transition-all duration-1000 ${
-              isVisible ? 'translate-x-0 opacity-100' : '-translate-x-12 opacity-0'
+              isVisible ? 'translate-x-0' : '-translate-x-12'
             }`} style={{ transitionDelay: '200ms' }}>
-              <div className="bg-gradient-to-br from-[#132d13] to-[#1a3d2e] rounded-3xl overflow-hidden shadow-2xl shadow-green-500/10 hover:shadow-green-500/20 transition-all duration-500 hover:scale-[1.02] group">
-                {/* Image Section */}
-                <div className="relative h-48 sm:h-56 lg:h-64 overflow-hidden">
-                  <img
-                    src="https://wigoyeorqnssgbrgexku.supabase.co/storage/v1/object/public/websiteassets/bildes/31.png"
-                    alt={({ lv: 'Pirts rituāla dāvanu karte', en: 'Sauna ritual gift card', ru: 'Подарочная карта на банный ритуал' })[locale]}
-                    className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-black/20"></div>
-                  
-                  {/* Floating Gift Icon */}
-                  <div className="absolute top-6 right-6">
-                    <div className="w-12 h-12 bg-amber-600/90 rounded-full flex items-center justify-center backdrop-blur-sm">
-                      <Gift className="w-6 h-6 text-white" />
-                    </div>
-                  </div>
+              <div className={`${GLASS_CARD} ${isVisible ? 'opacity-100' : 'opacity-0'}`}>
+                {/* The card itself; pressing it opens its order form. */}
+                <div className="p-4 sm:p-6 pb-0 sm:pb-0">
+                  <GiftCardVisual kind="ritual" onClick={() => handleSectionToggle('ritual')} />
                 </div>
 
                 {/* Content */}
@@ -291,16 +396,16 @@ const DavanuKartesPage = () => {
                     {t('ritualCard.title')}
                   </h2>
                   
-                  <p className="text-sm sm:text-base lg:text-lg text-gray-300 leading-relaxed mb-6 sm:mb-8">
+                  <p className="text-sm sm:text-base lg:text-lg text-white/70 leading-relaxed mb-6 sm:mb-8">
                     {t('ritualCard.description')}
                   </p>
 
                   <button 
                     onClick={() => handleSectionToggle('ritual')}
-                    className={`w-full py-4 px-6 sm:px-8 rounded-xl text-base sm:text-lg font-semibold transition-all duration-300 transform hover:scale-105 flex items-center justify-center gap-3 min-h-[48px] ${
+                    className={`w-full py-4 px-6 sm:px-8 rounded-xl text-base sm:text-lg font-semibold transition-all duration-300 transform hover:-translate-y-0.5 flex items-center justify-center gap-3 min-h-[48px] ${
                       activeSection === 'ritual'
-                        ? 'bg-amber-700 text-white shadow-lg shadow-amber-500/25'
-                        : 'bg-amber-600 hover:bg-amber-700 text-white hover:shadow-lg hover:shadow-amber-500/25'
+                        ? 'bg-gradient-to-b from-amber-500 to-amber-700 text-white shadow-[0_14px_34px_-12px_rgba(217,119,6,0.9),inset_0_1px_0_rgba(255,255,255,0.3)] ring-1 ring-amber-300/60'
+                        : 'bg-gradient-to-b from-amber-500 to-amber-600 text-white shadow-[0_14px_34px_-14px_rgba(217,119,6,0.8),inset_0_1px_0_rgba(255,255,255,0.3)] hover:brightness-110'
                     }`}
                   >
                     {t('ritualCard.cta')}
@@ -314,7 +419,7 @@ const DavanuKartesPage = () => {
                   <button
                     type="button"
                     onClick={() => { preloadGiftCard('ritual'); setPreview('ritual'); }}
-                    className="mt-3 w-full inline-flex items-center justify-center gap-2 rounded-xl border border-amber-500/60 bg-black/30 hover:bg-amber-600/20 px-4 py-3 text-amber-200 font-semibold transition-colors min-h-[48px]"
+                    className="mt-3 w-full inline-flex items-center justify-center gap-2 rounded-xl bg-white/[0.05] ring-1 ring-amber-300/40 backdrop-blur-md hover:bg-amber-500/15 hover:ring-amber-300/70 px-4 py-3 text-amber-100 font-semibold transition-colors min-h-[48px]"
                   >
                     <Eye className="w-5 h-5" />
                     {t('preview.open')}
@@ -325,30 +430,12 @@ const DavanuKartesPage = () => {
 
             {/* Right Block - Custom Value Gift Card */}
             <div className={`transform transition-all duration-1000 ${
-              isVisible ? 'translate-x-0 opacity-100' : 'translate-x-12 opacity-0'
+              isVisible ? 'translate-x-0' : 'translate-x-12'
             }`} style={{ transitionDelay: '400ms' }}>
-              <div className="bg-gradient-to-br from-[#132d13] to-[#1a3d2e] rounded-3xl overflow-hidden shadow-2xl shadow-green-500/10 hover:shadow-green-500/20 transition-all duration-500 hover:scale-[1.02] group">
-                {/* Gift Card Visual */}
-                <div className="relative h-48 sm:h-56 lg:h-64 bg-gradient-to-br from-amber-600 via-amber-700 to-amber-800 flex items-center justify-center overflow-hidden">
-                  {/* Background Pattern */}
-                  <div className="absolute inset-0 opacity-20">
-                    <div className="absolute inset-0" style={{
-                      backgroundImage: `radial-gradient(circle at 25% 25%, rgba(255, 255, 255, 0.1) 0%, transparent 50%), 
-                                       radial-gradient(circle at 75% 75%, rgba(255, 255, 255, 0.05) 0%, transparent 50%)`
-                    }}></div>
-                  </div>
-                  
-                  {/* Gift Card Content */}
-                  <div className="relative z-10 text-center">
-                    <Gift className="w-12 h-12 sm:w-14 sm:h-14 lg:w-16 lg:h-16 text-white mx-auto mb-3 sm:mb-4" />
-                    <h3 className="text-lg sm:text-xl lg:text-2xl font-bold text-white mb-2">
-                      {({ lv: 'DĀVANU KARTE', en: 'GIFT CARD', ru: 'ПОДАРОЧНАЯ КАРТА' })[locale]}
-                    </h3>
-                    <p className="text-amber-100 text-base sm:text-lg">80€ – 380€</p>
-                  </div>
-
-                  {/* Shine Effect */}
-                  <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000"></div>
+              <div className={`${GLASS_CARD} ${isVisible ? 'opacity-100' : 'opacity-0'}`}>
+                {/* The card itself; pressing it opens its order form. */}
+                <div className="p-4 sm:p-6 pb-0 sm:pb-0">
+                  <GiftCardVisual kind="value" onClick={() => handleSectionToggle('custom')} />
                 </div>
 
                 {/* Content */}
@@ -357,16 +444,16 @@ const DavanuKartesPage = () => {
                     {t('valueCard.title')}
                   </h2>
                   
-                  <p className="text-sm sm:text-base lg:text-lg text-gray-300 leading-relaxed mb-6 sm:mb-8">
+                  <p className="text-sm sm:text-base lg:text-lg text-white/70 leading-relaxed mb-6 sm:mb-8">
                     {t('valueCard.description')}
                   </p>
 
                   <button 
                     onClick={() => handleSectionToggle('custom')}
-                    className={`w-full py-4 px-6 sm:px-8 rounded-xl text-base sm:text-lg font-semibold transition-all duration-300 transform hover:scale-105 flex items-center justify-center gap-3 min-h-[48px] ${
+                    className={`w-full py-4 px-6 sm:px-8 rounded-xl text-base sm:text-lg font-semibold transition-all duration-300 transform hover:-translate-y-0.5 flex items-center justify-center gap-3 min-h-[48px] ${
                       activeSection === 'custom'
-                        ? 'bg-amber-700 text-white shadow-lg shadow-amber-500/25'
-                        : 'bg-amber-600 hover:bg-amber-700 text-white hover:shadow-lg hover:shadow-amber-500/25'
+                        ? 'bg-gradient-to-b from-amber-500 to-amber-700 text-white shadow-[0_14px_34px_-12px_rgba(217,119,6,0.9),inset_0_1px_0_rgba(255,255,255,0.3)] ring-1 ring-amber-300/60'
+                        : 'bg-gradient-to-b from-amber-500 to-amber-600 text-white shadow-[0_14px_34px_-14px_rgba(217,119,6,0.8),inset_0_1px_0_rgba(255,255,255,0.3)] hover:brightness-110'
                     }`}
                   >
                     {t('valueCard.cta')}
@@ -380,7 +467,7 @@ const DavanuKartesPage = () => {
                   <button
                     type="button"
                     onClick={() => { preloadGiftCard('value'); setPreview('custom'); }}
-                    className="mt-3 w-full inline-flex items-center justify-center gap-2 rounded-xl border border-amber-500/60 bg-black/30 hover:bg-amber-600/20 px-4 py-3 text-amber-200 font-semibold transition-colors min-h-[48px]"
+                    className="mt-3 w-full inline-flex items-center justify-center gap-2 rounded-xl bg-white/[0.05] ring-1 ring-amber-300/40 backdrop-blur-md hover:bg-amber-500/15 hover:ring-amber-300/70 px-4 py-3 text-amber-100 font-semibold transition-colors min-h-[48px]"
                   >
                     <Eye className="w-5 h-5" />
                     {t('preview.open')}
@@ -396,7 +483,7 @@ const DavanuKartesPage = () => {
           ref={formRef}
           className={`transition-all duration-700 ease-in-out ${
             activeSection !== 'none' 
-              ? 'max-h-screen opacity-100 py-8 sm:py-12' 
+              ? 'max-h-[2400px] opacity-100 py-8 sm:py-12' 
               : 'max-h-0 opacity-0 py-0 overflow-hidden'
           }`}
         >
@@ -414,146 +501,51 @@ const DavanuKartesPage = () => {
               </div>
             )}
 
-            {/* Pirts Rituāls Form */}
+            {/* The order forms in the booking form's look, in the page's gold. */}
+            <Accent.Provider value="gold">
+            {/* Pirts Rituāls Form: the booking form's look (bookingUi), the
+                ritual chosen from the same photo dropdown. */}
             {activeSection === 'ritual' && !showSuccess && (
-              <div className={`bg-[#132d13] rounded-3xl p-6 sm:p-8 lg:p-12 shadow-2xl shadow-green-500/10 transform transition-all duration-700 ${
-                activeSection === 'ritual' ? 'translate-y-0 opacity-100' : 'translate-y-8 opacity-0'
-              }`}>
-                <h2 className="text-xl sm:text-2xl lg:text-3xl xl:text-4xl font-bold text-white mb-6 sm:mb-8 text-center">
-                  {t('form.ritualTitle')}
-                </h2>
+              <div className={`${GLASS_FORM} p-5 sm:p-8 lg:p-10`}>
+                <form onSubmit={(e) => handleSubmit('ritual', e)} className="space-y-8">
+                  <FormTitle icon={Gift}>{t('form.ritualTitle')}</FormTitle>
 
-                <form onSubmit={(e) => handleSubmit('ritual', e)} className="space-y-4 sm:space-y-6">
-                  {/* Ritual Selection */}
-                  <div>
-                    <label className="block text-base sm:text-lg font-semibold text-white mb-2 sm:mb-3">
-                      {t('form.selectRitual')}
-                    </label>
-                    <select
-  value={selectedRitual}
-  onChange={(e) => setSelectedRitual(e.target.value)}
-  required
-  className="w-full px-2 sm:px-3 py-3 sm:py-4 bg-black/30 border border-green-500/30 rounded-xl text-white placeholder-gray-400 focus:border-green-500 focus:ring-2 focus:ring-green-500/20 transition-all duration-300 min-h-[48px] country-select-dropdown text-sm sm:text-base"
->
-                      <option value="">{t('form.selectRitualPlaceholder')}</option>
-                      {ritualOptions.map((option) => (
-                        <option key={option.value} value={option.value}>
-                          {option.label}
-                        </option>
-                      ))}
-                    </select>
+                  <Step n={1} title={t('form.selectRitual')}>
+                    <ChoicePicker
+                      name="giftRitual"
+                      label={t('form.selectRitual')}
+                      placeholder={t('form.selectRitualPlaceholder')}
+                      value={selectedRitual}
+                      onChange={setSelectedRitual}
+                      required
+                      options={ritualPickerOptions}
+                    />
                     {selectedRitual && (
                       <button type="button" onClick={() => setPreview('ritual')} className={previewButtonClass}>
                         <Eye className="w-5 h-5" />
                         {t('preview.open')}
                       </button>
                     )}
-                  </div>
+                  </Step>
 
-                  {/* Personal Information */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
-                    <div>
-                      <label className="block text-base sm:text-lg font-semibold text-white mb-2 sm:mb-3">
-                        {t('form.name')}
-                      </label>
-                      <input
-                        type="text"
-                        value={formData.name}
-                        onChange={(e) => handleInputChange('name', e.target.value)}
-                        placeholder={t('form.namePlaceholder')}
-                        required
-                        className="w-full px-3 sm:px-4 py-3 sm:py-4 bg-black/30 border border-green-500/30 rounded-xl text-white placeholder-gray-400 focus:border-green-500 focus:ring-2 focus:ring-green-500/20 transition-all duration-300 text-sm sm:text-base min-h-[48px]"
-                      />
-                    </div>
-                    
-                    <div>
-                      <label className="block text-base sm:text-lg font-semibold text-white mb-2 sm:mb-3">
-                        {t('form.email')}
-                      </label>
-                      <input
-                        type="email"
-                        value={formData.email}
-                        onChange={(e) => handleInputChange('email', e.target.value)}
-                        onBlur={contact.onEmailBlur}
-                        placeholder={t('form.emailPlaceholder')}
-                        required
-                        className="w-full px-3 sm:px-4 py-3 sm:py-4 bg-black/30 border border-green-500/30 rounded-xl text-white placeholder-gray-400 focus:border-green-500 focus:ring-2 focus:ring-green-500/20 transition-all duration-300 text-sm sm:text-base min-h-[48px]"
-                      />
-                    </div>
-                  </div>
+                  {contactStep}
 
-                  {/* Phone Number with Country Code */}
-                  <div>
-                    <label className="block text-base sm:text-lg font-semibold text-white mb-2 sm:mb-3">
-                      {t('form.phone')}
-                    </label>
-                    <div className="flex gap-2 sm:gap-3">
-                      <select
-                        value={formData.countryCode}
-                        onChange={(e) => handleInputChange('countryCode', e.target.value)}
-                        className="px-2 sm:px-3 py-3 sm:py-4 bg-black/30 border border-green-500/30 rounded-xl text-white focus:border-green-500 focus:ring-2 focus:ring-green-500/20 transition-all duration-300 min-w-[100px] sm:min-w-[120px] country-select-dropdown text-sm sm:text-base min-h-[48px]"
-                      >
-                        {europeanCountries.map((country) => (
-                          <option key={country.code} value={country.code}>
-                            {country.code} ({country.country})
-                          </option>
-                        ))}
-                      </select>
-                      <input
-                        type="tel"
-                        value={formData.phone}
-                        onChange={(e) => handleInputChange('phone', e.target.value)}
-                        placeholder={t('form.phonePlaceholder')}
-                        required
-                        className="flex-1 px-3 sm:px-4 py-3 sm:py-4 bg-black/30 border border-green-500/30 rounded-xl text-white placeholder-gray-400 focus:border-green-500 focus:ring-2 focus:ring-green-500/20 transition-all duration-300 text-sm sm:text-base min-h-[48px]"
-                      />
-                    </div>
-                  </div>
-
-                  <ContactCheckNotice notice={contact.notice} onUse={(email) => handleInputChange('email', email)} />
-
-                  <CompanyChoice value={company} onChange={setCompany} />
-
-                  {cardPayments && (
-                    <PaymentChoice
-                      card
-                      cash={false}
-                      value={paymentMethod}
-                      onChange={(method) => setChosenPayment(method === 'card' ? 'card' : 'transfer')}
-                    />
-                  )}
-
-                  {/* Purchase Button */}
-                  <div className="text-center pt-4 sm:pt-6">
-                    <button
-                      type="submit"
-                      disabled={isSubmitting}
-                      className="w-full sm:w-auto bg-amber-600 hover:bg-amber-700 disabled:bg-amber-800 disabled:cursor-not-allowed text-white px-8 sm:px-12 py-4 rounded-xl text-base sm:text-lg font-bold transition-all duration-300 transform hover:scale-105 hover:shadow-xl hover:shadow-amber-500/25 min-h-[48px]"
-                    >
-                      {isSubmitting ? t('form.submitting') : t('form.submit')}
-                    </button>
-                  </div>
+                  <button type="submit" disabled={isSubmitting} className={goldSubmitClass}>
+                    <span className="relative">{isSubmitting ? t('form.submitting') : t('form.submit')}</span>
+                  </button>
                 </form>
               </div>
             )}
 
             {/* Custom Value Form */}
             {activeSection === 'custom' && !showSuccess && (
-              <div className={`bg-[#132d13] rounded-3xl p-6 sm:p-8 lg:p-12 shadow-2xl shadow-green-500/10 transform transition-all duration-700 ${
-                activeSection === 'custom' ? 'translate-y-0 opacity-100' : 'translate-y-8 opacity-0'
-              }`}>
-                <h2 className="text-xl sm:text-2xl lg:text-3xl xl:text-4xl font-bold text-white mb-6 sm:mb-8 text-center">
-                  {t('form.valueTitle')}
-                </h2>
+              <div className={`${GLASS_FORM} p-5 sm:p-8 lg:p-10`}>
+                <form onSubmit={(e) => handleSubmit('custom', e)} className="space-y-8">
+                  <FormTitle icon={Gift}>{t('form.valueTitle')}</FormTitle>
 
-                <form onSubmit={(e) => handleSubmit('custom', e)} className="space-y-4 sm:space-y-6">
-                  {/* Value Range Selector */}
-                  <div>
-                    <label className="block text-base sm:text-lg font-semibold text-white mb-4 sm:mb-6">
-                      {t('form.valueLabel')} <span className="text-green-400 text-xl sm:text-2xl font-bold">{customValue}€</span>
-                    </label>
-                    
-                    <div className="relative">
+                  <Step n={1} title={t('form.valueLabel').replace(/:\s*$/, '')}>
+                    <div className="rounded-2xl bg-white/[0.04] p-4 sm:p-5 ring-1 ring-white/[0.12]">
+                      <p className="text-center text-4xl sm:text-5xl font-extrabold tabular-nums text-green-400">{customValue}€</p>
                       <input
                         type="range"
                         min={customMin}
@@ -561,11 +553,10 @@ const DavanuKartesPage = () => {
                         step={customStep}
                         value={customValue}
                         onChange={(e) => setCustomValue(Number(e.target.value))}
-                        className="w-full h-2 sm:h-3 bg-black/30 rounded-lg appearance-none cursor-pointer slider"
+                        aria-label={t('form.valueLabel')}
+                        className="mt-4 w-full h-2 sm:h-3 bg-black/30 rounded-lg appearance-none cursor-pointer slider"
                       />
-                      
-                      {/* Range Labels */}
-                      <div className="flex justify-between text-gray-400 text-xs sm:text-sm mt-2">
+                      <div className="flex justify-between text-white/50 text-xs sm:text-sm mt-2">
                         <span>{customMin}€</span>
                         <span>{customMax}€</span>
                       </div>
@@ -574,96 +565,20 @@ const DavanuKartesPage = () => {
                       <Eye className="w-5 h-5" />
                       {t('preview.open')}
                     </button>
-                  </div>
+                  </Step>
 
-                  {/* Personal Information */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
-                    <div>
-                      <label className="block text-base sm:text-lg font-semibold text-white mb-2 sm:mb-3">
-                        {t('form.name')}
-                      </label>
-                      <input
-                        type="text"
-                        value={formData.name}
-                        onChange={(e) => handleInputChange('name', e.target.value)}
-                        placeholder={t('form.namePlaceholder')}
-                        required
-                        className="w-full px-3 sm:px-4 py-3 sm:py-4 bg-black/30 border border-green-500/30 rounded-xl text-white placeholder-gray-400 focus:border-green-500 focus:ring-2 focus:ring-green-500/20 transition-all duration-300 text-sm sm:text-base min-h-[48px]"
-                      />
-                    </div>
-                    
-                    <div>
-                      <label className="block text-base sm:text-lg font-semibold text-white mb-2 sm:mb-3">
-                        {t('form.email')}
-                      </label>
-                      <input
-                        type="email"
-                        value={formData.email}
-                        onChange={(e) => handleInputChange('email', e.target.value)}
-                        onBlur={contact.onEmailBlur}
-                        placeholder={t('form.emailPlaceholder')}
-                        required
-                        className="w-full px-3 sm:px-4 py-3 sm:py-4 bg-black/30 border border-green-500/30 rounded-xl text-white placeholder-gray-400 focus:border-green-500 focus:ring-2 focus:ring-green-500/20 transition-all duration-300 text-sm sm:text-base min-h-[48px]"
-                      />
-                    </div>
-                  </div>
+                  {contactStep}
 
-                  {/* Phone Number with Country Code */}
-                  <div>
-                    <label className="block text-base sm:text-lg font-semibold text-white mb-2 sm:mb-3">
-                      {t('form.phone')}
-                    </label>
-                    <div className="flex gap-2 sm:gap-3">
-                      <select
-                        value={formData.countryCode}
-                        onChange={(e) => handleInputChange('countryCode', e.target.value)}
-                        className="px-2 sm:px-3 py-3 sm:py-4 bg-black/30 border border-green-500/30 rounded-xl text-white focus:border-green-500 focus:ring-2 focus:ring-green-500/20 transition-all duration-300 min-w-[100px] sm:min-w-[120px] country-select-dropdown text-sm sm:text-base min-h-[48px]"
-                      >
-                        {europeanCountries.map((country) => (
-                          <option key={country.code} value={country.code}>
-                            {country.code} ({country.country})
-                          </option>
-                        ))}
-                      </select>
-                      <input
-                        type="tel"
-                        value={formData.phone}
-                        onChange={(e) => handleInputChange('phone', e.target.value)}
-                        placeholder={t('form.phonePlaceholder')}
-                        required
-                        className="flex-1 px-3 sm:px-4 py-3 sm:py-4 bg-black/30 border border-green-500/30 rounded-xl text-white placeholder-gray-400 focus:border-green-500 focus:ring-2 focus:ring-green-500/20 transition-all duration-300 text-sm sm:text-base min-h-[48px]"
-                      />
-                    </div>
-                  </div>
-
-                  <ContactCheckNotice notice={contact.notice} onUse={(email) => handleInputChange('email', email)} />
-
-                  <CompanyChoice value={company} onChange={setCompany} />
-
-                  {cardPayments && (
-                    <PaymentChoice
-                      card
-                      cash={false}
-                      value={paymentMethod}
-                      onChange={(method) => setChosenPayment(method === 'card' ? 'card' : 'transfer')}
-                    />
-                  )}
-
-                  {/* Purchase Button */}
-                  <div className="text-center pt-4 sm:pt-6">
-                    <button
-                      type="submit"
-                      disabled={isSubmitting}
-                      className="w-full sm:w-auto bg-amber-600 hover:bg-amber-700 disabled:bg-amber-800 disabled:cursor-not-allowed text-white px-8 sm:px-12 py-4 rounded-xl text-base sm:text-lg font-bold transition-all duration-300 transform hover:scale-105 hover:shadow-xl hover:shadow-amber-500/25 min-h-[48px]"
-                    >
-                      {isSubmitting ? t('form.submitting') : t('form.submit')}
-                    </button>
-                  </div>
+                  <button type="submit" disabled={isSubmitting} className={goldSubmitClass}>
+                    <span className="relative">{isSubmitting ? t('form.submitting') : t('form.submit')}</span>
+                  </button>
                 </form>
               </div>
             )}
+            </Accent.Provider>
           </div>
         </section>
+        </LeafBackdrop>
       </main>
 
       <FooterSection />

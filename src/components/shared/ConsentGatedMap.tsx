@@ -69,7 +69,7 @@ const ConsentGatedMap: React.FC<{ height: number | string }> = ({ height }) => {
         href={MAPS_URL}
         target="_blank"
         rel="noopener noreferrer"
-        className="text-sm text-green-400 underline underline-offset-2 hover:text-green-300"
+        className="tap-area text-sm text-green-400 underline underline-offset-2 hover:text-green-300"
       >
         {t('cookies.embed.openInMaps')}
       </a>

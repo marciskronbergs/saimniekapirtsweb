@@ -4,5 +4,12 @@
   "bachelorette": "Vecmeitas Pūrs",
   "bachelorette_desc": "Tradicionāls vecmeitu ballītes rituāls ar īpašu atmosfēru un sievišķīgu pieskārienu.",
   "bachelor": "Vīru Paka",
-  "bachelor_desc": "Vīrišķīgs pirts piedzīvojums vecpuišu ballītei ar draudzīgu atmosfēru."
+  "bachelor_desc": "Vīrišķīgs pirts piedzīvojums vecpuišu ballītei ar draudzīgu atmosfēru.",
+  "ui": {
+    "eyebrow": "Pirms kāzām",
+    "pick": "Izvēlies piedzīvojumu – programma atvērsies zemāk",
+    "open": "Skatīt programmu",
+    "opened": "Atvērts",
+    "photos": "Foto"
+  }
 }

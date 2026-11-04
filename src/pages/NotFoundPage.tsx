@@ -3,6 +3,8 @@ import { Compass, ArrowRight } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import HeaderSection from '../components/HeaderSection';
 import FooterSection from '../components/FooterSection';
+import LeafBackdrop from '../components/leaves/LeafBackdrop';
+import { WhiskSeam } from '../components/whisks/WhiskAccent';
 import { useOfficePage } from '../lib/officeApi';
 import { getCurrentPageSEO } from '../utils/seoData';
 import { asLanguage } from '../utils/locale';
@@ -31,6 +33,12 @@ const NotFoundPage = () => {
       <HeaderSection />
 
       <main className="pt-20">
+        {/* The site's drifting leaves, behind the whole page. */}
+        <LeafBackdrop className="!bg-transparent">
+        {/* An oak whisk from the right, beside the heading. */}
+        <WhiskSeam asset="oak-right" width="28vw" top="48px" shiftY="0%" rotate={2} hideOnPhones />
+        {/* A birch whisk from the left, behind the suggested pages. */}
+        <WhiskSeam behind asset="birch-left" width="30vw" top="360px" shiftY="0%" rotate={4} hideOnPhones />
         <section className="py-24 px-6 max-w-4xl mx-auto text-center">
           <div className="flex justify-center mb-8">
             <div className="w-20 h-20 bg-green-600/20 rounded-full flex items-center justify-center">
@@ -65,6 +73,7 @@ const NotFoundPage = () => {
             {t('notFound.home')}
           </Link>
         </section>
+        </LeafBackdrop>
       </main>
 
       <FooterSection />

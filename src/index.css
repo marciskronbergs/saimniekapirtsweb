@@ -5,6 +5,17 @@
 /* Global smooth scrolling */
 html {
   scroll-behavior: smooth;
+  /* The page never scrolls sideways, whatever reaches past its edge (a
+     whisk, a leaf, a wide table on a phone): otherwise the whole page can
+     slide left and cut off its left side. Hidden for older browsers, clip
+     where supported (it keeps sticky elements working). */
+  overflow-x: hidden;
+  background-color: #0a0a0a;
+}
+@supports (overflow: clip) {
+  html {
+    overflow-x: clip;
+  }
 }
 
 /* Hero Section Zoom Animation */
@@ -13,6 +24,41 @@ html {
   to { transform: scale(1.05); }
 }
 
+/* A finger-sized hit area around a small control (carousel dots, short
+   text links), without changing how it looks. */
+.tap-area { position: relative; }
+.tap-area::after { content: ''; position: absolute; inset: -16px -4px; }
+
 .zoom-anim {
   animation: zoom 20s ease-in-out infinite alternate;
+}
+
+/* Glass lettering for the hero's tagline: the forest (--glass-src) shows
+   through the letter shapes, lightened like frosted glass, with a thin bright
+   edge and a soft shadow for contrast. Plain light text where the letters
+   cannot be filled with an image. */
+.hero-glass-text {
+  color: rgba(255, 255, 255, 0.92);
+  text-shadow: 0 2px 18px rgba(0, 0, 0, 0.4);
+}
+@supports ((-webkit-background-clip: text) or (background-clip: text)) {
+  .hero-glass-text {
+    color: transparent;
+    text-shadow: none;
+    background-image:
+      linear-gradient(172deg, rgba(255, 255, 255, 0.96) 0%, rgba(248, 253, 249, 0.82) 48%, rgba(238, 251, 242, 0.9) 100%),
+      var(--glass-src);
+    background-size: 100% 100%, cover;
+    background-position: center, center;
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-stroke: 1px rgba(255, 255, 255, 0.8);
+    filter: drop-shadow(0 2px 10px rgba(3, 12, 5, 0.45)) drop-shadow(0 0 1px rgba(255, 255, 255, 0.35));
+  }
+}
+/* Reveal (components/pirtsRituali/ritualUi.tsx) fades its direct children,
+   so a glass child keeps its backdrop blur while it fades in. No specificity:
+   a child's own opacity class still wins. */
+:where([data-reveal]) > * {
+  opacity: var(--rv, 1);
 }

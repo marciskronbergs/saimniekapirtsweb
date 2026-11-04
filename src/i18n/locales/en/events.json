@@ -4,5 +4,16 @@
   "description": "Bachelorette and bachelor parties – an unforgettable sauna experience, tailored to your group, for everyone to enjoy.",
   "bachelorette": "Bachelorette Sauna",
   "bachelor": "Bachelor Party",
-  "cta": "Learn More"
+  "cta": "Learn More",
+  "eyebrow": "Before the wedding",
+  "bacheloretteText": "A wishing ritual, scrubs and a whisking for the bride – an evening in the sauna with her friends.",
+  "bachelorText": "The small and the great men’s whisking, shedding the snakeskin and a cold dip for the groom.",
+  "bacheloretteAlt": "A guest resting on birch leaves in the sauna.",
+  "bachelorAlt": "Men in sauna hats warming up in a wooden sauna.",
+  "meta": {
+    "duration": "4 h",
+    "guests": "up to 8 guests",
+    "price": "€360"
+  },
+  "all": "All sauna experiences"
 }

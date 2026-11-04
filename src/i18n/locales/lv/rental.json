@@ -1,6 +1,5 @@
 {
   "title": "Pirts Noma (Ar vai Bez Zāļu Kubla)",
-  "subtitle": "Atrodi sev piemērotāko pirts piedzīvojumu no mūsu rūpīgi izveidotajiem piedāvājumiem, kas piemēroti dažādām vēlmēm un vajadzībām.",
   "baltaPirts": {
     "title": "Baltā Pirts",
     "description": "Perfekta izvēle lielākiem pasākumiem ar plašu vietu sēdēšanai un dabas baudīšanai. Ideāli piemērota ģimenes vai draugu svinībām."
@@ -13,5 +12,12 @@
     "title": "Ārstnieciskais Zāļu Kubls",
     "description": "Papildus iespēja iznomāt zāļu kubliņu ar aromātiskiem un ārstnieciskiem augiem. Ziemā mēs liekam klāt priežu skujas un vasarā sagatavotās bērzu & ozolu lapas."
   },
-  "cta": "Uzzināt Vairāk"
+  "cta": "Uzzināt Vairāk",
+  "more": "Uzzināt vairāk",
+  "prevPhoto": "Iepriekšējais attēls",
+  "nextPhoto": "Nākamais attēls",
+  "showPhoto": "Rādīt {{n}}. attēlu: {{title}}",
+  "interlude": {
+    "alt": "Divas koka pirtis meža malā: lielā guļbaļķu pirts ar lieliem logiem un mazā tumšā pirts ar skursteni un malkas grēdu."
+  }
 }

@@ -52,21 +52,33 @@
         "title": "INDIVIDUĀLI",
         "price": "220€ – 280€",
         "description": "Ideāli piemērots cilvēkiem, kuri meklē mierīgu atpūtu. (bez kubla 220€)",
-        "features": ["Sertificēts pirtinieks/-ce", "3h", "Zāļu Kubls & Pirts Noma"],
+        "features": [
+          "Sertificēts pirtinieks/-ce",
+          "3h",
+          "Zāļu Kubls & Pirts Noma"
+        ],
         "popular": false
       },
       {
         "title": "DIVIEM",
         "price": "300€ – 360€",
         "description": "Ideāli piemērots pārim vai draugiem, kuri vēlas izbaudīt kopīgu rituālu mierpilnā atmosfērā. (Bez kubla – 300€)",
-        "features": ["Sertificēts pirtinieks/-ce", "4h", "Zāļu Kubls & Pirts Noma"],
+        "features": [
+          "Sertificēts pirtinieks/-ce",
+          "4h",
+          "Zāļu Kubls & Pirts Noma"
+        ],
         "popular": true
       },
       {
         "title": "ĢIMENEI",
         "price": "380€",
         "description": "Ideāli piemērots ģimenes saliedēšanai caur sajūtām un jaunām pieredzēm. (2 pieaugušie + 3 bērni)",
-        "features": ["Sertificēts pirtinieks/-ce", "5h", "Zāļu Kubls & Pirts Noma"],
+        "features": [
+          "Sertificēts pirtinieks/-ce",
+          "5h",
+          "Zāļu Kubls & Pirts Noma"
+        ],
         "popular": false
       }
     ],
@@ -157,5 +169,20 @@
       "Neaizmirstams pārsteigums"
     ],
     "cta": "Uzzināt Vairāk"
+  },
+  "tubScene": {
+    "title": "Pirts Rituālu Cenas",
+    "alt": "Divi viesi zāļu kublā ar krūzēm rokās; saimnieks viņiem lej dzērienu no māla krūkas."
+  },
+  "ui": {
+    "experienceEyebrow": "Rituāls soli pa solim",
+    "step": "Solis",
+    "popular": "Populārākais",
+    "groupEyebrow": "Draugu lokā",
+    "included": "Iekļauts",
+    "notIncluded": "Nav iekļauts",
+    "hostEyebrow": "Iepazīsti saimnieku",
+    "team": "Mūsu pirtnieki",
+    "accommodationEyebrow": "Paliec pa nakti"
   }
 }

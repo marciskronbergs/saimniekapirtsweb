@@ -6,5 +6,33 @@
     "Choose a specific ritual or an amount",
     "An unforgettable surprise"
   ],
-  "cta": "Purchase Gift Card"
+  "cta": "Purchase Gift Card",
+  "eyebrow": "A gift to remember",
+  "scene": {
+    "alt": "A grass snake patterned with golden Latvian ornaments on mossy roots in an evening forest",
+    "home": {
+      "title": "Gift cards",
+      "text": "Give someone a sauna experience they won’t forget."
+    },
+    "rituals": {
+      "title": "Gift card",
+      "text": "Give a sauna ritual – an experience that stays with them."
+    },
+    "rental": {
+      "title": "Gift card",
+      "text": "Give an evening at the sauna to share with their own people."
+    }
+  },
+  "giftCard": {
+    "eyebrow": "Gift card",
+    "cta": "Buy",
+    "ritual": {
+      "title": "Sauna ritual",
+      "text": "A ritual with a sauna master – for one, for two or for a family"
+    },
+    "value": {
+      "title": "Sauna joy",
+      "text": "An amount of your choice – for a sauna ritual or sauna rental"
+    }
+  }
 }

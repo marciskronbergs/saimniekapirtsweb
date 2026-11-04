@@ -6,5 +6,23 @@
     "Relaksējoši Zāļu Kubli Ar Dabas Dziedinošo Spēku",
     "Atsvaidzinošs Dīķis Cauru Gadu"
   ],
-  "cta": "Uzzināt Vairāk"
+  "cta": "Uzzināt Vairāk",
+  "videos": {
+    "eyebrow": "Rituāls kustībā",
+    "region": "Pirts rituāla video",
+    "play": "Atskaņot: {{title}}",
+    "pause": "Apturēt: {{title}}",
+    "soon": "Drīzumā",
+    "items": [
+      {
+        "title": "Pilnā pirts rituāla pieredze, 1. video"
+      },
+      {
+        "title": "Pilnā pirts rituāla pieredze, 2. video"
+      },
+      {
+        "title": "Pilnā pirts rituāla pieredze, 3. video"
+      }
+    ]
+  }
 }

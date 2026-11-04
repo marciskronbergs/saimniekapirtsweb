@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ChevronLeft, ChevronRight, Calendar, Clock } from 'lucide-react';
+import { AnimatePresence, motion } from 'framer-motion';
 import TimeSlotPicker from './TimeSlotPicker';
 import { SlotAvailability } from './timeSlots';
 
@@ -35,7 +36,6 @@ const CalendarCode: React.FC<CalendarCodeProps> = ({
     startDate.setDate(firstDay.getDate() - firstWeekday);
 
     // Calculate how many weeks we need to show all days of the month
-    const lastWeekday = (lastDay.getDay() + 6) % 7;
     const totalDaysNeeded = firstWeekday + lastDay.getDate();
     const weeksNeeded = Math.ceil(totalDaysNeeded / 7);
     const totalCells = weeksNeeded * 7;
@@ -85,68 +85,114 @@ const CalendarCode: React.FC<CalendarCodeProps> = ({
 
   const monthNames = t('calendar.months', { returnObjects: true }) as string[];
   const dayNames = t('calendar.weekdays', { returnObjects: true }) as string[];
+  const monthKey = `${currentDate.getFullYear()}-${currentDate.getMonth()}`;
+  const atFirstMonth = currentDate.getMonth() === today.getMonth() && currentDate.getFullYear() === today.getFullYear();
 
+  const dayClass = (day: ReturnType<typeof generateCalendarDays>[number]) =>
+    day.isAvailable
+      ? day.isSelected
+        ? 'bg-gradient-to-b from-green-400 to-green-600 font-bold text-black shadow-[0_8px_22px_-6px_rgba(34,197,94,0.9)] ring-1 ring-green-200/70'
+        : day.isToday
+          ? 'font-semibold text-green-300 ring-1 ring-green-400/60 hover:bg-green-500/15'
+          : day.isCurrentMonth
+            ? 'text-white/85 hover:bg-white/[0.09] hover:text-white'
+            : 'text-white/35 hover:bg-white/[0.06]'
+      : day.isCurrentMonth
+        ? 'cursor-not-allowed text-white/20'
+        : 'cursor-not-allowed text-white/10';
+
+  // A month grid in the manner of 21st.dev's calendar: the month between
+  // round glass arrows, the days as rounded tiles, today ringed and dotted,
+  // the chosen day lit green; the grid slides over as the month changes.
   return (
     <div className="relative lg:max-h-[80vh] lg:overflow-y-auto lg:pr-3 custom-scroll">
       <div className="space-y-5 text-sm">
         {/* Header */}
-        <div className="flex items-center gap-2 mb-2">
-          <Calendar className="w-5 h-5 text-green-400" />
+        <div className="flex items-center gap-3">
+          <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-green-500/15 ring-1 ring-green-400/40">
+            <Calendar className="h-[18px] w-[18px] text-green-300" />
+          </span>
           <h3 className="text-lg font-semibold text-white">{t('calendar.select_date')}</h3>
         </div>
 
-        {/* Calendar Header */}
-        <div className="flex items-center justify-between mb-2">
-          <button onClick={() => navigateMonth('prev')} className="w-8 h-8 rounded-lg bg-gray-800 hover:bg-gray-700 flex items-center justify-center">
-            <ChevronLeft className="w-4 h-4 text-gray-300" />
-          </button>
-          <h4 className="text-base font-medium text-white">
-            {monthNames[currentDate.getMonth()]} {currentDate.getFullYear()}
-          </h4>
-          <button onClick={() => navigateMonth('next')} className="w-8 h-8 rounded-lg bg-gray-800 hover:bg-gray-700 flex items-center justify-center">
-            <ChevronRight className="w-4 h-4 text-gray-300" />
-          </button>
-        </div>
-
-        {/* Weekday Headers */}
-        <div className="grid grid-cols-7 gap-[3px] mb-1">
-          {dayNames.map((day) => (
-            <div key={day} className="text-center text-xs font-medium text-gray-400 py-1">{day}</div>
-          ))}
-        </div>
-
-        {/* Calendar Grid */}
-        <div className="grid grid-cols-7 gap-[3px] mb-4 min-h-[200px]">
-          {generateCalendarDays().map((day, index) => (
+        <div className="rounded-3xl bg-white/[0.035] p-3 ring-1 ring-white/10 shadow-[inset_0_1px_0_rgba(255,255,255,0.08)] sm:p-4">
+          {/* Calendar Header */}
+          <div className="mb-3 flex items-center justify-between">
             <button
-              key={index}
-              onClick={() => day.isAvailable && selectDate(day.date)}
-              disabled={!day.isAvailable}
-              className={`aspect-square text-[13px] flex items-center justify-center rounded-md transition-all
-                ${day.isAvailable
-                  ? day.isSelected
-                    ? 'bg-green-600 text-white font-bold shadow-md shadow-green-500/20'
-                    : day.isToday
-                      ? 'bg-green-600/20 text-green-400 font-semibold hover:bg-green-600/30'
-                      : day.isCurrentMonth
-                        ? 'text-gray-300 hover:bg-gray-800 hover:text-white'
-                        : 'text-gray-500 hover:bg-gray-800 hover:text-gray-400'
-                  : day.isCurrentMonth
-                    ? 'text-gray-600 cursor-not-allowed'
-                    : 'text-gray-700 cursor-not-allowed'}
-              `}
+              type="button"
+              onClick={() => navigateMonth('prev')}
+              disabled={atFirstMonth}
+              aria-label="‹"
+              className="flex h-9 w-9 items-center justify-center rounded-full bg-white/[0.06] ring-1 ring-white/15 transition hover:bg-white/[0.12] disabled:opacity-30"
             >
-              {day.date.getDate()}
+              <ChevronLeft className="h-4 w-4 text-white/80" />
             </button>
-          ))}
+            <AnimatePresence mode="wait" initial={false}>
+              <motion.h4
+                key={monthKey}
+                initial={{ y: 8, opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                exit={{ y: -8, opacity: 0 }}
+                transition={{ duration: 0.2 }}
+                className="text-base font-semibold tracking-wide text-white"
+              >
+                {monthNames[currentDate.getMonth()]} <span className="text-white/50">{currentDate.getFullYear()}</span>
+              </motion.h4>
+            </AnimatePresence>
+            <button
+              type="button"
+              onClick={() => navigateMonth('next')}
+              aria-label="›"
+              className="flex h-9 w-9 items-center justify-center rounded-full bg-white/[0.06] ring-1 ring-white/15 transition hover:bg-white/[0.12]"
+            >
+              <ChevronRight className="h-4 w-4 text-white/80" />
+            </button>
+          </div>
+
+          {/* Weekday Headers */}
+          <div className="mb-1.5 grid grid-cols-7 gap-1">
+            {dayNames.map((day) => (
+              <div key={day} className="py-1 text-center text-[11px] font-semibold uppercase tracking-wider text-white/40">{day}</div>
+            ))}
+          </div>
+
+          {/* Calendar Grid */}
+          <AnimatePresence mode="wait" initial={false}>
+            <motion.div
+              key={monthKey}
+              initial={{ opacity: 0, x: 14 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -14 }}
+              transition={{ duration: 0.2 }}
+              className="grid min-h-[200px] grid-cols-7 gap-1"
+            >
+              {generateCalendarDays().map((day, index) => (
+                <button
+                  type="button"
+                  key={index}
+                  onClick={() => day.isAvailable && selectDate(day.date)}
+                  disabled={!day.isAvailable}
+                  aria-pressed={!!day.isSelected}
+                  className={`relative flex aspect-square items-center justify-center rounded-xl text-[14px] tabular-nums transition-all duration-200 ${dayClass(day)}`}
+                >
+                  {day.date.getDate()}
+                  {day.isToday && !day.isSelected && (
+                    <span aria-hidden className="absolute bottom-1.5 h-1 w-1 rounded-full bg-green-400" />
+                  )}
+                </button>
+              ))}
+            </motion.div>
+          </AnimatePresence>
         </div>
 
         {/* Time Slots - phones render these in the popup header instead, so they
             stay visible while the calendar and the form scroll past. */}
         {selectedDate && (
           <div className="hidden lg:block space-y-3">
-            <div className="flex items-center gap-2">
-              <Clock className="w-5 h-5 text-green-400" />
+            <div className="flex items-center gap-3">
+              <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-green-500/15 ring-1 ring-green-400/40">
+                <Clock className="h-[18px] w-[18px] text-green-300" />
+              </span>
               <h3 className="text-lg font-semibold text-white">{t('calendar.select_time')}</h3>
             </div>
 
@@ -159,17 +205,10 @@ const CalendarCode: React.FC<CalendarCodeProps> = ({
         )}
       </div>
 
-      <style jsx>{`
-        .custom-scroll::-webkit-scrollbar {
-          width: 6px;
-        }
-        .custom-scroll::-webkit-scrollbar-thumb {
-          background-color: rgba(34, 197, 94, 0.7);
-          border-radius: 6px;
-        }
-        .custom-scroll::-webkit-scrollbar-track {
-          background: transparent;
-        }
+      <style>{`
+        .custom-scroll::-webkit-scrollbar { width: 6px; }
+        .custom-scroll::-webkit-scrollbar-thumb { background-color: rgba(34, 197, 94, 0.7); border-radius: 6px; }
+        .custom-scroll::-webkit-scrollbar-track { background: transparent; }
       `}</style>
     </div>
   );

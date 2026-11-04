@@ -4,8 +4,13 @@ import { Phone, MessageCircle, Menu, X, ChevronDown, Globe } from 'lucide-react'
 import { useTranslation } from 'react-i18next';
 import { pathForLanguage, routePathOf, type Language } from '../utils/locale';
 
+// Scrolled this far (px), the page counts as scrolled.
+const SCROLLED_AT = 24;
+// Pages whose full-screen hero has the desktop bar out of the way at the top.
+const HIDES_AT_TOP = ['/', '/pirts-rituali', '/pirts-noma', '/rezervet', '/davanu-kartes'];
+
 const HeaderSection = () => {
-  const [isScrolled, setIsScrolled] = useState(false);
+  const [isScrolled, setIsScrolled] = useState(() => window.scrollY > SCROLLED_AT);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isLanguageDropdownOpen, setIsLanguageDropdownOpen] = useState(false);
   const location = useLocation();
@@ -13,13 +18,22 @@ const HeaderSection = () => {
 
   const currentLanguage = i18n.language.toUpperCase();
 
+  // On the homepage and the rituals page the desktop bar stays out of the way
+  // while the hero is seen whole, and slides in once the visitor starts
+  // scrolling. Keyboard focus inside it brings it back too (focus-within below).
+  const hiddenAtTop = HIDES_AT_TOP.includes(routePathOf(location.pathname)) && !isScrolled;
+
   useEffect(() => {
-    const handleScroll = () => {
-      setIsScrolled(window.scrollY > 50);
-    };
-    window.addEventListener('scroll', handleScroll);
+    // React re-renders only when the answer flips, not on every scroll event.
+    const handleScroll = () => setIsScrolled(window.scrollY > SCROLLED_AT);
+    handleScroll();
+    window.addEventListener('scroll', handleScroll, { passive: true });
     return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
+  }, [location.pathname]);
+
+  useEffect(() => {
+    if (hiddenAtTop) setIsLanguageDropdownOpen(false);
+  }, [hiddenAtTop]);
 
   // Close mobile menu and language dropdown on route change
   useEffect(() => {
@@ -52,8 +66,12 @@ const HeaderSection = () => {
     { name: t('rezervet'), path: '/rezervet' }
   ];
 
-  const handleNavClick = () => {
+  // Closes the menu. A new page opens at its top by itself (ScrollToTop in
+  // App.tsx); a link to the page already open goes back up to its top.
+  const handleNavClick = (event: React.MouseEvent<HTMLAnchorElement>) => {
     setIsMobileMenuOpen(false);
+    const target = new URL(event.currentTarget.href).pathname;
+    if (target === window.location.pathname) window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const handleLanguageChange = async (languageCode: string) => {
@@ -81,7 +99,14 @@ const HeaderSection = () => {
   };
 
   return (
-    <header className="fixed w-full top-0 z-50 bg-black transition-all duration-500">
+    <header
+      data-hidden={hiddenAtTop ? 'true' : 'false'}
+      className={`fixed w-full top-0 z-50 bg-black transition-[transform,opacity] duration-[650ms] ease-[cubic-bezier(0.22,1,0.36,1)] motion-reduce:!translate-y-0 ${
+        hiddenAtTop
+          ? 'lg:-translate-y-full lg:opacity-0 lg:pointer-events-none lg:focus-within:translate-y-0 lg:focus-within:opacity-100 lg:focus-within:pointer-events-auto'
+          : ''
+      }`}
+    >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between py-3 h-18">
           {/* Logo - Far Left */}
@@ -154,13 +179,14 @@ const HeaderSection = () => {
                         ? 'text-green-400 underline' 
                         : 'text-white'
                     }`}
+                    onClick={handleNavClick}
                   >
                     {item.name}
                   </Link>
                   
-                  {/* Dropdown Menu */}
+                  {/* Dropdown Menu: on hover, and on keyboard focus too. */}
                   {item.submenu && (
-                    <div className="absolute top-full left-0 mt-2 w-48 bg-black/95 backdrop-blur-sm rounded-lg shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 z-50">
+                    <div className="absolute top-full left-0 mt-2 w-48 bg-black/95 backdrop-blur-sm rounded-lg shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible group-focus-within:opacity-100 group-focus-within:visible transition-all duration-300 z-50">
                       <div className="py-2">
                         {item.submenu.map((subItem, subIndex) => (
                           <Link
@@ -171,6 +197,7 @@ const HeaderSection = () => {
                                 ? 'text-green-400 bg-green-400/10' 
                                 : 'text-white'
                             }`}
+                            onClick={handleNavClick}
                           >
                             {subItem.name}
                           </Link>
@@ -207,8 +234,11 @@ const HeaderSection = () => {
           {/* Mobile Menu Button */}
           <div className="lg:hidden">
             <button
+              type="button"
               onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-              className="text-white hover:text-green-400 transition-colors duration-300"
+              aria-expanded={isMobileMenuOpen}
+              aria-label={isMobileMenuOpen ? t('closeMenu', 'Aizvērt izvēlni') : t('openMenu', 'Atvērt izvēlni')}
+              className="-m-2.5 flex p-2.5 text-white hover:text-green-400 transition-colors duration-300"
             >
               {isMobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
             </button>

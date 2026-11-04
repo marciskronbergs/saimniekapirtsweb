@@ -92,5 +92,16 @@
     "ctaTitle": "Piesaki \"DRAUGU PIRTS +\" Rituālu",
     "ctaSubtitle": "Izbaudi neaizmirstamu pirts piedzīvojumu draugu lokā – rezervē jau šodien!",
     "ctaButton": "Rezervēt"
+  },
+  "ui": {
+    "eyebrow": "Pirts draugu lokā",
+    "pick": "Izvēlies rituālu – programma atvērsies zemāk",
+    "open": "Skatīt programmu",
+    "opened": "Atvērts",
+    "back": "Atpakaļ uz pirts rituāliem",
+    "included": "Iekļauts",
+    "notIncluded": "Nav iekļauts",
+    "min": "Minimālā cena",
+    "book": "Rezervēt"
   }
 }

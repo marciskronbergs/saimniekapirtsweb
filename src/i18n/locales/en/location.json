@@ -10,5 +10,8 @@
   "companyReg": "Registration No.",
   "companyBank": "Bank",
   "companyIBAN": "Account No.",
-  "reserveNow": "Reserve Now"
+  "reserveNow": "Reserve Now",
+  "heading": "How to find us",
+  "copy": "Copy account number",
+  "copied": "Account number copied"
 }

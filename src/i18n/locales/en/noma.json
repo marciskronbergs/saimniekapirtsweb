@@ -92,5 +92,32 @@
       "An unforgettable surprise"
     ],
     "cta": "Learn More"
+  },
+  "page": {
+    "heroAlt": "Two wooden saunas at the forest edge by a pond: the large log sauna and the small dark sauna with its chimney and woodpile.",
+    "heroScroll": "Scroll on",
+    "saunasEyebrow": "Choose your sauna",
+    "saunasTitle": "Two saunas, two characters",
+    "book": "Book",
+    "herbEyebrow": "Add to your rental",
+    "herbFeatures": [
+      "Leaves of healing herbs",
+      "Warm water under the open sky",
+      "Can be added to any rental"
+    ],
+    "placeEyebrow": "The place",
+    "placeTitle": "Forest, pond and quiet",
+    "placeText": "After the heat of the sauna – the pond, the forest and peace. Scroll to look around.",
+    "pricingEyebrow": "Prices",
+    "withoutTub": "Without tub",
+    "withTub": "With hot tub",
+    "popular": "Most popular",
+    "pricingNote": "Prices are for the whole sauna, not per person.",
+    "extrasEyebrow": "Optional extras",
+    "photo": "Show photo {{n}}",
+    "prevPhoto": "Previous photo",
+    "nextPhoto": "Next photo",
+    "stayEyebrow": "Stay the night",
+    "stayPhoto": "Show room photo {{n}}"
   }
 }
