@@ -164,6 +164,14 @@ const PrivacyPolicyPage = () => {
                 </p>
               </div>
 
+              {/* Advertising measurement */}
+              <div className="mb-12">
+                <h3 className="text-2xl font-bold text-white mb-6">{t('adMeasurement.title')}</h3>
+                <p className="text-lg text-gray-300 leading-relaxed">
+                  {t('adMeasurement.description')}
+                </p>
+              </div>
+
               {/* Cookies */}
               <div className="mb-12">
                 <h3 className="text-2xl font-bold text-white mb-6">{t('cookies.title')}</h3>

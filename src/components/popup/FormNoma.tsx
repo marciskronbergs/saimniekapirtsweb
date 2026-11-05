@@ -17,6 +17,7 @@ import { goToCardPayment, paymentLabel, useCardPayments } from '../../lib/cardPa
 import { scrollIntoPopup } from './scrollIntoPopup';
 import { cancelUrl } from './cancelUrl';
 import { trackBookingSaved } from '../../lib/analytics';
+import { newEventId, recordSignals } from '../../lib/attribution';
 import { asLanguage } from '../../utils/locale';
 
 const allSaunaTypes = ['Baltā pirts', 'Pelēkā pirts'];
@@ -236,7 +237,9 @@ const FormNoma: React.FC<FormNomaProps> = ({ selectedDate, selectedTime, onClose
       if (error) throw new Error(`Supabase error: ${error.message}`);
 
       // Counted as soon as the booking is saved, whatever happens after.
-      trackBookingSaved(reservationData);
+      const leadEventId = newEventId();
+      trackBookingSaved(reservationData, leadEventId);
+      await recordSignals('reservation', id, leadEventId);
 
       // The booking is saved at this point. If the notification fails the guest
       // must still see it confirmed, or they would try again and book twice.

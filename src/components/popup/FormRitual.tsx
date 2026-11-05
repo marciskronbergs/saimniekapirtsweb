@@ -25,6 +25,7 @@ import { goToCardPayment, paymentLabel, useCardPayments } from '../../lib/cardPa
 import { scrollIntoPopup } from './scrollIntoPopup';
 import { cancelUrl } from './cancelUrl';
 import { trackBookingSaved } from '../../lib/analytics';
+import { newEventId, recordSignals } from '../../lib/attribution';
 import { asLanguage } from '../../utils/locale';
 
 // The labels come from the shared price list, the same one the invoice function
@@ -224,7 +225,9 @@ const reservationData = {
       }
 
       // Counted as soon as the booking is saved, whatever happens after.
-      trackBookingSaved(reservationData);
+      const leadEventId = newEventId();
+      trackBookingSaved(reservationData, leadEventId);
+      await recordSignals('reservation', reservationData.id, leadEventId);
 
       // Prepare data for Make.com webhook
       const webhookData = {

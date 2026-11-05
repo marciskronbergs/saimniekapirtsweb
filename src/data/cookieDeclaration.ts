@@ -63,6 +63,17 @@ export const COOKIE_DECLARATION: Record<DeclarationCategory, CookieEntry[]> = {
   ],
   marketing: [
     {
+      name: 'sp_ad_click',
+      provider: 'saimniekapirts.lv',
+      purpose: {
+        lv: 'Saglabā reklāmas klikšķa ID (Google, Meta, TikTok), lai rezervāciju varētu piesaistīt reklāmai, kas to atnesa.',
+        en: 'Stores the ad click ID (Google, Meta, TikTok) so a booking can be credited to the ad that brought it.',
+        ru: 'Сохраняет ID клика по рекламе (Google, Meta, TikTok), чтобы связать бронирование с рекламой, которая его принесла.',
+      },
+      expiry: MONTHS_3,
+      type: 'localStorage',
+    },
+    {
       name: '_gcl_au',
       provider: 'Google Ads',
       purpose: {
