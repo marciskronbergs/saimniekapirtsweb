@@ -85,6 +85,17 @@ export const COOKIE_DECLARATION: Record<DeclarationCategory, CookieEntry[]> = {
       type: 'HTTP',
     },
     {
+      name: '_gcl_aw',
+      provider: 'Google Ads',
+      purpose: {
+        lv: 'Saglabā Google reklāmas klikšķa ID, lai rezervāciju varētu piesaistīt reklāmai, kas to atnesa.',
+        en: 'Stores the Google ad click ID so a booking can be credited to the ad that brought it.',
+        ru: 'Сохраняет ID клика по рекламе Google, чтобы связать бронирование с рекламой, которая его принесла.',
+      },
+      expiry: MONTHS_3,
+      type: 'HTTP',
+    },
+    {
       name: '_fbp',
       provider: 'Meta (Facebook, Instagram)',
       purpose: {

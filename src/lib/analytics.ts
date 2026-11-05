@@ -37,6 +37,19 @@ interface EcommerceItem {
 
 const CURRENCY = 'EUR';
 
+/**
+ * Google Ads conversion "Rezervācija (mājaslapa)": a booking or a gift card
+ * order was saved. Sent through the gtag.js snippet in index.html, which
+ * honours Consent Mode, with the booking's event id so a reload never counts
+ * it twice.
+ */
+const ADS_BOOKING = 'AW-784077665/am9ECPag6LIdEOGm8PUC';
+
+function adsConversion(sendTo: string, eventId: string) {
+  const w = window as Window & { gtag?: (...args: unknown[]) => void };
+  w.gtag?.('event', 'conversion', { send_to: sendTo, transaction_id: eventId });
+}
+
 function push(
   event: string,
   params: Record<string, unknown>,
@@ -91,6 +104,7 @@ export function trackBookingSaved(
   eventId?: string,
 ) {
   const { items, value } = bookingItems(booking);
+  const id = eventId ?? randomId();
   push(
     'generate_lead',
     {
@@ -101,8 +115,9 @@ export function trackBookingSaved(
       currency: CURRENCY,
     },
     { currency: CURRENCY, value, items },
-    eventId,
+    id,
   );
+  adsConversion(ADS_BOOKING, id);
 }
 
 /** A gift card form was opened: which card, by its kind. */
@@ -120,6 +135,7 @@ export function trackGiftCardOrdered(order: GiftCardForPricing & { payment_metho
     price: item.unitPrice,
     quantity: item.quantity,
   }));
+  const id = eventId ?? randomId();
   push(
     'generate_lead',
     {
@@ -129,8 +145,9 @@ export function trackGiftCardOrdered(order: GiftCardForPricing & { payment_metho
       currency: CURRENCY,
     },
     { currency: CURRENCY, value: priced.total, items },
-    eventId,
+    id,
   );
+  adsConversion(ADS_BOOKING, id);
 }
 
 /**
