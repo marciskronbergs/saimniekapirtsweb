@@ -90,6 +90,10 @@
     "title": "Communication with Data Subject",
     "description": "For communication with the data subject, we use the phone number, email address or postal address specified by the data subject."
   },
+  "adMeasurement": {
+    "title": "Measuring advertising",
+    "description": "If you accepted marketing cookies in the cookie dialog, after a booking or gift card order we tell Meta Platforms Ireland Ltd. (Facebook, Instagram) and Google Ireland Ltd. (Google Ads, Google Analytics) that a booking or payment took place and its amount. With it we send the ad click ID and the browser IDs from these companies' cookies, and your email address and phone number in hashed (SHA-256) form, from which they cannot be read. This shows which ads bring guests. We do not send your name, what you booked or the booking number. The legal basis is your consent (GDPR Article 6(1)(a)); you can withdraw it at any time under \"Cookie settings\" at the bottom of the page. Without consent none of this data is sent."
+  },
   "cookies": {
     "title": "Cookies",
     "description": "Cookies are small text files that are created and stored on the internet user's device (computer, tablet, mobile phone, etc.) when visiting a website. Cookies help the user remember login name and settings (for example, language, font size, etc. additional information) so they don't have to be specified each time, thus improving website usability.",

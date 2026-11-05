@@ -18,6 +18,7 @@ import { goToCardPayment, useCardPayments } from '../lib/cardPayments';
 import GiftCardPreview from '../components/giftcards/GiftCardPreview';
 import { preloadGiftCard } from '../components/giftcards/giftCardAssets';
 import { trackGiftCardOrdered, trackGiftCardStart } from '../lib/analytics';
+import { newEventId, recordSignals } from '../lib/attribution';
 import { asLanguage } from '../utils/locale';
 
 // A photograph for each ritual in the order form's dropdown, as the booking
@@ -232,7 +233,9 @@ const DavanuKartesPage = () => {
         alert('Radās kļūda. Lūdzu mēģiniet vēlreiz.');
       } else {
         // Counted as soon as the order is saved, whatever happens after.
-        trackGiftCardOrdered(submissionData);
+        const leadEventId = newEventId();
+        trackGiftCardOrdered(submissionData, leadEventId);
+        await recordSignals('gift_card', id, leadEventId);
 
         // Send webhook to Make.com
         try {

@@ -90,6 +90,10 @@
     "title": "Saziņa ar datu subjektu",
     "description": "Saziņai ar datu subjektu mēs izmantojam datu subjekta norādīto tālruņa numuru, e-pasta adresi vai pasta adresi."
   },
+  "adMeasurement": {
+    "title": "Reklāmu efektivitātes mērīšana",
+    "description": "Ja sīkdatņu logā esat piekrituši mārketinga sīkdatnēm, pēc rezervācijas vai dāvanu kartes pasūtījuma mēs paziņojam Meta Platforms Ireland Ltd. (Facebook, Instagram) un Google Ireland Ltd. (Google Ads, Google Analytics), ka notikusi rezervācija vai apmaksa un kāda ir tās summa. Kopā ar to nosūtām reklāmas klikšķa ID un pārlūka ID no šo uzņēmumu sīkdatnēm, kā arī jūsu e-pasta adresi un tālruņa numuru jaukētā (SHA-256) veidā, no kura tos nevar nolasīt. Tas ļauj saprast, kuras reklāmas atnes klientus. Vārdu, rezervācijas saturu un rezervācijas numuru nenosūtām. Tiesiskais pamats ir jūsu piekrišana (VDAR 6. panta 1. punkta a) apakšpunkts); to var jebkurā laikā atsaukt lapas apakšā sadaļā \"Sīkdatņu iestatījumi\". Ja piekrišanas nav, šie dati netiek nosūtīti."
+  },
   "cookies": {
     "title": "Sīkdatnes",
     "description": "Sīkdatnes ir nelieli teksta faili, kas tiek izveidoti un saglabāti interneta lietotāja ierīcē (datorā, planšetdatorā, mobilajā tālrunī u.c.), apmeklējot vietni. Sīkdatnes palīdz lietotājam atcerēties pieteikšanās vārdu un iestatījumus (piemēram, valodu, fonta lielumu u.c. papildu informāciju), lai tie nebūtu katru reizi jānorāda, tādējādi uzlabojot vietnes lietošanas ērtumu.",

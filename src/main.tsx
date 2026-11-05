@@ -6,12 +6,14 @@ import './index.css';
 import i18n from './i18n/i18n';
 import { languageFromPath, routerBasename } from './utils/locale';
 import { trackContactLinks } from './lib/analytics';
+import { captureAdClicks } from './lib/attribution';
 
 // The address decides the language, so a shared or indexed English link opens
 // in English. With "/en" as the basename the routes themselves stay unchanged.
 const { pathname } = window.location;
 i18n.changeLanguage(languageFromPath(pathname));
 trackContactLinks();
+captureAdClicks();
 
 const app = (
   <StrictMode>

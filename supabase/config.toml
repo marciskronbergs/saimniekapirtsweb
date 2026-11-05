@@ -7,3 +7,8 @@ project_id = "wigoyeorqnssgbrgexku"
 # its own secrets, so the gateway must not require one -- as in production.
 [functions.invoice]
 verify_jwt = false
+
+# Called by pg_cron (no JWT) and fetched by Google Ads' scheduled upload. It
+# takes no input and checks its own key for the feed and status pages.
+[functions.conversions]
+verify_jwt = false

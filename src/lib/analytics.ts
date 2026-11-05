@@ -16,8 +16,9 @@
 // tag may act on an event is decided in Tag Manager by the cookie consent
 // (src/lib/consent.ts). No name, email, phone or booking id goes in here: the
 // booking id is the secret in the office's cancel link, so events carry a
-// random event_id instead, which the Meta and TikTok tags can use to
-// de-duplicate against a server-side feed later.
+// random event_id instead. For generate_lead and purchase it is the same id
+// the server sends to Meta's Conversions API (supabase/functions/conversions),
+// so Meta counts a booking once when both the pixel and the server report it.
 
 import priceCatalog from '../data/priceCatalog.json';
 import { priceGiftCard, priceReservation, type GiftCardForPricing, type ReservationForPricing } from './pricing';
@@ -36,10 +37,14 @@ interface EcommerceItem {
 
 const CURRENCY = 'EUR';
 
-function push(event: string, params: Record<string, unknown>, ecommerce?: Record<string, unknown>) {
+function push(
+  event: string,
+  params: Record<string, unknown>,
+  ecommerce?: Record<string, unknown>,
+  eventId: string = randomId(),
+) {
   const w = window as DataLayerWindow & { gtag?: (...args: unknown[]) => void };
   w.dataLayer = w.dataLayer || [];
-  const eventId = randomId();
   // Tag Manager merges ecommerce objects between pushes unless it is cleared first.
   if (ecommerce) w.dataLayer.push({ ecommerce: null });
   // `value` is reset on every event: Tag Manager keeps the last value it saw,
@@ -77,9 +82,13 @@ export function trackBookingStart(type: BookingType) {
   push('begin_checkout', { booking_type: type }, { currency: CURRENCY, items: [] });
 }
 
-/** A booking was saved. Fired for every payment method, card included. */
+/**
+ * A booking was saved. Fired for every payment method, card included.
+ * `eventId` is the one recorded with the booking (src/lib/attribution.ts).
+ */
 export function trackBookingSaved(
   booking: ReservationForPricing & { payment_method?: string; gift_card_code?: string | null },
+  eventId?: string,
 ) {
   const { items, value } = bookingItems(booking);
   push(
@@ -92,6 +101,7 @@ export function trackBookingSaved(
       currency: CURRENCY,
     },
     { currency: CURRENCY, value, items },
+    eventId,
   );
 }
 
@@ -101,7 +111,7 @@ export function trackGiftCardStart(kind: 'ritual' | 'custom') {
 }
 
 /** A gift card order was saved, for every payment method. */
-export function trackGiftCardOrdered(order: GiftCardForPricing & { payment_method?: string }) {
+export function trackGiftCardOrdered(order: GiftCardForPricing & { payment_method?: string }, eventId?: string) {
   const priced = priceGiftCard(priceCatalog, order);
   const items: EcommerceItem[] = priced.items.map((item) => ({
     item_id: item.name.lv,
@@ -119,6 +129,7 @@ export function trackGiftCardOrdered(order: GiftCardForPricing & { payment_metho
       currency: CURRENCY,
     },
     { currency: CURRENCY, value: priced.total, items },
+    eventId,
   );
 }
 
@@ -158,6 +169,8 @@ export async function trackPaid(
         quantity: item.quantity,
       })),
     },
+    // The server reports the same payment to Meta under this id.
+    `purchase-${transactionId}`,
   );
 }
 
