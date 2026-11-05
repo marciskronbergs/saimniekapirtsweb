@@ -439,6 +439,7 @@ async function status() {
   }
   return {
     pixel: META_PIXEL_ID,
+    meta_check: await metaCheck(),
     last_30_days: { bookings_recorded: signals ?? 0, with_marketing_consent: withConsent ?? 0, ...summary },
     secrets: {
       META_CAPI_TOKEN: Boolean(Deno.env.get('META_CAPI_TOKEN')),
@@ -446,6 +447,24 @@ async function status() {
       GA4_API_SECRET: Boolean(Deno.env.get('GA4_API_SECRET')),
     },
   };
+}
+
+/**
+ * Checks the token without sending an event: an empty batch gets an auth error
+ * for a bad token and "data must be non-empty" for a good one. (A Conversions
+ * API token may send events but not read the pixel, so a read is no test.)
+ */
+async function metaCheck() {
+  const token = Deno.env.get('META_CAPI_TOKEN');
+  if (!token) return { ok: false, detail: 'no token' };
+  const res = await fetch(`https://graph.facebook.com/${META_API}/${META_PIXEL_ID}/events?access_token=${encodeURIComponent(token)}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ data: [] }),
+  });
+  const body = await res.json().catch(() => ({}));
+  const message: string = body.error?.message ?? '';
+  return { ok: /data must be non-empty/i.test(message), detail: message || String(res.status) };
 }
 
 async function feedKey() {

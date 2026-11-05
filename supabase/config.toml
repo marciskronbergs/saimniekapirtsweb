@@ -12,3 +12,7 @@ verify_jwt = false
 # takes no input and checks its own key for the feed and status pages.
 [functions.conversions]
 verify_jwt = false
+
+# Checks the Meta Conversions API token; keyed with the conversions feed key.
+[functions.conversions-check]
+verify_jwt = false
