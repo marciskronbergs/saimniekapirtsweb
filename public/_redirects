@@ -14,6 +14,24 @@
 /home                                /                                 301
 /sakums                              /                                 301
 
+# The old site's English and Russian addresses. Search Console still shows
+# /en/home and /en/sakums in results, and they answered 404 after the
+# redesign. Netlify matches these with or without a trailing slash.
+/en/home                             /en                               301
+/en/sakums                           /en                               301
+/en/book-online                      /en/rezervet                      301
+/en/gift-card                        /en/davanu-kartes                 301
+/en/davanu-karte                     /en/davanu-kartes                 301
+/en/pakalpojumi-un-cenas             /en/pirts-noma                    301
+/en/atsauksmes                       /en                               301
+/ru/home                             /ru                               301
+/ru/sakums                           /ru                               301
+/ru/book-online                      /ru/rezervet                      301
+/ru/gift-card                        /ru/davanu-kartes                 301
+/ru/davanu-karte                     /ru/davanu-kartes                 301
+/ru/pakalpojumi-un-cenas             /ru/pirts-noma                    301
+/ru/atsauksmes                       /ru                               301
+
 # Additional common variations and typos (optional but recommended)
 /book-online/                        /rezervet                         301
 /gift-card/                          /davanu-kartes                    301
