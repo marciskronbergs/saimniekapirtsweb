@@ -31,7 +31,7 @@
 
 import { createClient } from 'npm:@supabase/supabase-js@2';
 
-const META_PIXEL_ID = Deno.env.get('META_PIXEL_ID') ?? '1601718544265561';
+const META_PIXEL_ID = Deno.env.get('META_PIXEL_ID') ?? '9129223913845060';
 const META_API = Deno.env.get('META_API_VERSION') ?? 'v24.0';
 const GA4_MEASUREMENT_ID = Deno.env.get('GA4_MEASUREMENT_ID') ?? 'G-46HJJ959K8';
 const SITE = 'https://saimniekapirts.lv';
@@ -438,6 +438,7 @@ async function status() {
     summary[key] = (summary[key] ?? 0) + 1;
   }
   return {
+    pixel: META_PIXEL_ID,
     last_30_days: { bookings_recorded: signals ?? 0, with_marketing_consent: withConsent ?? 0, ...summary },
     secrets: {
       META_CAPI_TOKEN: Boolean(Deno.env.get('META_CAPI_TOKEN')),

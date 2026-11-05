@@ -41,7 +41,8 @@ ad on. Build new ads paused and show the plan first.
   (mājaslapa)" (site tag, sent from `src/lib/analytics.ts`).
 - Meta: ad account 122322304515595 (a personal ad account, outside the
   business portfolio 751667061920260), Page "Sarmaspa.lv - Saimniekapirts.lv"
-  1056776424483097, pixel 1601718544265561, Instagram @saimniekapirts.
+  1056776424483097, pixel 9129223913845060 (the ad account's own; the old
+  1601718544265561 belongs to an account he cannot open), Instagram @saimniekapirts.
 - Supabase project `wigoyeorqnssgbrgexku`. Edge Functions: `invoice` (office,
   invoices, payments) and `conversions` (server-side conversions, every 10
   minutes from pg_cron).
