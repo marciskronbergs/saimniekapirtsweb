@@ -46,9 +46,12 @@ ad on. Build new ads paused and show the plan first.
 - **Meta: the official Meta connector only pushes, Composio reads.** Use the
   official connector only to create or change things (campaigns, ad sets,
   ads, creatives, audiences, uploads). Every read (insights, ad lists,
-  Instagram posts and reels, comments, follower numbers) goes through
-  Composio's Instagram / Facebook / Meta Ads tools. The official key is for
-  account control; too many reads through it can get the account banned.
+  Instagram posts and reels, comments, follower numbers) goes elsewhere:
+  Metricool (brand 3594169) for Instagram reels and posts with reach, views,
+  watch time and media ids; AdCrew `query_data` (`meta_ads_insights`) for ad
+  results; Composio's Meta Ads tools once a working read token is connected.
+  The official key is for account control; too many reads through it can get
+  the account banned.
 - Supabase project `wigoyeorqnssgbrgexku`. Edge Functions: `invoice` (office,
   invoices, payments) and `conversions` (server-side conversions, every 10
   minutes from pg_cron).
