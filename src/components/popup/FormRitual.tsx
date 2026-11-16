@@ -10,7 +10,7 @@ import {
 } from 'lucide-react';
 import { ChipOption, ChoicePicker, Field, FormTitle, Notice, OptionCard, Step, SubLabel, fieldClass, splitOption, submitClass } from './bookingUi';
 import { supabase } from '../../lib/supabase';
-import { sameSlot } from './timeSlots';
+import { canStayOvernight, overnightSaunas, overnightTimes, sameSlot } from './timeSlots';
 
 import priceCatalog from '../../data/priceCatalog.json';
 import BookingConfirmation, { type ConfirmedBooking } from './BookingConfirmation';
@@ -36,8 +36,6 @@ const groupRitualsLarge = priceCatalog.ritual.filter((r) => r.group === 'large')
 const groupRitualsSmall = priceCatalog.ritual.filter((r) => r.group === 'small').map((r) => r.label);
 
 const groupRituals = [...groupRitualsLarge, ...groupRitualsSmall];
-
-const timeSlotsForStay = ['17:00', '18:00'];
 
 // A photograph for each of the price list's rituals, in its order
 // (public/media/booking): alone, for two, the family, the groups, the parties.
@@ -108,15 +106,37 @@ const FormRitual: React.FC<FormRitualProps> = ({ selectedDate, selectedTime, onC
     }
   }, [initialRitualType]);
 
-  // Auto-reset overnightStay if time is changed to a non-evening slot
-React.useEffect(() => {
-  if (!timeSlotsForStay.includes(selectedTime || '') && formData.overnightStay) {
-    setFormData(prev => ({
-      ...prev,
-      overnightStay: false
-    }));
-  }
-}, [selectedTime]);
+  // The saunas a guest can stay the night at that are still free at the chosen
+  // time. The ritual's sauna is assigned when it is booked, so the overnight
+  // stay is offered only while one of them is free.
+  const [freeOvernightSaunas, setFreeOvernightSaunas] = useState<string[]>(overnightSaunas);
+  useEffect(() => {
+    setFreeOvernightSaunas(overnightSaunas);
+    if (!selectedDate || !selectedTime || !overnightTimes.includes(selectedTime)) return;
+    let cancelled = false;
+    (async () => {
+      const { data, error } = await supabase
+        .from('reservations')
+        .select('sauna_type, reservation_time')
+        .eq('reservation_date', selectedDate.toLocaleDateString('en-CA'));
+      if (cancelled || error || !data) return;
+      const taken = new Set(data.filter((r) => sameSlot(r.reservation_time, selectedTime)).map((r) => r.sauna_type));
+      setFreeOvernightSaunas(overnightSaunas.filter((sauna) => !taken.has(sauna)));
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [selectedDate, selectedTime]);
+
+  const showOvernight = freeOvernightSaunas.some((sauna) => canStayOvernight(sauna, selectedTime));
+
+  // The overnight stay is let go when it is no longer offered: a midday slot,
+  // or no sauna to sleep at left free.
+  useEffect(() => {
+    if (!showOvernight && formData.overnightStay) {
+      setFormData((prev) => ({ ...prev, overnightStay: false }));
+    }
+  }, [showOvernight, formData.overnightStay]);
 
 
   const handleInputChange = (field: string, value: string | boolean) => {
@@ -127,7 +147,6 @@ React.useEffect(() => {
   };
 
   const isGroupRitual = groupRituals.includes(formData.ritualType);
-  const showOvernight = timeSlotsForStay.includes(selectedTime || '');
 
 
 
@@ -149,7 +168,12 @@ React.useEffect(() => {
   }
   const data = day.filter((r) => sameSlot(r.reservation_time, selectedTime));
 
-  const usedTypes = new Set(data.map((r: any) => r.sauna_type));
+  const usedTypes = new Set(data.map((r) => r.sauna_type));
+
+  // Staying the night: only a sauna with somewhere to sleep will do.
+  if (formData.overnightStay) {
+    return overnightSaunas.find((sauna) => !usedTypes.has(sauna)) ?? '';
+  }
 
   if (!usedTypes.has('Pelēkā pirts')) return 'Pelēkā pirts';
   if (!usedTypes.has('Baltā pirts')) return 'Baltā pirts';
@@ -176,7 +200,9 @@ React.useEffect(() => {
       // Prepare data for Supabase
      const assignedSaunaType = await fetchSaunaType();
 if (!assignedSaunaType) {
-  setSubmitError(say('Diemžēl abas pirtis jau ir rezervētas šim laikam.', 'Sorry, both saunas are already booked for this time.', 'К сожалению, на это время обе бани уже забронированы.'));
+  setSubmitError(formData.overnightStay
+    ? say('Diemžēl nakšņošana šim laikam vairs nav pieejama. Izvēlieties citu laiku vai rituālu bez nakšņošanas.', 'Sorry, an overnight stay is no longer available at this time. Please choose another time or the ritual without staying the night.', 'К сожалению, ночёвка на это время уже недоступна. Выберите другое время или ритуал без ночёвки.')
+    : say('Diemžēl abas pirtis jau ir rezervētas šim laikam.', 'Sorry, both saunas are already booked for this time.', 'К сожалению, на это время обе бани уже забронированы.'));
   setIsSubmitting(false);
   return;
 }

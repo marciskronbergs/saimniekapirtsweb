@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { User, Mail, Phone, MessageSquare, Home, Plus, Minus, Clock } from 'lucide-react';
 import { ChoicePicker, Field, FormTitle, Notice, OptionCard, Step, SubLabel, fieldClass, splitOption, submitClass } from './bookingUi';
 import { supabase } from '../../lib/supabase';
-import { sameSlot } from './timeSlots';
+import { canStayOvernight, sameSlot } from './timeSlots';
 import { useTranslation } from 'react-i18next';
 import priceCatalog from '../../data/priceCatalog.json';
 import BookingConfirmation, { type ConfirmedBooking } from './BookingConfirmation';
@@ -172,10 +172,10 @@ const FormNoma: React.FC<FormNomaProps> = ({ selectedDate, selectedTime, onClose
     setExtraQuantities(prev => ({ ...prev, [option]: quantity }));
   };
 
-  // The overnight stay is only offered from the evening slots.
-  const cleanedExtras = formData.extras.filter(extra =>
-    extra !== overnightOption || (selectedTime === '17:00' || selectedTime === '18:00')
-  );
+  // The overnight stay is only offered from the evening slots, and only at a
+  // sauna with somewhere to sleep (timeSlots.ts).
+  const overnightOffered = canStayOvernight(formData.saunaType, selectedTime);
+  const cleanedExtras = formData.extras.filter(extra => extra !== overnightOption || overnightOffered);
 
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -283,7 +283,7 @@ const FormNoma: React.FC<FormNomaProps> = ({ selectedDate, selectedTime, onClose
     return <BookingConfirmation booking={confirmed} onClose={onClose} />;
   }
 
-  const extraOptions = [...baseExtraOptions, ...(selectedTime === '17:00' || selectedTime === '18:00' ? [overnightOption] : [])];
+  const extraOptions = [...baseExtraOptions, ...(overnightOffered ? [overnightOption] : [])];
 
   return (
     <div className="space-y-7">

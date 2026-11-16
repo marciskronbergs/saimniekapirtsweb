@@ -11,6 +11,16 @@ const maxPerSlot = 2;
 const slotGroup = (time: string) => (time < '14:00' ? 'midday' : 'evening');
 export const sameSlot = (a: string, b: string) => slotGroup(a) === slotGroup(b);
 
+// The evening slots a guest can stay the night after.
+export const overnightTimes = ['17:00', '18:00'];
+
+// The saunas a guest can stay the night at. For now only the white one: the
+// grey sauna has nowhere to sleep. Add 'Pelēkā pirts' back when it does.
+export const overnightSaunas = ['Baltā pirts'];
+
+export const canStayOvernight = (sauna: string, time: string | null | undefined) =>
+  overnightSaunas.includes(sauna) && overnightTimes.includes(time ?? '');
+
 export type SlotBadge = 'green' | 'yellow' | 'red';
 
 export interface SlotAvailability {
