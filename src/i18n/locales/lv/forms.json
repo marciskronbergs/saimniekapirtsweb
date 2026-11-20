@@ -41,6 +41,20 @@
       "option9": "VECMEITAS PŪRS 🌿🧔 – 360€ (līdz 8 cilvēkiem)",
       "option10": "VĪRU PAKA 🌿💪 – 360€ (līdz 8 cilvēkiem)"
     },
+    "includes": {
+      "title": "Kas iekļauts rituālā",
+      "master": "Rituālu vada pirtnieks, kurš ir ar jums visu laiku.",
+      "option1": "Iesildīšanās zāļu kublā, zāļu tēja, slotu pēriens, zāļu skrubis, silta medus masāža, atvēsināšanās vēsā dīķī un atpūta siltos pledos. Ilgst līdz 3 stundām.",
+      "option2": "Zāļu tēja, slotu pēriens, zāļu skrubis, silta medus masāža, atvēsināšanās vēsā dīķī un atpūta siltos pledos. Ilgst līdz 3 stundām.",
+      "option3": "Iesildīšanās zāļu kublā, zāļu tēja, slotu pēriens, zāļu skrubis, silta medus masāža, atvēsināšanās vēsā dīķī un atpūta siltos pledos. Ilgst līdz 4 stundām.",
+      "option4": "Zāļu tēja, slotu pēriens, zāļu skrubis, silta medus masāža, atvēsināšanās vēsā dīķī un atpūta siltos pledos. Ilgst līdz 4 stundām.",
+      "option5": "Iesildīšanās zāļu kublā, zāļu tēja, slotu pēriens, zāļu skrubis, silta medus masāža, atvēsināšanās vēsā dīķī un atpūta siltos pledos. Ilgst līdz 4 stundām.",
+      "option6": "Grupas skrubēšana, zāļu kubliņš un kontrasta procedūra. Ilgst līdz 4 stundām.",
+      "option7": "Iesildīšanās zāļu kubliņā, individuāls pēriens katram un grupas skrubēšana. Ilgst līdz 4 stundām.",
+      "option8": "Pilns individuāls rituāls katram – no iesildīšanās zāļu kubliņā līdz pērienam un skrubēšanai. Ilgst līdz 4 stundām.",
+      "option9": "Kopēja iesildīšanās ar novēlējumu rituālu, pēriens un skrubji, galvenais pēriens individuāli līgavai. Zāļu kubls iekļauts. Ilgst 4 stundas.",
+      "option10": "Kopēja iesildīšanās ar novēlējumu rituālu, mazais un lielais pēriens individuāli līgavainim ar izpeldināšanu. Zāļu kubls iekļauts. Ilgst 4 stundas."
+    },
     "people": {
       "3": "3 cilvēki",
       "4": "4 cilvēki",

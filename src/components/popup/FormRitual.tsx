@@ -406,6 +406,16 @@ const reservationData = {
             />
           </div>
 
+          {/* What the chosen ritual includes and how long it lasts: the
+              questions guests used to ask in the message box. */}
+          {ritualTypes.includes(formData.ritualType) && (
+            <div className="rounded-2xl bg-white/[0.04] px-4 py-3.5 text-sm leading-relaxed text-white/75 ring-1 ring-white/10">
+              <p className="font-medium text-white/90">{t('forms:ritual.includes.title')}</p>
+              <p className="mt-1">{t('forms:ritual.includes.master')}</p>
+              <p className="mt-1">{t(`forms:ritual.includes.option${ritualTypes.indexOf(formData.ritualType) + 1}`)}</p>
+            </div>
+          )}
+
           {isGroupRitual && (
             <div>
               <SubLabel icon={Users}>{t('forms:ritual.participants')}</SubLabel>

@@ -41,6 +41,20 @@
       "option9": "Bachelorette Sauna 🌿🧔 – 360€ (up to 8 people)",
       "option10": "Bachelor Pack 🌿💪 – 360€ (up to 8 people)"
     },
+    "includes": {
+      "title": "What the ritual includes",
+      "master": "The ritual is led by a sauna master who stays with you the whole time.",
+      "option1": "Warming in the herbal hot tub, herbal tea, whisking, a herbal scrub, a warm honey massage, a dip in the cool pond and rest in warm blankets. Up to 3 hours.",
+      "option2": "Herbal tea, whisking, a herbal scrub, a warm honey massage, a dip in the cool pond and rest in warm blankets. Up to 3 hours.",
+      "option3": "Warming in the herbal hot tub, herbal tea, whisking, a herbal scrub, a warm honey massage, a dip in the cool pond and rest in warm blankets. Up to 4 hours.",
+      "option4": "Herbal tea, whisking, a herbal scrub, a warm honey massage, a dip in the cool pond and rest in warm blankets. Up to 4 hours.",
+      "option5": "Warming in the herbal hot tub, herbal tea, whisking, a herbal scrub, a warm honey massage, a dip in the cool pond and rest in warm blankets. Up to 4 hours.",
+      "option6": "A shared scrub, the herbal hot tub and a hot-and-cold contrast. Up to 4 hours.",
+      "option7": "Warming in the herbal hot tub, individual whisking for everyone and a shared scrub. Up to 4 hours.",
+      "option8": "The complete individual ritual for everyone – from warming in the hot tub to whisking and a scrub. Up to 4 hours.",
+      "option9": "Warming up together with a wish-making ritual, whisking and scrubs, and the main whisking just for the bride. Herbal hot tub included. 4 hours.",
+      "option10": "Warming up together with a wish-making ritual, and a short and a great whisking just for the groom, with a dip in the pond. Herbal hot tub included. 4 hours."
+    },
     "people": {
       "3": "3 people",
       "4": "4 people",
